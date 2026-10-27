@@ -1,0 +1,234 @@
+@model giao_dien_demo.Models.LeaderKPIViewModel
+@{
+    ViewData["Title"] = "Hiệu suất & Đánh giá KPI (Lãnh đạo)";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-chart-pie"></i></span>
+            Hiệu suất & Đánh giá KPI (Lãnh đạo)
+        </h1>
+        <div class="hrms-page-subtitle">Giám sát kết quả đánh giá KPI và phân bổ xếp loại nhân sự trong phạm vi phụ trách.</div>
+    </div>
+</div>
+
+<!-- BỘ LỌC DỮ LIỆU PHẠM VI -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="hrms-form-label">Đơn vị / Phòng ban được phụ trách</label>
+                <select name="department" class="hrms-form-select">
+                    <option value="">-- Tất cả đơn vị phụ trách (@Model.AllowedDepts.Count đơn vị) --</option>
+                    @foreach (var dept in Model.AllowedDepts)
+                    {
+                        <option value="@dept" selected="@(Model.CurrentDept == dept)">@dept</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="hrms-form-label">Kỳ đánh giá</label>
+                <select name="periodId" class="hrms-form-select">
+                    <option value="">-- Tất cả các kỳ đánh giá --</option>
+                    @foreach (var p in Model.Periods)
+                    {
+                        <option value="@p.Id" selected="@(Model.SelectedPeriodId == p.Id)">@p.Name (@p.Status)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary flex-grow-1"><i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu</button>
+                <a href="@Url.Action("Index", "LeaderKPI")" class="hrms-btn hrms-btn-ghost" title="Đặt lại bộ lọc"><i class="fa-solid fa-rotate-left"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- THẺ CHỈ SỐ TỔNG HỢP (3 CHỈ SỐ THẬT) -->
+<div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-clipboard-check"></i></div>
+            <div class="hrms-kpi-value text-primary">@Model.CompletedEvaluationsCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đánh giá đã hoàn thành</div>
+            <div class="hrms-kpi-sub">Theo kỳ và phạm vi được chọn</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-star-half-stroke"></i></div>
+            <div class="hrms-kpi-value text-success">@Model.AverageFinalScore.ToString("0.00")<small style="font-size: 14px; font-weight: normal; color: var(--hrms-text-muted);">/100</small></div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Điểm KPI trung bình</div>
+            <div class="hrms-kpi-sub">Dựa trên các đánh giá COMPLETED</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-body">
+            <div class="hrms-kpi-label mb-2">Phân bố xếp loại</div>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                @if (Model.RatingDistribution != null && Model.RatingDistribution.Any())
+                {
+                    foreach (var kvp in Model.RatingDistribution)
+                    {
+                        <span class="hrms-badge hrms-badge-neutral px-2 py-1">
+                            <strong>@kvp.Key:</strong> <span class="text-primary fw-bold ms-1">@kvp.Value</span>
+                        </span>
+                    }
+                }
+                else
+                {
+                    <span class="text-muted small">Chưa có xếp loại</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TABS: LỊCH SỬ ĐÁNH GIÁ (AUTHORITATIVE) VS SNAPSHOT HIỆN TẠI (PAYROLL) -->
+<ul class="nav nav-tabs hrms-tabs mb-4" id="leaderKpiTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-semibold" id="evaluations-tab" data-bs-toggle="tab" data-bs-target="#evaluations" type="button" role="tab" aria-controls="evaluations" aria-selected="true">
+            <i class="fa-solid fa-list-check me-1"></i> Kết quả Đánh giá theo kỳ (@Model.CompletedEvaluations.Count)
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-semibold" id="snapshot-tab" data-bs-toggle="tab" data-bs-target="#snapshot" type="button" role="tab" aria-controls="snapshot" aria-selected="false">
+            <i class="fa-solid fa-users me-1"></i> Xếp loại nhân sự hiện tại (@Model.CurrentEmployeeSnapshots.Count)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="leaderKpiTabContent">
+    <!-- TAB 1: EVALUATIONS -->
+    <div class="tab-pane fade show active" id="evaluations" role="tabpanel" aria-labelledby="evaluations-tab">
+        <div class="hrms-card">
+            <div class="hrms-table-wrap">
+                <table class="hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Nhân sự</th>
+                            <th>Đơn vị / Chức danh</th>
+                            <th>Kỳ đánh giá</th>
+                            <th>Điểm cuối</th>
+                            <th>Xếp loại</th>
+                            <th>Thời gian hoàn tất</th>
+                            <th class="col-actions">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.CompletedEvaluations.Any())
+                        {
+                            <tr>
+                                <td colspan="7">
+                                    <div class="hrms-empty-state py-5">
+                                        <div class="hrms-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+                                        <div class="hrms-empty-title">Chưa có kết quả đánh giá</div>
+                                        <div class="hrms-empty-desc">Chưa có bản ghi đánh giá KPI hoàn thành nào trong phạm vi được chọn.</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.CompletedEvaluations)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@item.EmployeeName</div>
+                                        <div class="small text-muted">@item.EmployeeCode</div>
+                                    </td>
+                                    <td>
+                                        <div>@item.Department</div>
+                                        <div class="small text-muted">@item.JobTitle</div>
+                                    </td>
+                                    <td class="fw-medium">@item.PeriodName</td>
+                                    <td>
+                                        <span class="fw-bold text-success">@item.FinalScore?.ToString("0.00")</span>
+                                    </td>
+                                    <td>
+                                        <span class="hrms-badge hrms-badge-success">@item.FinalRating</span>
+                                    </td>
+                                    <td class="small text-muted">
+                                        @item.CompletedAt?.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
+                                    <td class="col-actions">
+                                        <a href="@Url.Action("Details", "LeaderKPI", new { id = item.Id })" class="hrms-btn hrms-btn-xs hrms-btn-secondary">
+                                            <i class="fa-solid fa-eye me-1"></i> Chi tiết
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: CURRENT SNAPSHOT -->
+    <div class="tab-pane fade" id="snapshot" role="tabpanel" aria-labelledby="snapshot-tab">
+        <div class="hrms-card">
+            <div class="hrms-card-header">
+                <div class="small text-muted">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    Bảng này hiển thị xếp loại KPI hiện hành từ <code>Employee.KPIScore</code> được sử dụng đồng bộ trong tính toán Tiền lương (Payroll).
+                </div>
+            </div>
+            <div class="hrms-table-wrap">
+                <table class="hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Phòng ban</th>
+                            <th>Chức danh</th>
+                            <th>Xếp loại KPI (Hiện tại)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.CurrentEmployeeSnapshots.Any())
+                        {
+                            <tr>
+                                <td colspan="4">
+                                    <div class="hrms-empty-state py-5">
+                                        <div class="hrms-empty-icon"><i class="fa-solid fa-users"></i></div>
+                                        <div class="hrms-empty-title">Không có dữ liệu nhân sự</div>
+                                        <div class="hrms-empty-desc">Không có dữ liệu nhân sự nào trong phạm vi quản lý.</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var emp in Model.CurrentEmployeeSnapshots)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark">@emp.Name</div>
+                                        <div class="small text-muted">@emp.EmployeeCode</div>
+                                    </td>
+                                    <td>@emp.Department</td>
+                                    <td>@emp.JobTitle</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(emp.KPIScore))
+                                        {
+                                            <span class="hrms-badge hrms-badge-info">@emp.KPIScore</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">Chưa xếp loại</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

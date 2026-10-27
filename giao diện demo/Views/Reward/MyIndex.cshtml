@@ -1,0 +1,477 @@
+@{
+    ViewData["Title"] = "Khen thưởng của tôi";
+}
+
+<style>
+    .reward-view {
+        --primary: var(--color-primary);
+        --primary-light: var(--color-primary-subtle);
+        --success: var(--status-success);
+        --success-light: var(--status-success-subtle);
+        --warning: var(--status-warning);
+        --warning-light: var(--status-warning-subtle);
+        --danger: var(--status-danger);
+        --danger-light: var(--status-danger-subtle);
+        --gold: #f59e0b;
+        --gold-light: #fef3c7;
+    }
+
+    .kpi-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-lg, 10px);
+        box-shadow: var(--shadow-xs);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        overflow: hidden;
+        position: relative;
+        height: 100%;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .kpi-icon-wrapper {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-md, 8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .bg-primary-light { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .bg-success-light { background: var(--status-success-subtle); color: var(--status-success); }
+    .bg-warning-light { background: var(--status-warning-subtle); color: var(--status-warning); }
+    .bg-gold-light { background: #fef3c7; color: #d97706; }
+
+    .kpi-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-top: 0.5rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-label {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Featured Award Card */
+    .featured-card {
+        background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+        color: white;
+        border-radius: var(--radius-lg, 10px);
+        padding: 24px;
+        box-shadow: var(--shadow-md);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .featured-card::after {
+        content: '\f091';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        right: -20px;
+        bottom: -30px;
+        font-size: 150px;
+        opacity: 0.1;
+        transform: rotate(-15deg);
+    }
+
+    /* Timeline */
+    .timeline {
+        position: relative;
+        padding: 1rem 0;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 20px;
+        width: 2px;
+        background: var(--border-default);
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 50px;
+        margin-bottom: 1.5rem;
+    }
+    .timeline-item:last-child {
+        margin-bottom: 0;
+    }
+    .timeline-icon {
+        position: absolute;
+        left: 6px;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--surface-card);
+        border: 2px solid var(--color-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--color-primary);
+        font-size: 0.875rem;
+        z-index: 1;
+    }
+    .timeline-content {
+        background: var(--surface-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md, 8px);
+        padding: 1rem;
+        box-shadow: var(--shadow-xs);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .timeline-content:hover {
+        border-color: var(--color-primary);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .reward-type-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-weight: 500;
+    }
+    .badge-monetary { background: var(--status-success-subtle); color: var(--status-success); }
+    .badge-non-monetary { background: var(--surface-muted); color: var(--text-secondary); }
+
+    /* Skeleton Loading */
+    .skeleton {
+        background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+    }
+    @@keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+</style>
+
+<div class="reward-view py-2">
+    <!-- Header -->
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fa-solid fa-trophy"></i></span>
+                Khen thưởng của tôi
+            </h1>
+            <p class="hrms-page-subtitle">Theo dõi thành tích, khen thưởng và các quyết định tôn vinh của bạn.</p>
+        </div>
+    </div>
+
+    <div>
+        
+        <!-- KPIs Row -->
+        <div class="row mb-4" id="kpiContainer">
+            <div class="col-md-3">
+                <div class="kpi-card p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="kpi-label">Tổng Số Khen Thưởng</div>
+                            <div class="kpi-value skeleton" id="kpiTotalCount" style="width: 50px; height: 32px; margin-top: 8px;"></div>
+                        </div>
+                        <div class="kpi-icon-wrapper bg-primary-light">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="kpi-label">Trong Năm Nay</div>
+                            <div class="kpi-value skeleton" id="kpiCurrentYear" style="width: 50px; height: 32px; margin-top: 8px;"></div>
+                        </div>
+                        <div class="kpi-icon-wrapper bg-success-light">
+                            <i class="fa-solid fa-calendar-check"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="kpi-label">Thành Tích Nổi Bật</div>
+                            <div class="kpi-value skeleton" id="kpiFeatured" style="width: 50px; height: 32px; margin-top: 8px;"></div>
+                        </div>
+                        <div class="kpi-icon-wrapper bg-gold-light">
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="kpi-card p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="kpi-label">Tổng Tiền Thưởng</div>
+                            <div class="kpi-value skeleton" id="kpiTotalAmount" style="width: 100px; height: 32px; margin-top: 8px;"></div>
+                        </div>
+                        <div class="kpi-icon-wrapper bg-warning-light">
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Featured & List -->
+            <div class="col-md-8">
+                <!-- Featured Card -->
+                <div id="featuredContainer" class="mb-4" style="display: none;">
+                    <!-- Injected via JS -->
+                </div>
+
+                <!-- History List -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="card-title font-weight-bold"><i class="fa-solid fa-list-ul mr-2 text-primary"></i>Lịch sử Khen thưởng</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày</th>
+                                        <th>Danh hiệu / Khen thưởng</th>
+                                        <th>Loại</th>
+                                        <th>Tiền thưởng</th>
+                                        <th class="text-center">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rewardTableBody">
+                                    <tr><td colspan="5" class="text-center"><div class="spinner-border text-primary" role="status"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Timeline -->
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="card-title font-weight-bold"><i class="fa-solid fa-timeline mr-2 text-primary"></i>Dòng thời gian</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline" id="rewardTimeline">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Chi Tiết Khen Thưởng -->
+<div class="modal fade" id="rewardDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 bg-primary text-white">
+                <h5 class="modal-title"><i class="fa-solid fa-award mr-2"></i>Chi Tiết Khen Thưởng</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="text-center mb-4">
+                    <div class="kpi-icon-wrapper bg-primary-light mx-auto mb-2" style="width:64px; height:64px; font-size:28px;">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                    <h4 id="detailTitle" class="font-weight-bold text-dark mb-1"></h4>
+                    <span id="detailType" class="badge badge-primary"></span>
+                </div>
+                
+                <table class="table table-sm table-borderless">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted" width="40%">Ngày hiệu lực</td>
+                            <td class="font-weight-bold" id="detailDate"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Thành tích</td>
+                            <td class="font-weight-bold text-success" id="detailAchievement"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Mô tả</td>
+                            <td id="detailDescription"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Tiền thưởng</td>
+                            <td class="font-weight-bold text-danger" id="detailAmount"></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Số quyết định</td>
+                            <td class="font-weight-bold" id="detailDecision"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer border-top-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+                <a id="btnDownloadDecision" href="#" class="btn btn-primary" style="display:none;">
+                    <i class="fa-solid fa-download mr-1"></i>Tải Quyết định
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            loadSummary();
+            loadFeatured();
+            loadHistory();
+        });
+
+        const formatCurrency = (amount) => {
+            if (!amount) return '0 ₫';
+            return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        };
+
+        const formatDate = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('vi-VN');
+        };
+
+        function loadSummary() {
+            $.get('/Reward/GetMySummary', function (res) {
+                $('#kpiTotalCount').removeClass('skeleton').text(res.totalCount).css({width: 'auto', height: 'auto', marginTop: '0'});
+                $('#kpiCurrentYear').removeClass('skeleton').text(res.currentYearCount).css({width: 'auto', height: 'auto', marginTop: '0'});
+                $('#kpiFeatured').removeClass('skeleton').text(res.featuredCount).css({width: 'auto', height: 'auto', marginTop: '0'});
+                $('#kpiTotalAmount').removeClass('skeleton').text(formatCurrency(res.totalAmount)).css({width: 'auto', height: 'auto', marginTop: '0', color: 'var(--danger)'});
+            }).fail(function() {
+                toastr.error("Không thể tải thống kê");
+            });
+        }
+
+        function loadFeatured() {
+            $.get('/Reward/GetFeaturedReward', function (res) {
+                if (res) {
+                    const html = `
+                        <div class="featured-card">
+                            <div class="d-flex justify-content-between align-items-start position-relative" style="z-index: 1;">
+                                <div>
+                                    <span class="badge bg-white text-primary mb-2">${res.rewardType || 'Nổi bật'}</span>
+                                    <h3 class="font-weight-bold mb-1">${res.title}</h3>
+                                    <p class="mb-2 text-white-50"><i class="fa-regular fa-calendar mr-1"></i> ${formatDate(res.date)}</p>
+                                    <p class="mb-0"><strong>Thành tích:</strong> ${res.achievement || res.description}</p>
+                                </div>
+                                ${res.hasMonetaryReward ? `
+                                    <div class="text-right">
+                                        <div class="small text-white-50 text-uppercase tracking-wide">Tiền thưởng</div>
+                                        <div class="h4 font-weight-bold mb-0 text-warning">${formatCurrency(res.rewardAmount)}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    $('#featuredContainer').html(html).slideDown();
+                }
+            });
+        }
+
+        function loadHistory() {
+            $.get('/Reward/GetMyRewards', function (data) {
+                let tbody = '';
+                let timeline = '';
+
+                if (!data || data.length === 0) {
+                    tbody = '<tr><td colspan="5" class="text-center text-muted">Chưa có dữ liệu khen thưởng</td></tr>';
+                    timeline = '<div class="text-center text-muted">Chưa có dữ liệu</div>';
+                } else {
+                    data.forEach(item => {
+                        // Table row
+                        let badgeCls = item.hasMonetaryReward ? 'badge-monetary' : 'badge-non-monetary';
+                        tbody += `
+                            <tr>
+                                <td>${formatDate(item.date)}</td>
+                                <td>
+                                    <strong>${item.title}</strong><br>
+                                    <small class="text-muted">${item.achievement}</small>
+                                </td>
+                                <td><span class="reward-type-badge ${badgeCls}">${item.rewardType || 'Khác'}</span></td>
+                                <td class="font-weight-bold ${item.hasMonetaryReward ? 'text-danger' : ''}">
+                                    ${item.hasMonetaryReward ? formatCurrency(item.rewardAmount) : '-'}
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="viewDetail(${item.id})">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+
+                        // Timeline item
+                        let icon = item.hasMonetaryReward ? 'fa-sack-dollar' : 'fa-certificate';
+                        timeline += `
+                            <div class="timeline-item">
+                                <div class="timeline-icon"><i class="fa-solid ${icon}"></i></div>
+                                <div class="timeline-content" onclick="viewDetail(${item.id})">
+                                    <div class="d-flex justify-content-between">
+                                        <strong class="text-primary">${item.title}</strong>
+                                        <small class="text-muted">${formatDate(item.date)}</small>
+                                    </div>
+                                    <div class="small text-muted mt-1">${item.achievement}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                $('#rewardTableBody').html(tbody);
+                $('#rewardTimeline').html(timeline);
+            }).fail(function() {
+                $('#rewardTableBody').html('<tr><td colspan="5" class="text-center text-danger">Lỗi tải dữ liệu</td></tr>');
+            });
+        }
+
+        function viewDetail(id) {
+            $.get('/Reward/GetRewardDetail/' + id, function (res) {
+                $('#detailTitle').text(res.title);
+                $('#detailType').text(res.rewardType || 'Khác');
+                $('#detailDate').text(formatDate(res.date));
+                $('#detailAchievement').text(res.achievement);
+                $('#detailDescription').text(res.description || 'Không có mô tả');
+                
+                if (res.hasMonetaryReward) {
+                    $('#detailAmount').text(formatCurrency(res.rewardAmount));
+                } else {
+                    $('#detailAmount').html('<span class="text-muted">Không có thưởng tiền</span>');
+                }
+
+                $('#detailDecision').text(res.decisionNumber || 'Chưa có quyết định chính thức');
+
+                if (res.hasDocument) {
+                    $('#btnDownloadDecision').attr('href', '/Reward/DownloadDecision/' + res.id).show();
+                } else {
+                    $('#btnDownloadDecision').hide();
+                }
+
+                $('#rewardDetailModal').modal('show');
+            }).fail(function(err) {
+                toastr.error("Không thể lấy chi tiết khen thưởng");
+            });
+        }
+    </script>
+}

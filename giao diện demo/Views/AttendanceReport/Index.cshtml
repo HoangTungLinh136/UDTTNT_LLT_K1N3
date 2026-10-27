@@ -1,0 +1,124 @@
+@model giao_dien_demo.Models.AttendanceReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo chấm công";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1 fw-bold text-dark">Báo cáo chấm công</h3>
+        <p class="text-muted mb-0">Thống kê tình hình chấm công tháng @Model.CurrentMonth</p>
+    </div>
+</div>
+
+<!-- Thống kê tổng quan -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Tổng nhân viên</p>
+                        <h4 class="fw-bold mb-0 text-primary">@Model.TotalEmployees</h4>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded-3 text-primary">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Tỷ lệ đi làm trung bình</p>
+                        <h4 class="fw-bold mb-0 text-success">@Math.Round(Model.AverageAttendanceRate, 1)%</h4>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded-3 text-success">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Tổng giờ tăng ca</p>
+                        <h4 class="fw-bold mb-0 text-warning">@Math.Round(Model.TotalOvertimeHours, 1)h</h4>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded-3 text-warning">
+                        <i class="fa-solid fa-moon"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Tổng ngày nghỉ</p>
+                        <h4 class="fw-bold mb-0 text-info">@Model.TotalLeaveDays</h4>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded-3 text-info">
+                        <i class="fa-solid fa-bed"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng chi tiết -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Chi tiết chấm công nhân viên</h5>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã NV</th>
+                        <th>Họ tên</th>
+                        <th>Phòng ban</th>
+                        <th class="text-center">Ngày công TT</th>
+                        <th class="text-center">Tỷ lệ đi làm</th>
+                        <th class="text-center">Ngày nghỉ phép</th>
+                        <th class="text-center">Nghỉ không phép</th>
+                        <th class="text-center">Số giờ tăng ca</th>
+                        <th class="text-center text-danger">Đi muộn</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.EmployeeDetails.Any())
+                    {
+                        foreach (var emp in Model.EmployeeDetails)
+                        {
+                            <tr>
+                                <td><span class="badge bg-secondary">@emp.EmployeeCode</span></td>
+                                <td class="fw-medium">@emp.EmployeeName</td>
+                                <td>@emp.Department</td>
+                                <td class="text-center">@emp.ActualWorkingDays / @emp.ExpectedWorkingDays</td>
+                                <td class="text-center text-success fw-bold">@Math.Round(emp.AttendanceRate, 1)%</td>
+                                <td class="text-center">@emp.LeaveDays</td>
+                                <td class="text-center @(emp.UnauthorizedAbsenceDays > 0 ? "text-danger fw-bold" : "")">@emp.UnauthorizedAbsenceDays</td>
+                                <td class="text-center">@Math.Round(emp.OvertimeHours, 1)h</td>
+                                <td class="text-center text-danger">@(emp.LateCount > 0 ? emp.LateCount + " lần" : "-")</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted">Không có dữ liệu trong tháng này.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

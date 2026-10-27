@@ -1,0 +1,74 @@
+﻿@model IEnumerable<giao_dien_demo.Models.ExperienceConfig>
+
+@{
+    ViewData["Title"] = "Cấu hành Hệ số Kinh nghiệm";
+}
+
+<div class="container mt-4">
+    <h2 style="color: #2c3e50;">?️ Cấu hành Hệ số Kinh nghiệm</h2>
+    <p style="color: #7f8c8d;">Thiết lập hệ số lương theo dải năm kinh nghiệm. Hệ số này sẽ nhân trực tiếp vào lương cơ bản để tính Lương theo Hiệu suất.</p>
+    
+    <table class="table table-bordered table-striped mt-3">
+        <thead class="table-dark">
+            <tr>
+                <th>Từ (năm)</th>
+                <th>Đến (năm)</th>
+                <th>Hệ số (Multiplier)</th>
+                <th>Ghi chA</th>
+            </tr>
+        </thead>
+        <tbody id="configTable">
+            @foreach (var item in Model)
+            {
+                <tr data-id="@item.Id">
+                    <td>
+                        <input type="number" class="form-control min-input" value="@item.MinYears" />
+                    </td>
+                    <td>
+                        <input type="number" class="form-control max-input" value="@item.MaxYears" />
+                    </td>
+                    <td>
+                        <input type="number" step="0.1" min="0" class="form-control coef-input" value="@item.Coefficient.ToString("0.0")" />
+                    </td>
+                    <td>
+                        <input type="text" class="form-control note-input" value="@item.Notes" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    
+    <button id="btnSave" class="btn btn-primary">🔹 Lưu Cấu Hành</button>
+</div>
+
+<script>
+document.getElementById('btnSave').addEventListener('click', function() {
+    var rows = document.querySelectorAll('#configTable tr');
+    var data = [];
+    rows.forEach(function(r) {
+        data.push({
+            Id: parseInt(r.getAttribute('data-id')),
+            MinYears: parseInt(r.querySelector('.min-input').value),
+            MaxYears: parseInt(r.querySelector('.max-input').value),
+            Coefficient: parseFloat(r.querySelector('.coef-input').value),
+            Notes: r.querySelector('.note-input').value
+        });
+    });
+    
+    fetch('/ExperienceConfig/SaveConfigs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(res => {
+        if(res.ok) {
+            Swal.fire('Thành công', 'Đã lưu cấu hành Hệ số Kinh nghiệm.', 'success');
+        } else {
+            Swal.fire('Lỗi', 'Không thể lưu cấu hành.', 'error');
+        }
+    }).catch(err => {
+        console.error(err);
+        Swal.fire('Lỗi', 'Có lỗi kết nối mạng.', 'error');
+    });
+});
+</script>
+

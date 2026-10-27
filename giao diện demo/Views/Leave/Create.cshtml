@@ -1,158 +1,264 @@
 ﻿@model giao_dien_demo.Models.Leave
 
 @{
-    ViewData["Title"] = "📝 Tạo đơn nghỉ phép";
+    ViewData["Title"] = "Tạo đơn nghỉ phép";
 }
 
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
 <style>
-    body { background-color: #f5f7fa; }
+/* ============================================================
+   MODULE NGHỈ PHÉP — CREATE STYLES
+   ============================================================ */
+.leave-page { padding: 0; }
 
-    /* 1. Tạo khung giấy A4 */
-    .a4-paper {
-        max-width: 800px;
-        margin: 20px auto 50px auto;
-        padding: 60px 80px;
-        background: #fff;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        font-family: 'Times New Roman', Times, serif; /* Font chuẩn văn bản hành chính */
-        font-size: 18px;
-        line-height: 1.8;
-        color: #000;
-        border-radius: 4px;
-        animation: fadeIn 0.5s ease;
-    }
+.leave-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.leave-header-left { display: flex; flex-direction: column; gap: 6px; }
+.leave-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.leave-page-title .leave-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+.leave-back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px;
+    font-weight: 600; color: #64748b; text-decoration: none; transition: 0.2s;
+}
+.leave-back-link:hover { color: #3b82f6; }
 
-    /* 2. Biến ô Input thành dòng kẻ chấm chấm để điền */
-    .input-word {
-        border: none;
-        border-bottom: 2px dotted #555;
-        outline: none;
-        background: transparent;
-        font-family: inherit;
-        font-size: inherit;
-        font-weight: bold;
-        color: #000080; /* Màu mực xanh đen giống bút bi */
-        padding: 0 10px;
-        text-align: center;
-    }
+/* --- FORM CARD --- */
+.leave-form-card {
+    background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    border: 1px solid #f1f5f9; overflow: hidden; max-width: 800px; margin: 0 auto;
+}
+.leave-form-header {
+    padding: 24px; border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc; text-align: center;
+}
+.leave-form-title { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; text-transform: uppercase; }
+.leave-form-sub { font-size: 14px; color: #64748b; margin-top: 6px; font-weight: 500; }
 
-    .input-word:focus {
-        border-bottom: 2px solid #3498db;
-        background-color: #f0f8ff;
-    }
+.leave-form-body { padding: 32px; }
+.leave-form-footer {
+    padding: 20px 32px; border-top: 1px solid #f1f5f9; background: #f8fafc;
+    display: flex; justify-content: flex-end; gap: 12px; align-items: center;
+}
 
-    .input-textarea {
-        width: 100%;
-        border: none;
-        border-bottom: 2px dotted #555;
-        outline: none;
-        font-family: inherit;
-        font-size: inherit;
-        color: #000080;
-        resize: vertical;
-        line-height: 1.8;
-        background: transparent;
-    }
-    
-    .input-textarea:focus {
-        border-bottom: 2px solid #3498db;
-        background-color: #f0f8ff;
-    }
+/* --- FORM ELEMENTS --- */
+.form-group { margin-bottom: 24px; }
+.form-label {
+    display: block; font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 8px;
+}
+.form-control, .form-select {
+    width: 100%; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 10px;
+    font-size: 15px; color: #334155; background: #fff; transition: all 0.2s; outline: none;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.12);
+}
+textarea.form-control { resize: vertical; min-height: 100px; }
 
-    /* 3. Nút bấm kỹ thuật số (tách biệt khỏi giao diện giấy) */
-    .action-panel {
-        max-width: 800px;
-        margin: 30px auto 0 auto;
-        display: flex;
-        justify-content: flex-start;
-        font-family: Arial, sans-serif; /* Trả lại font hiện đại cho nút bấm */
-    }
+/* Signature Area */
+.signature-box {
+    border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center;
+    background: #f8fafc; cursor: pointer; transition: all 0.2s; min-height: 140px;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.signature-box:hover { border-color: #3b82f6; background: #eff6ff; }
+.signature-placeholder { color: #94a3b8; font-weight: 600; font-size: 15px; }
+.signature-placeholder i { font-size: 32px; margin-bottom: 12px; color: #cbd5e1; }
+.signature-box:hover .signature-placeholder { color: #3b82f6; }
+.signature-box:hover .signature-placeholder i { color: #93c5fd; }
 
-    .btn-submit {
-        background: linear-gradient(45deg, #00c6ff, #0072ff);
-        color: white;
-        border: none;
-        padding: 12px 40px;
-        border-radius: 8px;
-        font-weight: bold;
-        font-size: 16px;
-        transition: 0.3s;
-    }
+.signature-display { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.cursive-part { font-family: 'Dancing Script', cursive; font-size: 42px; color: #1d4ed8; line-height: 1; margin-bottom: 8px; }
+.printed-part { font-family: inherit; font-size: 16px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
 
-    .btn-submit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,114,255,0.4);
-    }
+.btn-submit {
+    background: #3b82f6; color: white; border: none; padding: 12px 28px;
+    border-radius: 10px; font-weight: 600; transition: 0.3s;
+}
+.btn-submit:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(59,130,246,0.3); }
 
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+.commitment-text { background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; color: #b45309; font-size: 13.5px; font-weight: 500; display: flex; gap: 12px; }
+.commitment-text i { font-size: 20px; color: #f59e0b; margin-top: 2px; }
 </style>
 
-<div class="container mt-2">
-    <div class="action-panel">
-        <a asp-controller="NhanVien" asp-action="Index" class="btn btn-outline-secondary fw-bold shadow-sm">
-            ⬅ Quay lại Dashboard
-        </a>
+<div class="leave-page">
+
+    <div class="leave-page-header">
+        <div class="leave-header-left">
+            <a asp-action="Index" class="leave-back-link">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+            <h1 class="leave-page-title">
+                <span class="leave-icon"><i class="fas fa-file-signature"></i></span>
+                Tạo Đơn Xin Nghỉ Phép
+            </h1>
+        </div>
     </div>
 
-    <div class="a4-paper">
-        <div class="text-center mb-5">
-            <h5 class="fw-bold mb-1" style="font-size: 20px;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h5>
-            <h6 class="fw-bold" style="text-decoration: underline; font-size: 18px;">Độc lập - Tự do - Hạnh phúc</h6>
-            <br>
-            <h2 class="fw-bold mt-3 mb-4" style="font-size: 28px;">ĐƠN XIN NGHỈ PHÉP</h2>
+    <div class="leave-form-card">
+        <div class="leave-form-header">
+            <h2 class="leave-form-title">Đơn Xin Nghỉ Phép</h2>
+            <div class="leave-form-sub">Kính gửi: Ban Giám đốc & Phòng Hành chính Nhân sự</div>
         </div>
 
-        <form asp-action="Create" method="post">
-            
-            <div class="mb-4">
-                <span class="fst-italic">Kính gửi:</span> <strong>Ban Giám đốc & Phòng Hành chính Nhân sự</strong>
-            </div>
-
-            <div class="mb-3 d-flex align-items-center">
-                <span class="text-nowrap">Tôi tên là: </span>
-                <input type="text" name="EmployeeName" class="input-word flex-grow-1 ms-2" required placeholder="Nhập họ và tên..." />
-            </div>
-
-            <div class="mb-3 d-flex flex-wrap align-items-center">
-                <span class="text-nowrap mt-2">Nay tôi làm đơn này xin phép được nghỉ từ ngày</span>
-                <input type="date" name="FromDate" class="input-word mx-2 mt-2" required />
-                <span class="text-nowrap mt-2">đến hết ngày</span>
-                <input type="date" name="ToDate" class="input-word ms-2 mt-2" required />.
-            </div>
-
-            <div class="mb-4 mt-4">
-                <span class="d-block mb-1">Lý do xin nghỉ:</span>
-                <textarea name="Reason" class="input-textarea" rows="2" required placeholder="Ghi rõ lý do (Ví dụ: Nghỉ ốm, việc gia đình...)"></textarea>
-            </div>
-
-            <div class="mb-5" style="text-align: justify;">
-                Tôi xin cam đoan sẽ bàn giao công việc đầy đủ cho người có liên quan và đi làm lại đúng thời gian quy định. Kính mong Ban Giám đốc xem xét và chấp thuận.
-            </div>
-
-            <div class="mb-3">
-                <span class="fst-italic">Xin trân trọng cảm ơn!</span>
-            </div>
-
-            <div class="row mt-5">
-                <div class="col-6">
-                    </div>
-                <div class="col-6 text-center">
-                    <i style="font-size: 16px;">Ngày ..... tháng ..... năm 202...</i><br>
-                    <strong style="font-size: 18px;">Người làm đơn</strong><br>
-                    <small class="fst-italic text-muted">(Ký và ghi rõ họ tên)</small><br><br><br><br><br>
+        <form asp-action="Create" method="post" id="leaveForm">
+            <div class="leave-form-body">
+                
+                <div class="form-group">
+                    <label class="form-label">Tôi tên là <span class="text-danger">*</span></label>
+                    <input type="text" name="EmployeeName" class="form-control" required placeholder="Nhập họ và tên..." id="empNameInput" autocomplete="off" />
                 </div>
-            </div>
 
-            <div class="text-center mt-4" style="font-family: Arial, sans-serif;">
-                <hr class="mb-4" style="border-top: 1px dashed #ccc;">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Từ ngày <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-calendar-alt text-muted"></i></span>
+                                <input type="text" name="FromDate" class="form-control datepicker border-start-0 ps-0" required placeholder="dd/mm/yyyy" readonly />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Đến hết ngày <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-calendar-check text-muted"></i></span>
+                                <input type="text" name="ToDate" class="form-control datepicker border-start-0 ps-0" required placeholder="dd/mm/yyyy" readonly />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Lý do xin nghỉ <span class="text-danger">*</span></label>
+                    <textarea name="Reason" class="form-control" rows="3" required placeholder="Ghi rõ lý do (Ví dụ: Nghỉ ốm, việc gia đình, đi du lịch...)"></textarea>
+                </div>
+
+                <div class="commitment-text mb-4">
+                    <i class="fas fa-info-circle"></i>
+                    <div>Tôi xin cam đoan sẽ bàn giao công việc đầy đủ cho người có liên quan và đi làm lại đúng thời gian quy định. Kính mong Ban Giám đốc xem xét và chấp thuận.</div>
+                </div>
+
+                <div class="row justify-content-center mt-5">
+                    <div class="col-md-6 text-center">
+                        <p class="mb-2" style="color: #64748b; font-size: 14px;"><i>Thái Nguyên, ngày @DateTime.Now.Day tháng @DateTime.Now.Month năm @DateTime.Now.Year</i></p>
+                        <h6 class="fw-bold mb-3">Người làm đơn</h6>
+                        
+                        <div id="signatureArea" class="signature-box" onclick="openSignModal()">
+                            <div id="signaturePlaceholder" class="signature-placeholder">
+                                <i class="fas fa-signature d-block"></i>
+                                Nhấn vào đây để ký tên điện tử
+                            </div>
+                            <div id="signatureContent" class="signature-display d-none">
+                                <div id="cursive-part" class="cursive-part"></div>
+                                <div id="printed-part" class="printed-part"></div>
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="EmployeeSignature" id="hiddenSignature" required />
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="leave-form-footer">
+                <a asp-action="Index" class="btn btn-outline-secondary" style="border-radius:10px; font-weight: 600; padding: 10px 20px;">Hủy bỏ</a>
                 <button type="submit" class="btn-submit">
-                    🚀 Gửi đơn ngay
+                    <i class="fas fa-paper-plane me-1"></i> Gửi đơn xin nghỉ
                 </button>
             </div>
-
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/vn.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        flatpickr(".datepicker", {
+            dateFormat: "d/m/Y",
+            locale: "vn",
+            allowInput: true
+        });
+
+        function openSignModal() {
+            const suggestedName = document.getElementById('empNameInput').value;
+
+            Swal.fire({
+                title: 'Ký tên điện tử',
+                input: 'text',
+                inputLabel: 'Nhập họ tên của bạn để xác nhận đơn:',
+                inputValue: suggestedName,
+                placeholder: 'Ví dụ: Nguyễn Văn A',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Xác nhận ký',
+                cancelButtonText: 'Hủy',
+                inputValidator: (value) => {
+                    if (!value) { return 'Bạn phải nhập tên để ký đơn!'; }
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const fullName = result.value.trim();
+                    
+                    // Lấy từ cuối cùng trong chuỗi họ tên để làm chữ ký nghệ thuật
+                    const nameParts = fullName.split(" ");
+                    const lastName = nameParts[nameParts.length - 1];
+
+                    // Gán vào 2 phần HTML tương ứng
+                    document.getElementById('cursive-part').innerText = lastName;
+                    document.getElementById('printed-part').innerText = fullName;
+                    
+                    // Hiện chữ ký, ẩn placeholder
+                    document.getElementById('signaturePlaceholder').classList.add('d-none');
+                    document.getElementById('signatureContent').classList.remove('d-none');
+                    
+                    // Lưu giá trị thực tế vào Form để nộp lên Server
+                    document.getElementById('hiddenSignature').value = fullName;
+                    
+                    Swal.fire({ icon: 'success', title: 'Đã ký thành công', showConfirmButton: false, timer: 1000 });
+                }
+            });
+        }
+
+        document.getElementById('leaveForm').onsubmit = function() {
+            const sig = document.getElementById('hiddenSignature').value;
+            if (!sig) {
+                Swal.fire('Cảnh báo', 'Vui lòng ký tên vào đơn trước khi gửi!', 'warning');
+                return false;
+            }
+            return true;
+        };
+    </script>
+}

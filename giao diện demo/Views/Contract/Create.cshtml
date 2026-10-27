@@ -1,5 +1,26 @@
 ﻿@model giao_dien_demo.Models.Contract
 
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+<style>
+    /* Styling cho vùng chữ ký giống với form nghỉ phép */
+    .signature-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: 1px dashed transparent;
+        transition: 0.3s;
+        min-height: 80px;
+    }
+
+        .signature-display:hover {
+            border: 1px dashed #3498db;
+            background-color: #fcfcfc;
+            border-radius: 8px;
+        }
+</style>
+
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center">
         <h2 class="text-primary"><i class="fas fa-file-contract"></i> Soạn thảo Hợp đồng mới</h2>
@@ -8,6 +29,7 @@
     <hr />
 
     <form asp-action="Create" method="post" id="contractForm">
+        @Html.AntiForgeryToken()
         <div class="row">
             <div class="col-md-4">
                 <div class="card shadow-sm border-0 bg-light">
@@ -15,14 +37,14 @@
                         <h5 class="card-title text-secondary border-bottom pb-2 mb-3">Thông tin cơ bản</h5>
                         
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Chọn nhân viên (Bên B)</label>
-                            <select asp-for="EmployeeName" class="form-select" id="employeeNameInput" required>
+                            <label class="form-label fw-bold">Chọn nhân viên (Bán B)</label>
+                            <select asp-for="EmployeeId" class="form-select" id="employeeNameInput" required>
                                 <option value="">-- Chọn nhân viên trong hệ thống --</option>
                                 @if (ViewBag.Employees != null)
                                 {
                                     foreach (var emp in ViewBag.Employees)
                                     {
-                                        <option value="@emp.Name">@emp.Name (@emp.Position)</option>
+                                        <option value="@emp.Id">@emp.Name (@emp.Position)</option>
                                     }
                                 }
                             </select>
@@ -44,7 +66,7 @@
                             </select>
                         </div>
 
-                        <input type="hidden" id="HrSignatureData" name="HrSignature" />
+                        <input type="hidden" id="HrSignatureData" name="HrSignature" required />
 
                         <div class="mt-4 d-grid gap-2">
                             <button type="submit" class="btn btn-success btn-lg shadow-sm">
@@ -59,35 +81,29 @@
                 <div class="card shadow border-primary">
                     <div class="card-body p-5" style="background-color: #fff; min-height: 700px; font-family: 'Times New Roman', serif;">
                         <div class="text-center mb-5">
-                            <h5 class="mb-0">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h5>
+                            <h5 class="mb-0">CỘNG HÓA XÓA HỘI CHỦ NGHĨA VIỆT NAM</h5>
                             <p class="small">Độc lập - Tự do - Hạnh phúc</p>
                             <p>-------------------------</p>
                             <h4 class="mt-4 fw-bold">HỢP ĐỒNG LAO ĐỘNG</h4>
                         </div>
 
-                        <p>Hôm nay, ngày @DateTime.Now.Day tháng @DateTime.Now.Month năm @DateTime.Now.Year, chúng tôi gồm:</p>
+                        <p>Hàm nay, ngày @DateTime.Now.Day tháng @DateTime.Now.Month năm @DateTime.Now.Year, chúng tài gồm:</p>
                         
                         <p><strong>BÊN A (HR):</strong> CÔNG TY HRMS (Đại diện: Nguyễn Đức Long)</p>
                         <p><strong>BÊN B (NHÂN VIÊN):</strong> <span id="previewName" class="text-primary fw-bold" style="border-bottom: 1px dotted #000; min-width: 150px; display: inline-block;">................................</span></p>
 
                         <div class="row mt-5 pt-4">
                             <div class="col-6 text-center">
-                                <p class="mb-5 fw-bold">NGƯỜI LAO ĐỘNG</p>
-                                <p class="text-muted small mt-5">(Sẽ ký sau khi nhận mail)</p>
+                                <strong style="font-size: 18px;">NGƯỜI LAO ĐỘNG</strong><br>
+                                <small class="fst-italic text-muted">(Sẽ ký sau khi nhận mail)</small>
                             </div>
                             <div class="col-6 text-center">
-                                <p class="fw-bold">ĐẠI DIỆN CÔNG TY (HR KÝ)</p>
-                                
-                                <div style="position: relative; display: inline-block;">
-                                    <canvas id="signature-pad" width="300" height="150"
-                                            style="border:1px dashed #007bff; background-color: #fdfdfd; cursor:crosshair; border-radius: 4px; touch-action: none; display: block;">
-                                    </canvas>
-                                </div>
+                                <strong style="font-size: 18px;">ĐẠI DIỆN CÔNG TY (HR KA)</strong><br>
+                                <small class="fst-italic text-muted nào-print">(Bấm vào dưới đây để ký)</small>
 
-                                <div class="mt-2">
-                                    <button type="button" class="btn btn-sm text-danger" id="clear-btn">
-                                        <i class="fas fa-eraser"></i> Xóa ký lại
-                                    </button>
+                                <div class="signature-display mt-2" onclick="openContractSignModal()" style="flex-direction: column; padding: 10px;">
+                                    <div id="hr-cursive" style="font-family: 'Dancing Script', cursive; font-size: 36px; color: #000080;">(Chưa ký)</div>
+                                    <div id="hr-printed" style="font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; margin-top: -5px; color: #000;"></div>
                                 </div>
                             </div>
                         </div>
@@ -98,74 +114,62 @@
     </form>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
+    
+
     document.addEventListener("DOMContentLoaded", function () {
-        const canvas = document.getElementById('signature-pad');
-        const ctx = canvas.getContext('2d');
-        const clearBtn = document.getElementById('clear-btn');
-        const contractForm = document.getElementById('contractForm');
-        const nameSelect = document.getElementById('employeeNameInput');
-        const namePreview = document.getElementById('previewName');
+    const contractForm = document.getElementById('contractForm');
+    const nameSelect = document.getElementById('employeeNameInput');
+    const namePreview = document.getElementById('previewName');
         
-        let isDrawing = false;
+    // 1. Đồng bộ tên Nhân viên khi chọn từ danh sách
+    nameSelect.onchange = () => {
+    namePreview.innerText = nameSelect.options[nameSelect.selectedIndex].text || "................................";
+    };
 
-        // 1. Đồng bộ tên khi chọn từ danh sách
-        nameSelect.onchange = () => {
-            namePreview.innerText = nameSelect.value || "................................";
-        };
-
-        // 2. Cấu hình bút vẽ (Mực xanh bút bi)
-        ctx.strokeStyle = "#000080";
-        ctx.lineWidth = 3;
-        ctx.lineJoin = "round";
-        ctx.lineCap = "round";
-
-        function getMousePos(canvasDom, mouseEvent) {
-            const rect = canvasDom.getBoundingClientRect();
-            return {
-                x: mouseEvent.clientX - rect.left,
-                y: mouseEvent.clientY - rect.top
-            };
-        }
-
-        // 3. Sự kiện chuột để ký
-        canvas.onmousedown = (e) => {
-            isDrawing = true;
-            const pos = getMousePos(canvas, e);
-            ctx.beginPath();
-            ctx.moveTo(pos.x, pos.y);
-        };
-
-        canvas.onmousemove = (e) => {
-            if (isDrawing) {
-                const pos = getMousePos(canvas, e);
-                ctx.lineTo(pos.x, pos.y);
-                ctx.stroke();
-            }
-        };
-
-        canvas.onmouseup = () => isDrawing = false;
-        canvas.onmouseleave = () => isDrawing = false;
-
-        // 4. Nút xóa ký lại
-        clearBtn.onclick = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        };
-
-        // 5. Xử lý lưu Form và bảo mật chữ ký
-        contractForm.onsubmit = (e) => {
-            const dataURL = canvas.toDataURL();
-            const blank = document.createElement('canvas');
-            blank.width = canvas.width;
-            blank.height = canvas.height;
-            
-            if (dataURL === blank.toDataURL()) {
-                alert("Đức Long ơi, bạn cần ký xác nhận của đại diện công ty trước khi gửi nhé!");
-                e.preventDefault();
-                return;
-            }
-
-            document.getElementById('HrSignatureData').value = dataURL;
-        };
+    // 2. Kiểm tra việc ký hợp đồng trước khi Submit
+    contractForm.onsubmit = (e) => {
+    const hrSig = document.getElementById('HrSignatureData').value;
+    if (!hrSig) {
+    Swal.fire('Thiếu chữ ký', 'Vui lòng ký xác nhận Đại diện HR trước khi gửi Hợp đồng!', 'warning');
+    e.preventDefault(); // Ngăn gửi form
+    }
+    };
     });
+
+    // 3. Hàm kích hoạt Popup KA tên (Chỉ dành cho HR ở trang Create này)
+    function openContractSignModal() {
+    Swal.fire({
+    title: 'KA tên Đại diện HR',
+    input: 'text',
+    inputLabel: 'Nhập họ và tên đầy đủ để xác nhận:',
+    inputValue: 'Nguyễn Đức Long', // Mặc định gợi A tên người đại diện HR
+    placeholder: 'Và dụ: Nguyễn Đức Long',
+    showCancelButton: true,
+    confirmButtonText: 'Xác nhận ký',
+    cancelButtonText: 'Hủy',
+    inputValidator: (value) => {
+    if (!value) { return 'Bạn phải nhập tên để ký hợp đồng!'; }
+    }
+    }).then((result) => {
+    if (result.isConfirmed && result.value) {
+    const fullName = result.value.trim();
+                
+    // Cắt lấy chữ cuối công trong tên để làm chữ ký nghệ thuật
+    const nameParts = fullName.split(" ");
+    const lastName = nameParts[nameParts.length - 1];
+
+    // Hiển thị 2 lớp chữ ký lên giây
+    document.getElementById('hr-cursive').innerText = lastName;
+    document.getElementById('hr-printed').innerText = fullName;
+                
+    // Lưu vào Input Hidden để truyền về Controller
+    document.getElementById('HrSignatureData').value = fullName;
+                
+    Swal.fire({ icon: 'success', title: 'Đã ký thành công!', showConfirmButton: false, timer: 1000 });
+    }
+    });
+    }
 </script>

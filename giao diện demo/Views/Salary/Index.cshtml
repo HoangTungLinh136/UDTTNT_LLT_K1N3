@@ -1,114 +1,378 @@
-﻿@model List<giao_dien_demo.Models.Salary>
-@using Microsoft.AspNetCore.Http
 @{
-    ViewData["Title"] = "Bảng lương chi tiết";
-    // 🔥 Lấy quyền của User để hiển thị tiêu đề cho phù hợp
-    var role = Context.Session.GetString("Role"); 
+    ViewData["Title"] = "Bảng lương - HRMS";
 }
 
 <style>
-    /* Style chuyên nghiệp cho bảng lương */
-    .table-salary thead th { vertical-align: middle; text-align: center; border-bottom: 2px solid #dee2e6; }
-    .group-income { background-color: #e0f2fe !important; color: #0369a1; } /* Nhóm Thu nhập - Xanh dương */
-    .group-deduction { background-color: #ffedd5 !important; color: #9a3412; } /* Nhóm Giảm trừ - Cam */
-    .text-net-pay { font-weight: bold; color: #16a34a; font-size: 1.1rem; background-color: #f0fdf4; } /* Lương Net - Xanh lá */
-    .badge-tax { cursor: help; color: #3b82f6; margin-left: 5px; }
+    .pr-page {
+        font-family: 'Inter', sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        background-color: #f8fafc;
+        min-height: calc(100vh - 60px);
+    }
     
-    /* Hiệu ứng khi di chuột */
-    .table-salary tbody tr:hover { background-color: #f8fafc; transition: 0.2s; }
-    .btn-back { text-decoration: none; color: #64748b; font-weight: 500; }
-    .btn-back:hover { color: #1e293b; }
+    .pr-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 16px 24px;
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        border: 1px solid var(--hrms-border-light);
+    }
+
+    .pr-title-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pr-back-btn {
+        color: #64748b;
+        font-size: 18px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+    
+    .pr-back-btn:hover {
+        color: #1e293b;
+    }
+
+    .pr-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .pr-status-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 500;
+        border: 1px solid #e2e8f0;
+    }
+
+    .pr-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pr-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .pr-btn-outline {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+    }
+    
+    .pr-btn-outline:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+    }
+    
+    .pr-btn-icon {
+        padding: 8px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        cursor: pointer;
+    }
+
+    .pr-content-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        border: 1px solid var(--hrms-border-light);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pr-ai-box {
+        margin: 20px 20px 0 20px;
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 12px;
+        padding: 16px 20px;
+    }
+
+    .pr-ai-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #0284c7;
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+
+    .pr-ai-text {
+        font-size: 14px;
+        color: #334155;
+        line-height: 1.5;
+    }
+    
+    .pr-ai-highlight {
+        color: #10b981;
+        font-weight: 600;
+    }
+
+    .pr-toolbar {
+        padding: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .pr-search {
+        position: relative;
+        width: 300px;
+    }
+
+    .pr-search i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+
+    .pr-search input {
+        width: 100%;
+        padding: 8px 12px 8px 36px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        outline: none;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+    
+    .pr-search input:focus {
+        border-color: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .pr-table-wrapper {
+        overflow-x: auto;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .pr-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 1000px;
+    }
+
+    .pr-table th {
+        background: #f8fafc;
+        padding: 16px 20px;
+        text-align: right;
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 13px;
+        border-bottom: 1px solid #e2e8f0;
+        white-space: nowrap;
+    }
+    
+    .pr-table th:nth-child(1),
+    .pr-table th:nth-child(2) {
+        text-align: left;
+    }
+
+    .pr-table td {
+        padding: 14px 20px;
+        text-align: right;
+        color: #334155;
+        font-size: 14px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .pr-table td:nth-child(1) { text-align: left; color: #64748b; font-size: 13px; width: 40px; }
+    .pr-table td:nth-child(2) { text-align: left; font-weight: 500; color: #1e293b; }
+
+    .pr-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .pr-input-edit {
+        width: 100px;
+        padding: 6px 10px;
+        border: 1px solid #10b981;
+        border-radius: 4px;
+        outline: none;
+        text-align: right;
+        font-family: 'Inter', sans-serif;
+        color: #1e293b;
+        background: #fff;
+    }
+
+    .pr-text-green {
+        color: #10b981 !important;
+        font-weight: 600;
+    }
+
+    .pr-footer-row td {
+        background: #f8fafc;
+        font-weight: 700;
+        color: #1e293b;
+        border-top: 2px solid #e2e8f0;
+        border-bottom: none;
+    }
+    
+    .pr-footer-row td:first-child {
+        text-align: left;
+    }
+
 </style>
 
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1">💰 @(role == "HR" || role == "Admin" || role == "Leader" ? "Bảng lương toàn công ty" : "Lịch sử lương của tôi")</h2>
-            <a href="javascript:history.back()" class="btn-back">⬅ Quay về trang chủ</a>
+<div class="pr-page">
+    <!-- HEADER -->
+    <div class="pr-header">
+        <div class="pr-title-group">
+            <a href="javascript:history.back()" class="pr-back-btn" title="Quay lại"><i class="fa-solid fa-arrow-left"></i></a>
+            <h1 class="pr-title">
+                Bảng lương tháng 10/2025 - Công ty TNHH Bán lẻ
+                <i class="fa-solid fa-pencil" style="font-size: 14px; color: #94a3b8; cursor:pointer;"></i>
+            </h1>
+            <div class="pr-status-badge">
+                <i class="fa-solid fa-lock-open"></i> Chưa khóa
+            </div>
+        </div>
+        <div class="pr-actions">
+            <button class="pr-btn pr-btn-outline">
+                <i class="fa-solid fa-plus"></i> Chọn nhân viên
+            </button>
+            <button class="pr-btn-icon">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
         </div>
     </div>
 
-    <div class="card shadow border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered mb-0 table-salary">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="min-width: 200px;">Thông tin nhân viên</th>
-                            <th colspan="4" class="group-income">Thu nhập (Gross)</th>
-                            <th colspan="3" class="group-deduction">Giảm trừ & Thuế (Deductions)</th>
-                            <th rowspan="2" class="text-net-pay">Thực nhận (Net)</th>
-                            <th rowspan="2">Thao tác</th>
-                        </tr>
-                        <tr>
-                            <th class="group-income">Lương CB</th>
-                            <th class="group-income">Giờ làm</th>
-                            <th class="group-income">Thưởng & Phụ cấp</th>
-                            <th class="group-income">Tổng thu nhập</th>
-                            
-                            <th class="group-deduction">Bảo hiểm (10.5%)</th>
-                            <th class="group-deduction">Thuế TNCN (5 bậc)</th>
-                            <th class="group-deduction">Khác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model != null && Model.Any())
-                        {
-                            foreach (var item in Model) {
-                            <tr>
-                                <td>
-                                    <div class="fw-bold">@item.EmployeeName</div>
-                                    <small class="text-muted">Mã: #@item.Id</small>
-                                </td>
-                                <td class="text-end">@item.BasicSalary.ToString("N0")</td>
-                                
-                                <td class="text-end">@item.HoursWorked.ToString("0.####") giờ</td>
-                                
-                                <td class="text-end text-success fw-bold">
-                                    +@((item.BonusAndAllowance + item.HolidayBonus + item.DiligenceBonus + item.Reward).ToString("N0"))
-                                </td>
-                                
-                                <td class="text-end fw-bold">@item.TotalSalary.ToString("N0")</td>
-                                
-                                <td class="text-end text-danger">
-                                    -@item.Insurance.ToString("N0") 
-                                </td>
-                                <td class="text-end">
-                                    <span class="text-danger">-@item.TaxTNCN.ToString("N0")</span>
-                                    <i class="bi bi-info-circle badge-tax" title="Tính theo biểu thuế lũy tiến 5 bậc."></i>
-                                </td>
-                                <td class="text-end text-danger">-@item.Discipline.ToString("N0")</td>
-                                
-                                <td class="text-end text-net-pay">@item.NetSalary.ToString("N0")</td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary" onclick="window.print()">
-                                        <i class="bi bi-printer"></i> In phiếu
-                                    </button>
-                                </td>
-                            </tr>
-                            }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="10" class="text-center py-4 text-muted">
-                                    Chưa có dữ liệu bảng lương.
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <!-- MAIN CONTENT -->
+    <div class="pr-content-card">
+        <!-- AI BOX -->
+        <div class="pr-ai-box">
+            <div class="pr-ai-title">
+                <img src="/images/avatar/robot-icon.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/4712/4712010.png'" style="width:24px; height:24px;" alt="AI"/> 
+                Tóm tắt bảng lương <i class="fa-solid fa-wand-magic-sparkles" style="color:#38bdf8;"></i>
             </div>
+            <div class="pr-ai-text">
+                Tổng lương thực lĩnh: <span class="pr-ai-highlight">360.000.000 VNĐ/30 nhân viên</span>. Trong đó: mức lương cao nhất là <span class="pr-ai-highlight">78.450.000</span> (Nguyễn Hoàng Nam), thấp nhất là (Trần Thị Lan Anh), trung bình là <span class="pr-ai-highlight">12.300.000</span>.
+            </div>
+        </div>
+
+        <!-- TOOLBAR -->
+        <div class="pr-toolbar">
+            <div class="pr-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" placeholder="Tìm kiếm" />
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="pr-table-wrapper">
+            <table class="pr-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th>Lương đóng bảo hiểm</th>
+                        <th>Thưởng KPI</th>
+                        <th>Trợ cấp</th>
+                        <th>Tổng thu nhập</th>
+                        <th>Thuế TNCN</th>
+                        <th>Thực lĩnh</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>10</td>
+                        <td>Nguyễn Hoàng Nam</td>
+                        <td>10.000.000</td>
+                        <td><input type="text" class="pr-input-edit" value="400.000" /></td>
+                        <td>1.000.000</td>
+                        <td>11.400.000</td>
+                        <td>2.950.000</td>
+                        <td class="pr-text-green">78.450.000</td>
+                    </tr>
+                    <tr>
+                        <td>11</td>
+                        <td>Trần Thị Lan Anh</td>
+                        <td>8.000.000</td>
+                        <td>300.000</td>
+                        <td>500.000</td>
+                        <td>8.800.000</td>
+                        <td>600.000</td>
+                        <td class="pr-text-green">12.300.000</td>
+                    </tr>
+                    <tr>
+                        <td>12</td>
+                        <td>Lê Minh Hoàng</td>
+                        <td>9.000.000</td>
+                        <td>250.000</td>
+                        <td>700.000</td>
+                        <td>9.950.000</td>
+                        <td>750.000</td>
+                        <td class="pr-text-green">19.700.000</td>
+                    </tr>
+                    <tr>
+                        <td>13</td>
+                        <td>Phạm Quang Huy</td>
+                        <td>7.000.000</td>
+                        <td>200.000</td>
+                        <td>600.000</td>
+                        <td>7.800.000</td>
+                        <td>550.000</td>
+                        <td class="pr-text-green">17.800.000</td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td>Võ Thị Mỹ Linh</td>
+                        <td>6.000.000</td>
+                        <td>180.000</td>
+                        <td>400.000</td>
+                        <td>6.580.000</td>
+                        <td>480.000</td>
+                        <td class="pr-text-green">14.500.000</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr class="pr-footer-row">
+                        <td colspan="2">Tổng cộng</td>
+                        <td>360.000.000</td>
+                        <td>12.300.000</td>
+                        <td>3.200.000</td>
+                        <td>375.200.000</td>
+                        <td>5.330.000</td>
+                        <td class="pr-text-green">360.000.000</td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 </div>
-
-@section Scripts {
-    <script>
-        // Khởi tạo Tooltip cho các icon thông tin thuế
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-    </script>
-}

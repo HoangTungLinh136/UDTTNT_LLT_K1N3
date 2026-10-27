@@ -1,4 +1,4 @@
-namespace giao_diện_demo.Models
+﻿namespace giao_diện_demo.Models
 {
     public class ErrorViewModel
     {

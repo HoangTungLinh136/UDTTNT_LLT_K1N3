@@ -1,0 +1,365 @@
+@model giao_dien_demo.Models.AdminIntegrationViewModel
+
+@{
+    ViewData["Title"] = "Tích hợp hệ thống";
+}
+
+<style>
+/* Switch styling */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--hrms-green, #10b981); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Modal overlay scoped */
+.admin-cfg-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center; }
+.admin-cfg-modal-content { background:white; width:100%; max-width:560px; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15); display:flex; flex-direction:column; }
+.admin-cfg-modal-header { padding:16px 20px; border-bottom:1px solid var(--hrms-border, #f1f5f9); display:flex; justify-content:space-between; align-items:center; }
+.admin-cfg-modal-title { margin:0; font-size:16px; font-weight:700; color:var(--hrms-text-main, #1e293b); }
+.admin-cfg-modal-close { background:none; border:none; font-size:18px; color:var(--hrms-text-muted, #94a3b8); cursor:pointer; }
+.admin-cfg-modal-close:hover { color:var(--hrms-text-main, #334155); }
+.admin-cfg-modal-footer { padding:16px 20px; background:var(--hrms-background, #f8fafc); border-top:1px solid var(--hrms-border, #f1f5f9); text-align:right; display:flex; justify-content:flex-end; gap:8px; }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>Tích hợp hệ thống</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-plug"></i></span>
+            Tích hợp hệ thống
+        </h1>
+        <p class="hrms-page-subtitle">Quản trị kết nối máy chủ Email SMTP, Thiết bị chấm công camera và Trợ lý AI</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="hrms-alert hrms-alert-success mb-4">
+        <i class="fa-solid fa-circle-check me-2"></i> @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="hrms-alert hrms-alert-danger mb-4">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["Error"]
+    </div>
+}
+
+<div class="hrms-tabs mb-4">
+    <button class="hrms-tab active admin-module-tab" onclick="showAdminTab('email',this)"><i class="fa-solid fa-envelope me-1"></i> Email (SMTP)</button>
+    <button class="hrms-tab admin-module-tab" onclick="showAdminTab('device',this)"><i class="fa-solid fa-fingerprint me-1"></i> Thiết bị chấm công (Camera IMOU)</button>
+    <button class="hrms-tab admin-module-tab" onclick="showAdminTab('ai',this)"><i class="fa-solid fa-robot me-1"></i> Trợ lý AI (LLM Provider)</button>
+</div>
+
+<!-- TAB EMAIL -->
+<div id="admin-tab-email">
+    <div class="row">
+        <div class="col-md-7">
+            <form asp-action="SaveEmailConfig" method="post">
+                @Html.AntiForgeryToken()
+                <div class="hrms-card mb-4">
+                    <div class="hrms-card-header">
+                        <h3 class="hrms-card-title"><i class="fa-solid fa-server card-title-icon"></i> Máy chủ SMTP</h3>
+                    </div>
+                    <div class="hrms-card-body">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="hrms-form-label">SMTP Host</label>
+                                <input type="text" name="Host" class="hrms-form-control" value="@Model.EmailConfig.Smtp.Host" placeholder="VD: smtp.gmail.com" required />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="hrms-form-label">Port</label>
+                                <input type="number" name="Port" class="hrms-form-control" value="@Model.EmailConfig.Smtp.Port" required />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="hrms-form-label">Tài khoản (Username)</label>
+                                <input type="text" name="Username" class="hrms-form-control" value="@Model.EmailConfig.Smtp.Username" placeholder="email@domain.com" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="hrms-form-label">Mật khẩu</label>
+                                <input type="password" name="Password" class="hrms-form-control" value="@Model.EmailConfig.Smtp.Password" placeholder="••••••••••••" required />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 mt-2" style="background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px solid var(--hrms-border, #e2e8f0);">
+                            <div>
+                                <div style="font-weight:600; color:var(--hrms-text-main, #1e293b); font-size:14px;">Bảo mật SSL/TLS</div>
+                                <div style="font-size:12px; color:var(--hrms-text-muted, #64748b);">Yêu cầu mã hóa an toàn khi kết nối SMTP</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" name="EnableSsl" value="true" @(Model.EmailConfig.Smtp.EnableSsl ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hrms-card mb-4">
+                    <div class="hrms-card-header">
+                        <h3 class="hrms-card-title"><i class="fa-regular fa-address-card card-title-icon"></i> Thông tin người gửi</h3>
+                    </div>
+                    <div class="hrms-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="hrms-form-label">Tên hiển thị</label>
+                                <input type="text" name="SenderName" class="hrms-form-control" value="@Model.EmailConfig.Smtp.SenderName" placeholder="HRMS System" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="hrms-form-label">Email gửi (Tùy chọn)</label>
+                                <input type="text" name="SenderEmail" class="hrms-form-control" value="@Model.EmailConfig.Smtp.SenderEmail" placeholder="Mặc định lấy từ Username" />
+                            </div>
+                        </div>
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="hrms-btn hrms-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình SMTP</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-5">
+            <div class="hrms-card" style="border-left: 4px solid var(--hrms-primary, #2563eb);">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title"><i class="fa-solid fa-paper-plane card-title-icon"></i> Kiểm tra kết nối SMTP</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <p style="font-size:13px; color:var(--hrms-text-muted, #475569); margin-bottom:16px;">Gửi email thử nghiệm để đảm bảo cấu hình kết nối chính xác.</p>
+                    <form asp-action="TestEmailConnection" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="hrms-form-label">Email người nhận thử nghiệm</label>
+                            <input type="email" name="testEmail" class="hrms-form-control" placeholder="admin@example.com" required />
+                        </div>
+                        <button type="submit" class="hrms-btn hrms-btn-secondary"><i class="fa-regular fa-envelope"></i> Gửi thử nghiệm</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB AI PROVIDER -->
+<div id="admin-tab-ai" style="display:none;">
+    <div class="row">
+        <div class="col-md-7">
+            <form asp-action="SaveAiConfig" method="post">
+                @Html.AntiForgeryToken()
+                <div class="hrms-card mb-4">
+                    <div class="hrms-card-header">
+                        <h3 class="hrms-card-title"><i class="fa-solid fa-robot card-title-icon"></i> Thông tin kết nối AI Provider</h3>
+                    </div>
+                    <div class="hrms-card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="hrms-form-label">Tên nhà cung cấp (Provider Name)</label>
+                                <input type="text" name="ProviderName" class="hrms-form-control" value="@Model.AiConfig.ProviderName" placeholder="VD: Groq, OpenAI" required />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="hrms-form-label">Model Name</label>
+                                <input type="text" name="ModelName" class="hrms-form-control" value="@Model.AiConfig.ModelName" placeholder="VD: llama-3.1-8b-instant" required />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="hrms-form-label">Base URL</label>
+                            <input type="url" name="BaseUrl" class="hrms-form-control" value="@Model.AiConfig.BaseUrl" placeholder="VD: https://api.groq.com/openai/v1/" required />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="hrms-form-label">API Key</label>
+                            <input type="password" name="ApiKey" class="hrms-form-control" value="@Model.AiConfig.ApiKey" placeholder="••••••••••••" required />
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 mt-3" style="background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px solid var(--hrms-border, #e2e8f0);">
+                            <div>
+                                <div style="font-weight:600; color:var(--hrms-text-main, #1e293b); font-size:14px;">Kích hoạt Trợ lý AI</div>
+                                <div style="font-size:12px; color:var(--hrms-text-muted, #64748b);">Bật/tắt AI trên toàn hệ thống</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" name="IsActive" value="true" @(Model.AiConfig.IsActive ? "checked" : "") />
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="hrms-btn hrms-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình AI</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-5">
+            <div class="hrms-card" style="border-left: 4px solid var(--hrms-primary, #2563eb);">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title"><i class="fa-solid fa-paper-plane card-title-icon"></i> Kiểm tra kết nối AI</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <p style="font-size:13px; color:var(--hrms-text-muted, #475569); margin-bottom:16px;">Gửi một yêu cầu kiểm tra tới nhà cung cấp AI đã cấu hình.</p>
+                    <form asp-action="TestAiConnection" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="hrms-btn hrms-btn-secondary"><i class="fa-solid fa-bolt"></i> Ping AI Provider</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB DEVICE -->
+<div id="admin-tab-device" style="display:none;">
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h3 class="hrms-card-title mb-0"><i class="fa-solid fa-video card-title-icon"></i> Danh sách Camera AI / IMOU</h3>
+            <button type="button" class="hrms-btn hrms-btn-primary" onclick="openDeviceModal(0, '', '', '', '', true)"><i class="fa-solid fa-plus"></i> Thêm Camera</button>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Tên thiết bị</th>
+                        <th>Địa chỉ IP</th>
+                        <th>RTSP URL</th>
+                        <th>Tài khoản</th>
+                        <th>Trạng thái</th>
+                        <th class="col-actions" style="text-align:right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.CameraConfigs.Any())
+                    {
+                        foreach (var cam in Model.CameraConfigs)
+                        {
+                            <tr>
+                                <td style="font-weight:600; color:var(--hrms-text-main, #1e293b);">@cam.Name</td>
+                                <td><i class="fa-solid fa-network-wired me-1" style="color:var(--hrms-text-muted, #94a3b8); font-size:12px;"></i> @cam.IPAddress</td>
+                                <td><code style="background:var(--hrms-background, #f1f5f9); padding:2px 6px; border-radius:4px; font-size:12px;">@cam.RtspUrl</code></td>
+                                <td>@cam.Username</td>
+                                <td>
+                                    @if(cam.IsActive) {
+                                        <span class="hrms-badge hrms-badge-success"><span class="hrms-badge-dot"></span> Đang hoạt động</span>
+                                    } else {
+                                        <span class="hrms-badge hrms-badge-neutral"><span class="hrms-badge-dot"></span> Ngừng hoạt động</span>
+                                    }
+                                </td>
+                                <td style="text-align:right;">
+                                    <form asp-action="TestDeviceConnection" method="post" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@cam.Id" />
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-secondary" title="Kiểm tra kết nối TCP"><i class="fa-solid fa-plug"></i> Ping</button>
+                                    </form>
+                                    <button class="hrms-btn hrms-btn-sm hrms-btn-secondary" onclick="openDeviceModal(@cam.Id, '@cam.Name', '@cam.IPAddress', '@cam.RtspUrl', '@cam.Username', @cam.IsActive.ToString().ToLower())"><i class="fa-solid fa-pen"></i></button>
+                                    <form asp-action="DeleteDevice" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa cấu hình Camera này không?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@cam.Id" />
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-icon"><i class="fa-solid fa-video-slash"></i></div>
+                                    <div class="hrms-empty-text">Chưa cấu hình máy chấm công / Camera AI nào.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Device -->
+<div id="deviceModal" class="admin-cfg-modal">
+    <div class="admin-cfg-modal-content" style="max-width:560px;">
+        <div class="admin-cfg-modal-header">
+            <h3 class="admin-cfg-modal-title">Cấu hình Camera IMOU</h3>
+            <button type="button" class="admin-cfg-modal-close" onclick="closeDeviceModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form asp-action="SaveDevice" method="post">
+            @Html.AntiForgeryToken()
+            <div style="padding:24px;">
+                <input type="hidden" name="Id" id="dev_id" value="0" />
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tên thiết bị <span style="color:red;">*</span></label>
+                    <input type="text" name="Name" id="dev_name" class="hrms-form-control" required placeholder="VD: Camera Cửa Chính" />
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Địa chỉ IP <span style="color:red;">*</span></label>
+                        <input type="text" name="IPAddress" id="dev_ip" class="hrms-form-control" required placeholder="VD: 192.168.1.100" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Tài khoản (Username)</label>
+                        <input type="text" name="Username" id="dev_user" class="hrms-form-control" placeholder="admin" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="hrms-form-label">Mật khẩu thiết bị (Safety Code)</label>
+                    <input type="password" name="Password" id="dev_pass" class="hrms-form-control" placeholder="Nhập để thay đổi..." />
+                </div>
+                <div class="mb-3">
+                    <label class="hrms-form-label">Đường dẫn RTSP Stream <span style="color:red;">*</span></label>
+                    <input type="text" name="RtspUrl" id="dev_rtsp" class="hrms-form-control" required placeholder="VD: rtsp://admin:L242CD0@192.168.1.100:554/cam/realmonitor?channel=1&subtype=0" />
+                    <small style="color:var(--hrms-text-muted, #64748b); margin-top:4px; display:block;">Đường dẫn stream RTSP chuẩn để backend kéo frame chấm công.</small>
+                </div>
+                <div class="d-flex justify-content-between align-items-center p-3 mt-3" style="background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px solid var(--hrms-border, #e2e8f0);">
+                    <div>
+                        <div style="font-weight:600; color:var(--hrms-text-main, #1e293b); font-size:14px;">Trạng thái hoạt động</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="IsActive" id="dev_active" value="true" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="admin-cfg-modal-footer">
+                <button type="button" class="hrms-btn hrms-btn-ghost" onclick="closeDeviceModal()">Hủy bỏ</button>
+                <button type="submit" class="hrms-btn hrms-btn-primary">Lưu thiết bị</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function showAdminTab(id, btn) {
+    document.querySelectorAll('[id^="admin-tab-"]').forEach(t => t.style.display='none');
+    document.getElementById('admin-tab-'+id).style.display='';
+    document.querySelectorAll('.admin-module-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function openDeviceModal(id, name, ip, rtsp, user, isActive) {
+    document.getElementById('dev_id').value = id;
+    document.getElementById('dev_name').value = name;
+    document.getElementById('dev_ip').value = ip;
+    document.getElementById('dev_rtsp').value = rtsp;
+    document.getElementById('dev_user').value = user;
+    document.getElementById('dev_pass').value = ''; // Luôn rỗng để bảo mật
+    document.getElementById('dev_active').checked = isActive;
+    
+    document.getElementById('deviceModal').style.display = 'flex';
+}
+
+function closeDeviceModal() {
+    document.getElementById('deviceModal').style.display = 'none';
+}
+</script>
+}

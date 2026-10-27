@@ -1,0 +1,167 @@
+@model giao_dien_demo.Models.MyKPIListViewModel
+@{
+    ViewData["Title"] = "KPI của tôi";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="hrms-page-title mb-1">
+                <i class="fa-solid fa-bullseye text-primary me-2"></i>Đánh giá KPI của tôi
+            </h1>
+            <div class="hrms-breadcrumb text-muted small">
+                <span>Nhân viên</span>
+                <i class="fa-solid fa-chevron-right mx-1"></i>
+                <span class="text-dark fw-medium">KPI của tôi</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (ViewBag.ErrorMessage != null)
+{
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="fa-solid fa-circle-exclamation me-2 fs-5"></i>
+        <div>@ViewBag.ErrorMessage</div>
+    </div>
+}
+
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label small text-muted">Kỳ đánh giá</label>
+                <select name="periodId" class="form-select">
+                    <option value="">-- Tất cả các kỳ --</option>
+                    @foreach (var p in Model.AvailablePeriods)
+                    {
+                        <option value="@p.Id" selected="@(Model.SelectedPeriodId == p.Id)">@p.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Lọc</button>
+                <a href="@Url.Action("Index", "MyKPI")" class="hrms-btn hrms-btn-secondary" title="Đặt lại"><i class="fa-solid fa-rotate-left"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-card p-0">
+    <div class="hrms-card-body p-0">
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Kỳ đánh giá</th>
+                        <th>Thời gian</th>
+                        <th>Trạng thái</th>
+                        <th>Mục tiêu</th>
+                        <th>Tiến độ của bạn</th>
+                        <th>Điểm cuối</th>
+                        <th>Xếp loại</th>
+                        <th class="text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Items.Any())
+                    {
+                        <tr>
+                            <td colspan="8">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-state-icon"><i class="fa-solid fa-bullseye"></i></div>
+                                    <div class="hrms-empty-state-title">Chưa có bản ghi đánh giá</div>
+                                    <div class="hrms-empty-state-desc">Bạn chưa có bản ghi đánh giá KPI nào được giao hoặc kích hoạt trong kỳ này.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-semibold text-dark">
+                                    @item.PeriodName
+                                </td>
+                                <td class="small text-muted">
+                                    <i class="fa-regular fa-calendar me-1"></i>
+                                    @item.StartDate.ToString("dd/MM/yyyy") - @item.EndDate.ToString("dd/MM/yyyy")
+                                </td>
+                                <td>
+                                    @if (item.Status == "ACTIVE")
+                                    {
+                                        <span class="hrms-badge hrms-badge-info">
+                                            <i class="fa-solid fa-spinner fa-spin me-1"></i>Đang thực hiện
+                                        </span>
+                                    }
+                                    else if (item.Status == "EVALUATING")
+                                    {
+                                        <span class="hrms-badge hrms-badge-warning">
+                                            <i class="fa-solid fa-pen-ruler me-1"></i>Đang đánh giá
+                                        </span>
+                                    }
+                                    else if (item.Status == "COMPLETED")
+                                    {
+                                        <span class="hrms-badge hrms-badge-success">
+                                            <i class="fa-solid fa-circle-check me-1"></i>Hoàn thành
+                                        </span>
+                                    }
+                                    else if (item.Status == "CANCELLED")
+                                    {
+                                        <span class="hrms-badge hrms-badge-danger">
+                                            <i class="fa-solid fa-ban me-1"></i>Đã hủy
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="hrms-badge hrms-badge-neutral">@item.TargetCount mục tiêu</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center" style="max-width: 140px;">
+                                        <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                            <div class="progress-bar bg-info" role="progressbar" style="width: @(item.ProgressAverage)%;"></div>
+                                        </div>
+                                        <span class="small fw-semibold text-muted">@(item.ProgressAverage)%</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    @if (item.FinalScore.HasValue)
+                                    {
+                                        <span class="fw-bold text-success" style="font-variant-numeric: tabular-nums;">@item.FinalScore.Value.ToString("0.00")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">--</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(item.FinalRating))
+                                    {
+                                        <span class="hrms-badge hrms-badge-success">@item.FinalRating</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">--</span>
+                                    }
+                                </td>
+                                <td class="text-end pe-4">
+                                    <a href="@Url.Action("Details", "MyKPI", new { id = item.Id })" class="hrms-btn hrms-btn-sm hrms-btn-secondary">
+                                        @if (item.Status == "ACTIVE")
+                                        {
+                                            <span><i class="fa-solid fa-pen me-1"></i>Cập nhật</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="fa-solid fa-eye me-1"></i>Chi tiết</span>
+                                        }
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

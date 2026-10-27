@@ -1,0 +1,52 @@
+@model IEnumerable<giao_dien_demo.Models.CameraEvent>
+
+@{
+    ViewData["Title"] = "Camera Event History";
+}
+
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+            <h4 class="mb-0">Detection History</h4>
+            <a asp-action="Live" class="btn btn-sm btn-light">View Live Feed</a>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Time</th>
+                        <th>Camera</th>
+                        <th>Zone</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center">No detection events found.</td>
+                        </tr>
+                    }
+                    @foreach (var ev in Model)
+                    {
+                        <tr>
+                            <td>@ev.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td>@(ev.CameraConfig?.Name ?? "Unknown")</td>
+                            <td><span class="badge bg-warning text-dark">@ev.ZoneName</span></td>
+                            <td>
+                                @if (ev.IsResolved)
+                                {
+                                    <span class="badge bg-success">Resolved</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Unresolved</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,472 @@
+@{
+    ViewData["Title"] = "Mẫu bảng lương";
+}
+
+<!-- Cần tải thư viện SortableJS cho Drag & Drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1 fw-bold text-dark">Mẫu bảng lương</h3>
+        <p class="text-muted mb-0">Quản lý mẫu hiển thị bảng lương.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" id="btnDuplicate" disabled onclick="duplicateTemplate()">
+            <i class="fas fa-copy me-2"></i>Nhân bản
+        </button>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+            <i class="fas fa-plus me-2"></i>Tạo mẫu
+        </button>
+    </div>
+</div>
+
+<div class="row g-4" style="min-height: calc(100vh - 200px);">
+    
+    <!-- PANEL TRÁI: DANH SÁCH MẪU -->
+    <div class="col-md-3 d-flex flex-column">
+        <div class="card border-0 shadow-sm rounded-4 flex-grow-1">
+            <div class="card-header bg-white border-bottom pt-4 pb-3 px-4">
+                <input type="text" id="searchTemplate" class="form-control bg-light" placeholder="Tìm kiếm mẫu bảng lương..." onkeyup="filterTemplates()">
+            </div>
+            <div class="card-body p-0 overflow-auto" id="templateListContainer" style="height: 0; min-height: 500px;">
+                <!-- Templates sẽ được render vào đây -->
+                <div class="text-center py-5 text-muted">
+                    <div class="spinner-border text-primary mb-2" role="status"></div>
+                    <p class="small">Đang tải...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL GIỮA: PREVIEW -->
+    <div class="col-md-6 d-flex flex-column">
+        <div class="card border-0 shadow-sm rounded-4 flex-grow-1">
+            <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">Xem trước mẫu</h5>
+                <span class="badge bg-light text-muted border" id="previewStatus">Chưa chọn mẫu</span>
+            </div>
+            <div class="card-body p-0 overflow-auto" style="height: 0; min-height: 500px;">
+                
+                <div id="previewEmptyState" class="text-center py-5 text-muted mt-5">
+                    <i class="fas fa-table fs-1 mb-3"></i>
+                    <p>Chọn một mẫu để xem trước và cấu hình.</p>
+                </div>
+
+                <div class="table-responsive h-100 d-none" id="previewTableContainer">
+                    <table class="table table-hover table-bordered mb-0 align-middle" style="white-space: nowrap;">
+                        <thead class="bg-light" id="previewThead">
+                            <!-- Headers will be rendered here -->
+                        </thead>
+                        <tbody id="previewTbody">
+                            <!-- Data rows will be rendered here -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL PHẢI: CẤU HÌNH CỘT -->
+    <div class="col-md-3 d-flex flex-column">
+        <div class="card border-0 shadow-sm rounded-4 flex-grow-1 d-flex flex-column">
+            
+            <div class="card-header bg-white border-bottom pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark">Cấu hình hiển thị</h5>
+            </div>
+            
+            <div class="card-body p-0 flex-grow-1 overflow-auto bg-light" style="height: 0; min-height: 440px;">
+                <div id="configEmptyState" class="text-center py-5 text-muted mt-5">
+                    <i class="fas fa-sliders-h fs-2 mb-3"></i>
+                    <p class="small px-4">Hãy chọn một mẫu bảng lương bên trái để bắt đầu cấu hình.</p>
+                </div>
+
+                <!-- Danh sách Cột có thể kéo thả -->
+                <ul class="list-group list-group-flush d-none" id="columnConfigList">
+                    <!-- Column configs go here -->
+                </ul>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div class="card-footer bg-white border-top p-3 d-none gap-2 d-flex flex-column" id="configActions">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-light flex-grow-1" onclick="cancelEdit()">Hủy</button>
+                    <button class="btn btn-primary flex-grow-1" onclick="saveTemplate()">Lưu mẫu</button>
+                </div>
+                <button class="btn btn-outline-primary w-100" id="btnSetDefault" onclick="setDefaultTemplate()">Đặt mặc định</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal Tạo Mẫu -->
+<div class="modal fade" id="createModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-bottom">
+        <h5 class="modal-title fw-bold">Tạo mẫu bảng lương mới</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+          <div class="mb-3">
+              <label class="form-label fw-semibold">Tên mẫu <span class="text-danger">*</span></label>
+              <input type="text" id="createTemplateName" class="form-control" placeholder="VD: Bảng lương cơ bản">
+          </div>
+          <div class="mb-3">
+              <label class="form-label fw-semibold">Mô tả</label>
+              <textarea id="createTemplateDesc" class="form-control" rows="2" placeholder="Ghi chú thêm về mẫu này..."></textarea>
+          </div>
+      </div>
+      <div class="modal-footer border-top bg-light">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-primary" onclick="submitCreateTemplate()">Tạo mới</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        let templates = [];
+        let allowedFields = [];
+        let previewData = [];
+        let activeTemplate = null;
+        let activeConfigColumns = []; // local edit state
+        let sortableInstance = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadAllowedFields();
+            await loadPreviewData();
+            await loadTemplates();
+        });
+
+        async function loadAllowedFields() {
+            try {
+                let res = await fetch('/PayrollTemplate/GetAllowedFields');
+                allowedFields = await res.json();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadPreviewData() {
+            try {
+                let res = await fetch('/PayrollTemplate/GetPreviewData');
+                previewData = await res.json();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadTemplates() {
+            try {
+                let res = await fetch('/PayrollTemplate/GetTemplates');
+                templates = await res.json();
+                renderTemplateList();
+            } catch (e) {
+                document.getElementById('templateListContainer').innerHTML = '<div class="text-center py-5 text-danger">Lỗi tải dữ liệu.</div>';
+            }
+        }
+
+        function renderTemplateList() {
+            let container = document.getElementById('templateListContainer');
+            let search = document.getElementById('searchTemplate').value.toLowerCase();
+            
+            let filtered = templates.filter(t => t.name.toLowerCase().includes(search));
+            
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-5 text-muted"><p>Chưa có mẫu bảng lương.</p></div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(t => {
+                let activeClass = (activeTemplate && activeTemplate.id === t.id) ? 'bg-primary bg-opacity-10 border-start border-primary border-4' : 'border-start border-transparent border-4';
+                let defaultBadge = t.isDefault ? '<span class="badge bg-primary ms-2" style="font-size:0.6rem">Mặc định</span>' : '';
+                
+                html += `
+                    <div class="p-3 border-bottom cursor-pointer template-item ${activeClass}" onclick="selectTemplate('${t.id}')">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0 fw-bold text-dark">${t.name} ${defaultBadge}</h6>
+                        </div>
+                        <p class="text-muted small mb-0 text-truncate">${t.description || 'Không có mô tả'}</p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function filterTemplates() {
+            renderTemplateList();
+        }
+
+        function selectTemplate(id) {
+            let temp = templates.find(t => t.id === id);
+            if (!temp) return;
+            
+            activeTemplate = JSON.parse(JSON.stringify(temp)); // Deep copy to isolate state
+            
+            // Re-merge with allowed fields in case there are new fields not in template
+            let mergedColumns = [];
+            allowedFields.forEach(af => {
+                let existingCol = activeTemplate.columns.find(c => c.fieldKey === af.fieldKey);
+                if (existingCol) {
+                    mergedColumns.push(existingCol);
+                } else {
+                    // Field mới, mặc định ẩn
+                    mergedColumns.push({
+                        fieldKey: af.fieldKey,
+                        displayName: af.defaultLabel,
+                        isVisible: false,
+                        order: 999,
+                        isRequired: af.isRequired
+                    });
+                }
+            });
+
+            // Sắp xếp lại theo Order hiện tại
+            mergedColumns.sort((a, b) => a.order - b.order);
+            activeConfigColumns = mergedColumns;
+
+            // UI Updates
+            renderTemplateList(); // highlight
+            document.getElementById('btnDuplicate').disabled = false;
+            
+            if (activeTemplate.isDefault) {
+                document.getElementById('btnSetDefault').disabled = true;
+                document.getElementById('btnSetDefault').innerText = "Đang là mặc định";
+            } else {
+                document.getElementById('btnSetDefault').disabled = false;
+                document.getElementById('btnSetDefault').innerText = "Đặt mặc định";
+            }
+
+            document.getElementById('previewStatus').innerText = activeTemplate.name;
+
+            // Hiển thị panel phải và giữa
+            document.getElementById('previewEmptyState').classList.add('d-none');
+            document.getElementById('previewTableContainer').classList.remove('d-none');
+            
+            document.getElementById('configEmptyState').classList.add('d-none');
+            document.getElementById('columnConfigList').classList.remove('d-none');
+            document.getElementById('configActions').classList.remove('d-none');
+
+            renderColumnConfig();
+            renderPreview();
+        }
+
+        function renderColumnConfig() {
+            let list = document.getElementById('columnConfigList');
+            let html = '';
+            
+            activeConfigColumns.forEach((col, index) => {
+                let requiredAttr = col.isRequired ? 'disabled checked' : (col.isVisible ? 'checked' : '');
+                let opacity = col.isVisible ? '1' : '0.5';
+                let reqBadge = col.isRequired ? '<span class="badge bg-danger ms-1" style="font-size:0.6rem">Bắt buộc</span>' : '';
+                
+                html += `
+                    <li class="list-group-item d-flex align-items-center p-3 border-bottom config-item" data-id="${col.fieldKey}" style="opacity: ${opacity}">
+                        <i class="fas fa-grip-vertical text-muted me-3 drag-handle" style="cursor: grab;"></i>
+                        <div class="form-check form-switch mb-0 fs-5 me-3">
+                            <input class="form-check-input cursor-pointer" type="checkbox" onchange="toggleColumn('${col.fieldKey}', this.checked)" ${requiredAttr}>
+                        </div>
+                        <div class="flex-grow-1">
+                            <span class="fw-semibold text-dark fs-6">${col.displayName} ${reqBadge}</span>
+                            <div class="text-muted" style="font-size:0.7rem">${col.fieldKey}</div>
+                        </div>
+                    </li>
+                `;
+            });
+
+            list.innerHTML = html;
+
+            // Kích hoạt Drag & Drop
+            if (sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(list, {
+                handle: '.drag-handle',
+                animation: 150,
+                onEnd: function (evt) {
+                    reorderLocalState();
+                }
+            });
+        }
+
+        function toggleColumn(key, isChecked) {
+            let col = activeConfigColumns.find(c => c.fieldKey === key);
+            if (col && !col.isRequired) {
+                col.isVisible = isChecked;
+                renderColumnConfig(); // refresh UI to update opacity
+                renderPreview(); // real-time preview
+            }
+        }
+
+        function reorderLocalState() {
+            // Get new order from DOM
+            let items = document.querySelectorAll('#columnConfigList .config-item');
+            let newArray = [];
+            
+            items.forEach((item, idx) => {
+                let key = item.getAttribute('data-id');
+                let col = activeConfigColumns.find(c => c.fieldKey === key);
+                if (col) {
+                    col.order = idx;
+                    newArray.push(col);
+                }
+            });
+
+            activeConfigColumns = newArray;
+            renderPreview(); // Real-time update preview
+        }
+
+        function renderPreview() {
+            let thead = document.getElementById('previewThead');
+            let tbody = document.getElementById('previewTbody');
+            
+            // Lấy các cột đang bật (và sort theo order hiện tại)
+            let visibleCols = activeConfigColumns.filter(c => c.isVisible).sort((a, b) => a.order - b.order);
+
+            // Render Header
+            let thHtml = '<tr>';
+            visibleCols.forEach(c => {
+                thHtml += `<th class="py-3 px-3 text-muted fw-semibold">${c.displayName}</th>`;
+            });
+            thHtml += '</tr>';
+            thead.innerHTML = thHtml;
+
+            // Render Body
+            let tbHtml = '';
+            previewData.forEach(row => {
+                tbHtml += '<tr>';
+                visibleCols.forEach(c => {
+                    let val = row[c.fieldKey] !== undefined ? row[c.fieldKey] : '';
+                    
+                    // Format money based on allowed field definition
+                    let af = allowedFields.find(f => f.fieldKey === c.fieldKey);
+                    if (af && af.dataType === 'MONEY' && !isNaN(val) && val !== '') {
+                        val = Number(val).toLocaleString('vi-VN') + ' ₫';
+                    }
+
+                    tbHtml += `<td class="py-3 px-3 text-dark">${val}</td>`;
+                });
+                tbHtml += '</tr>';
+            });
+            tbody.innerHTML = tbHtml;
+        }
+
+        function cancelEdit() {
+            if (!activeTemplate) return;
+            // Reload active template original state
+            selectTemplate(activeTemplate.id);
+        }
+
+        async function saveTemplate() {
+            if (!activeTemplate) return;
+            
+            // Update activeTemplate.columns with activeConfigColumns
+            activeTemplate.columns = activeConfigColumns;
+
+            try {
+                let res = await fetch('/PayrollTemplate/SaveTemplate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(activeTemplate)
+                });
+                let result = await res.json();
+                if (result.success) {
+                    alert("Đã lưu mẫu bảng lương thành công!");
+                    await loadTemplates();
+                    selectTemplate(result.data.id);
+                } else {
+                    alert("Lỗi: " + result);
+                }
+            } catch (e) {
+                alert("Đã có lỗi xảy ra");
+            }
+        }
+
+        function openCreateModal() {
+            document.getElementById('createTemplateName').value = '';
+            document.getElementById('createTemplateDesc').value = '';
+            var myModal = new bootstrap.Modal(document.getElementById('createModal'));
+            myModal.show();
+        }
+
+        async function submitCreateTemplate() {
+            let name = document.getElementById('createTemplateName').value.trim();
+            let desc = document.getElementById('createTemplateDesc').value.trim();
+            
+            if (!name) {
+                alert("Vui lòng nhập tên mẫu");
+                return;
+            }
+
+            let newTemp = {
+                name: name,
+                description: desc,
+                columns: allowedFields.map(f => ({
+                    fieldKey: f.fieldKey,
+                    displayName: f.defaultLabel,
+                    isVisible: f.defaultVisible,
+                    order: f.defaultOrder,
+                    isRequired: f.isRequired
+                }))
+            };
+
+            try {
+                let res = await fetch('/PayrollTemplate/SaveTemplate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newTemp)
+                });
+                let result = await res.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('createModal')).hide();
+                    await loadTemplates();
+                    selectTemplate(result.data.id); // Chọn ngay mẫu vừa tạo
+                }
+            } catch(e) {
+                alert("Lỗi tạo mẫu");
+            }
+        }
+
+        async function duplicateTemplate() {
+            if (!activeTemplate) return;
+            if (!confirm("Bạn có chắc chắn muốn nhân bản mẫu này?")) return;
+
+            try {
+                let res = await fetch('/PayrollTemplate/DuplicateTemplate?id=' + activeTemplate.id, { method: 'POST' });
+                let result = await res.json();
+                if (result.success) {
+                    await loadTemplates();
+                    selectTemplate(result.data.id);
+                }
+            } catch(e) {
+                alert("Lỗi nhân bản mẫu");
+            }
+        }
+
+        async function setDefaultTemplate() {
+            if (!activeTemplate) return;
+            
+            try {
+                let res = await fetch('/PayrollTemplate/SetDefaultTemplate?id=' + activeTemplate.id, { method: 'POST' });
+                let result = await res.json();
+                if (result.success) {
+                    alert("Đã đặt làm mẫu mặc định!");
+                    await loadTemplates();
+                    selectTemplate(activeTemplate.id);
+                }
+            } catch(e) {
+                alert("Lỗi khi đặt mặc định");
+            }
+        }
+    </script>
+    
+    <style>
+        .cursor-pointer { cursor: pointer; }
+        .template-item:hover { background-color: #f8f9fa; }
+        .config-item { transition: opacity 0.2s ease; }
+        .config-item.sortable-ghost { opacity: 0.3 !important; background-color: #e9ecef; }
+        .config-item.sortable-drag { background-color: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+}

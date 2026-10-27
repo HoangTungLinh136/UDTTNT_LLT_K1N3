@@ -1,0 +1,640 @@
+@model dynamic
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Quy hoạch";
+    var currentPeriodId = ViewBag.CurrentPeriodId as int?;
+    var periods = ViewBag.Periods as List<giao_dien_demo.Models.PlanningPeriod> ?? new List<giao_dien_demo.Models.PlanningPeriod>();
+    var jobPositions = ViewBag.JobPositions as List<giao_dien_demo.Models.JobPosition> ?? new List<giao_dien_demo.Models.JobPosition>();
+    var currentRole = Context.Session.GetString("Role") ?? "";
+    var isHr = currentRole == "HR";
+
+    int targetPositionsCount = ViewBag.TargetPositionsCount ?? 0;
+    int potentialCandidatesCount = ViewBag.PotentialCandidatesCount ?? 0;
+    int readyNowCount = ViewBag.ReadyNowCount ?? 0;
+    int devRequiredCount = ViewBag.DevRequiredCount ?? 0;
+}
+
+<style>
+/* --- PAGE WRAPPER --- */
+.ob-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* --- PAGE HEADER --- */
+.ob-page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.ob-page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 10px; }
+.ob-page-title .ob-icon { width: 36px; height: 36px; border-radius: 10px; background: #fdf4ff; display: flex; align-items: center; justify-content: center; color: #c026d3; font-size: 17px; flex-shrink: 0; }
+.ob-header-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+.ob-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* --- STATISTICS CARDS --- */
+.ob-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.ob-stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.ob-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ob-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+.ob-stat-icon.indigo { background: #eef2ff; color: #6366f1; }
+.ob-stat-icon.red    { background: #fef2f2; color: #ef4444; }
+.ob-stat-icon.green  { background: #ecfdf5; color: #059669; }
+.ob-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.ob-stat-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+.ob-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+/* --- TOOLBAR --- */
+.ob-filter-bar { background: #fff; border-radius: 12px; padding: 14px 18px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ob-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 340px; }
+.ob-search-wrap .sicon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+.ob-search-input { width: 100%; padding: 9px 12px 9px 34px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; outline: none; transition: all 0.2s; }
+.ob-search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.ob-filter-select { padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; min-width: 140px; outline: none; }
+.ob-filter-select:focus { border-color: #3b82f6; }
+
+/* --- BUTTONS --- */
+.btn-ob-primary { background: #3b82f6; color: #fff; border: none; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: background 0.2s; }
+.btn-ob-primary:hover { background: #2563eb; color: #fff; }
+.btn-ob-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-outline:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+
+/* --- TABLE CARD --- */
+.ob-table-card { background: #fff; border-radius: 14px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-table-header { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.ob-table-title { font-size: 14px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.ob-table-wrap { overflow-x: auto; }
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ob-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; padding: 11px 14px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.ob-table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+.ob-table tbody tr:hover td { background: #f8fafc; cursor: pointer; }
+
+/* --- BADGES --- */
+.badge-status { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; display: inline-block; }
+.badge-ready { background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; }
+.badge-dev { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
+.badge-wait { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+
+/* --- DRAWER OVERLAY --- */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); }
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer-panel { position: fixed; top: 0; right: -700px; width: 100%; max-width: 650px; height: 100%; background: #fff; z-index: 9999; box-shadow: -4px 0 24px rgba(0,0,0,0.1); transition: right 0.3s ease; display: flex; flex-direction: column; }
+.drawer-panel.open { right: 0; }
+.drawer-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+.drawer-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; }
+.drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff; color: #64748b; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; justify-content: flex-end; gap: 12px; }
+
+/* --- FORM --- */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #fff; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.emp-search-results { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; z-index: 10; max-height: 200px; overflow-y: auto; display: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+.emp-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; justify-content: space-between; align-items: center;}
+.emp-item:hover { background: #f8fafc; }
+
+.candidate-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.candidate-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.candidate-name { font-weight: 700; font-size: 15px; color: #0f172a; }
+.candidate-pos { font-size: 13px; color: #64748b; }
+.candidate-actions { display: flex; gap: 8px; }
+
+</style>
+
+<div class="ob-page">
+    <div class="ob-page-header">
+        <div>
+            <h1 class="ob-page-title">
+                <div class="ob-icon"><i class="fa-solid fa-sitemap"></i></div>
+                Quy hoạch
+            </h1>
+            <div class="ob-header-subtitle">Quản lý vị trí mục tiêu và nguồn nhân sự kế cận.</div>
+        </div>
+        <div class="ob-header-actions">
+            @if (isHr)
+            {
+                <button class="btn-ob-primary" onclick="openCreatePeriodDrawer()"><i class="fas fa-plus"></i> Tạo kỳ quy hoạch</button>
+                @if (currentPeriodId.HasValue)
+                {
+                    <button class="btn-ob-primary" onclick="openCreatePlanDrawer()"><i class="fas fa-plus"></i> Thêm vị trí</button>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="ob-stats-grid">
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon blue"><i class="fas fa-crosshairs"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Vị trí quy hoạch</div>
+                <div class="ob-stat-value">@targetPositionsCount</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon indigo"><i class="fas fa-users"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Nhân sự tiềm năng</div>
+                <div class="ob-stat-value">@potentialCandidatesCount</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Sẵn sàng ngay</div>
+                <div class="ob-stat-value">@readyNowCount</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon amber"><i class="fas fa-chart-line"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Cần phát triển</div>
+                <div class="ob-stat-value">@devRequiredCount</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="ob-filter-bar">
+        <div class="ob-search-wrap">
+            <i class="fas fa-search sicon"></i>
+            <input type="text" id="searchInput" class="ob-search-input" placeholder="Tìm vị trí mục tiêu...">
+        </div>
+        <select id="periodFilter" class="ob-filter-select" onchange="loadPlans()">
+            <option value="">Tất cả kỳ quy hoạch</option>
+            @foreach(var p in periods) {
+                <option value="@p.Id" selected="@(p.Id == currentPeriodId)">@p.Name</option>
+            }
+        </select>
+        <select id="readinessFilter" class="ob-filter-select" onchange="loadPlans()">
+            <option value="">Mức sẵn sàng</option>
+            <option value="READY_NOW">Sẵn sàng ngay</option>
+            <option value="READY_1_2_YEARS">Sẵn sàng 1-2 năm</option>
+            <option value="READY_2_3_YEARS">Sẵn sàng 2-3 năm</option>
+            <option value="DEVELOPMENT_REQUIRED">Cần phát triển</option>
+        </select>
+        <button class="btn-ob-outline" onclick="resetFilter()"><i class="fas fa-undo"></i></button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="ob-table-card">
+        <div class="ob-table-header">
+            <div class="ob-table-title">Danh sách Vị trí Quy hoạch</div>
+        </div>
+        <div class="ob-table-wrap">
+            <table class="ob-table">
+                <thead>
+                    <tr>
+                        <th>Vị trí mục tiêu</th>
+                        <th>Phòng ban</th>
+                        <th>Số ứng viên</th>
+                        <th>Ưu tiên</th>
+                        <th>Mức sẵn sàng tốt nhất</th>
+                        <th>Cập nhật gần nhất</th>
+                    </tr>
+                </thead>
+                <tbody id="plansTableBody">
+                    <tr><td colspan="6" class="text-center">Đang tải...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeAllDrawers()"></div>
+
+<!-- CREATE PERIOD DRAWER -->
+<div class="drawer-panel" id="createPeriodDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Tạo Kỳ Quy hoạch</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmCreatePeriod">
+            <div class="form-group">
+                <label>Tên kỳ quy hoạch</label>
+                <input type="text" name="Name" class="form-control" required placeholder="VD: Quy hoạch nhân sự 2026">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Ngày bắt đầu</label>
+                    <input type="date" name="StartDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Ngày kết thúc</label>
+                    <input type="date" name="EndDate" class="form-control" required>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeAllDrawers()">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitCreatePeriod()">Tạo mới</button>
+    </div>
+</div>
+
+<!-- CREATE TARGET POSITION DRAWER -->
+<div class="drawer-panel" id="createPlanDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Thêm Vị trí Mục tiêu</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmCreatePlan">
+            <input type="hidden" name="PlanningPeriodId" value="@currentPeriodId" />
+            <div class="form-group">
+                <label>Vị trí mục tiêu</label>
+                <select name="TargetPositionId" class="form-control" required>
+                    <option value="">-- Chọn Job Position --</option>
+                    @foreach(var jp in jobPositions) {
+                        <option value="@jp.Id">@jp.Name (@jp.Group)</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Phòng ban</label>
+                <input type="text" name="Department" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Mức ưu tiên</label>
+                <select name="Priority" class="form-control">
+                    <option value="CRITICAL">Critical (Rất quan trọng)</option>
+                    <option value="HIGH">High (Cao)</option>
+                    <option value="MEDIUM">Medium (Trung bình)</option>
+                    <option value="LOW">Low (Thấp)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Lý do quy hoạch</label>
+                <textarea name="Reason" class="form-control" rows="3"></textarea>
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeAllDrawers()">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitCreatePlan()">Thêm</button>
+    </div>
+</div>
+
+<!-- PLAN DETAIL DRAWER -->
+<div class="drawer-panel" id="planDetailDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Chi tiết Quy hoạch</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" style="background:#f8fafc;">
+        <div id="planDetailContent">Đang tải...</div>
+        
+        <h4 style="margin-top:24px; font-weight:700; font-size:15px; margin-bottom:12px;">Ứng viên kế cận</h4>
+        @if (isHr)
+        {
+            <div class="form-group" style="position:relative;">
+                <input type="text" id="empSearchInput" class="form-control" placeholder="Tìm kiếm mã NV, họ tên để thêm ứng viên..." autocomplete="off">
+                <div id="empSearchResults" class="emp-search-results"></div>
+            </div>
+        }
+        
+        <div id="candidatesList"></div>
+    </div>
+</div>
+
+<!-- ASSESSMENT DRAWER -->
+<div class="drawer-panel" id="assessmentDrawer" style="z-index:10001;">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Đánh giá Ứng viên</h2>
+        <button class="drawer-close" onclick="closeAssessmentDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmAssessment">
+            <input type="hidden" id="assessCandidateId" name="Id">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Điểm Năng lực (1-10)</label>
+                    <input type="number" name="CompetencyScore" id="a_comp" class="form-control" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>Điểm Hiệu suất (1-10)</label>
+                    <input type="number" name="PerformanceScore" id="a_perf" class="form-control" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>Điểm Kinh nghiệm (1-10)</label>
+                    <input type="number" name="ExperienceScore" id="a_exp" class="form-control" min="1" max="10">
+                </div>
+                <div class="form-group">
+                    <label>Điểm Tiềm năng (1-10)</label>
+                    <input type="number" name="PotentialScore" id="a_pot" class="form-control" min="1" max="10">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Xếp hạng (Rank)</label>
+                <input type="number" name="Rank" id="a_rank" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Mức Sẵn Sàng</label>
+                <select name="ReadinessLevel" id="a_readiness" class="form-control">
+                    <option value="">-- Chưa xác định --</option>
+                    <option value="READY_NOW">Sẵn sàng ngay</option>
+                    <option value="READY_1_2_YEARS">Sẵn sàng 1-2 năm</option>
+                    <option value="READY_2_3_YEARS">Sẵn sàng 2-3 năm</option>
+                    <option value="DEVELOPMENT_REQUIRED">Cần phát triển</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú đánh giá</label>
+                <textarea name="AssessmentNotes" id="a_notes" class="form-control" rows="3"></textarea>
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeAssessmentDrawer()">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitAssessment()">Lưu Đánh Giá</button>
+    </div>
+</div>
+
+<!-- DEVELOPMENT PLAN DRAWER -->
+<div class="drawer-panel" id="devPlanDrawer" style="z-index:10001;">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Kế hoạch Phát triển</h2>
+        <button class="drawer-close" onclick="closeDevPlanDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmDevPlan">
+            <input type="hidden" id="devCandidateId" name="SuccessionCandidateId">
+            <div class="form-group">
+                <label>Mục tiêu phát triển</label>
+                <input type="text" name="Objective" id="d_obj" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Khoảng trống năng lực (Gap)</label>
+                <textarea name="DevelopmentGap" id="d_gap" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Hoạt động đào tạo / Giao việc</label>
+                <textarea name="Activities" id="d_act" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Người phụ trách (Mentor)</label>
+                    <input type="text" name="ResponsiblePerson" id="d_resp" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Hạn hoàn thành</label>
+                    <input type="date" name="TargetDate" id="d_target" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tiến độ (%)</label>
+                <input type="number" name="Progress" id="d_prog" class="form-control" min="0" max="100">
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeDevPlanDrawer()">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitDevPlan()">Lưu Kế hoạch</button>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+    const canEdit = @(isHr.ToString().ToLowerInvariant());
+    let currentPlanId = 0;
+
+    $(document).ready(function() {
+        loadPlans();
+
+        $('#searchInput').on('input', function() {
+            let val = $(this).val().toLowerCase();
+            $('#plansTableBody tr').each(function() {
+                let text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(val) > -1);
+            });
+        });
+
+        // Search Employee auto-complete
+        let searchTimeout;
+        $('#empSearchInput').on('input', function() {
+            clearTimeout(searchTimeout);
+            let val = $(this).val();
+            if (val.length < 2) {
+                $('#empSearchResults').hide();
+                return;
+            }
+            searchTimeout = setTimeout(() => {
+                $.get('/Succession/SearchEmployees', { query: val }, function(res) {
+                    let html = '';
+                    res.forEach(e => {
+                        html += `<div class="emp-item" onclick="addCandidate(${e.id}, '${e.name}')">
+                                    <div><strong>${e.name}</strong> (${e.employeeCode})<br/><small>${e.department} - ${e.position}</small></div>
+                                    <i class="fas fa-plus" style="color:#3b82f6;"></i>
+                                 </div>`;
+                    });
+                    if(res.length == 0) html = '<div style="padding:10px;">Không tìm thấy nhân viên.</div>';
+                    $('#empSearchResults').html(html).show();
+                });
+            }, 300);
+        });
+        
+        // Hide search when click outside
+        $(document).click(function(e) {
+            if (!$(e.target).closest('.form-group').length) {
+                $('#empSearchResults').hide();
+            }
+        });
+    });
+
+    function loadPlans() {
+        let periodId = $('#periodFilter').val();
+        let readiness = $('#readinessFilter').val();
+        
+        $.get('/Succession/GetPlans', { periodId, readiness }, function(res) {
+            let html = '';
+            if (res.length === 0) {
+                html = '<tr><td colspan="6" class="text-center">Chưa có vị trí quy hoạch.</td></tr>';
+            } else {
+                res.forEach(p => {
+                    let badge = '';
+                    if (p.bestReadiness == 'READY_NOW') badge = '<span class="badge-status badge-ready">Sẵn sàng ngay</span>';
+                    else if (p.bestReadiness == 'DEVELOPMENT_REQUIRED') badge = '<span class="badge-status badge-dev">Cần phát triển</span>';
+                    else badge = `<span class="badge-status badge-wait">${p.bestReadiness}</span>`;
+
+                    html += `<tr onclick="openPlanDetail(${p.id})">
+                        <td><strong>${p.targetPosition}</strong></td>
+                        <td>${p.department}</td>
+                        <td><span class="count-chip">${p.candidatesCount}</span></td>
+                        <td>${p.priority}</td>
+                        <td>${badge}</td>
+                        <td>${p.updatedAt}</td>
+                    </tr>`;
+                });
+            }
+            $('#plansTableBody').html(html);
+        });
+    }
+
+    function resetFilter() {
+        $('#periodFilter').val('');
+        $('#readinessFilter').val('');
+        $('#searchInput').val('');
+        loadPlans();
+    }
+
+    // DRAWERS
+    function openCreatePeriodDrawer() { $('#drawerOverlay').addClass('open'); $('#createPeriodDrawer').addClass('open'); }
+    function openCreatePlanDrawer() { $('#drawerOverlay').addClass('open'); $('#createPlanDrawer').addClass('open'); }
+    
+    function closeAllDrawers() {
+        $('#drawerOverlay').removeClass('open');
+        $('.drawer-panel').removeClass('open');
+        $('#empSearchInput').val('');
+        $('#empSearchResults').hide();
+    }
+    
+    function closeAssessmentDrawer() {
+        $('#assessmentDrawer').removeClass('open');
+    }
+    function closeDevPlanDrawer() {
+        $('#devPlanDrawer').removeClass('open');
+    }
+
+    function submitCreatePeriod() {
+        let data = {};
+        $('#frmCreatePeriod').serializeArray().map(function(x){data[x.name] = x.value;});
+        $.ajax({
+            url: '/Succession/CreatePeriod', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            success: function(res) { if (res.success) location.reload(); }
+        });
+    }
+
+    function submitCreatePlan() {
+        let data = {};
+        $('#frmCreatePlan').serializeArray().map(function(x){data[x.name] = x.value;});
+        $.ajax({
+            url: '/Succession/AddTargetPosition', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            success: function(res) { if (res.success) { closeAllDrawers(); loadPlans(); } }
+        });
+    }
+
+    function openPlanDetail(id) {
+        currentPlanId = id;
+        $('#planDetailContent').html('Đang tải...');
+        $('#candidatesList').html('');
+        $('#drawerOverlay').addClass('open');
+        $('#planDetailDrawer').addClass('open');
+
+        reloadPlanDetail();
+    }
+
+    function reloadPlanDetail() {
+        $.get('/Succession/GetPlanDetails', { id: currentPlanId }, function(res) {
+            let p = res.plan;
+            let infoHtml = `<div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e2e8f0;">
+                <h3 style="margin-top:0; color:#0f172a;">${p.targetPosition}</h3>
+                <div style="font-size:13.5px; color:#475569;">
+                    <p><strong>Phòng ban:</strong> ${p.department} &bull; <strong>Ưu tiên:</strong> ${p.priority}</p>
+                    <p><strong>Kỳ:</strong> ${p.periodName} &bull; <strong>Trạng thái:</strong> ${p.status}</p>
+                </div>
+            </div>`;
+            $('#planDetailContent').html(infoHtml);
+
+            let cHtml = '';
+            if (res.candidates.length === 0) {
+                cHtml = '<div style="text-align:center; padding:20px; color:#64748b;">Chưa có ứng viên kế cận.</div>';
+            } else {
+                res.candidates.forEach(c => {
+                    let readinessText = c.readiness ? c.readiness : 'Chưa đánh giá';
+                    let badgeClass = c.readiness == 'READY_NOW' ? 'badge-ready' : 'badge-wait';
+                    
+                    cHtml += `<div class="candidate-card">
+                        <div class="candidate-header">
+                            <div>
+                                <div class="candidate-name">Rank ${c.rank || '-'}: ${c.fullName} (${c.employeeCode})</div>
+                                <div class="candidate-pos">${c.department} - ${c.position}</div>
+                                <div style="margin-top:4px;"><span class="badge-status ${badgeClass}">${readinessText}</span></div>
+                            </div>
+                            <div class="candidate-actions">
+                                ${canEdit ? `<button class="btn-ob-outline" style="padding:4px 8px; font-size:12px;" onclick="openAssessment(${c.id}, '${c.competencyScore}','${c.performanceScore}','${c.experienceScore}','${c.potentialScore}','${c.readiness}','${c.rank}')"><i class="fas fa-star"></i> Đánh giá</button><button class="btn-ob-outline" style="padding:4px 8px; font-size:12px;" onclick="openDevPlan(${c.id})"><i class="fas fa-tasks"></i> Kế hoạch PT</button>` : ''}
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+            $('#candidatesList').html(cHtml);
+        });
+    }
+
+    function addCandidate(empId, name) {
+        if (!confirm(`Thêm ${name} vào quy hoạch vị trí này?`)) return;
+        $('#empSearchResults').hide();
+        $('#empSearchInput').val('');
+        
+        let data = { SuccessionPlanId: currentPlanId, EmployeeId: empId };
+        $.ajax({
+            url: '/Succession/AddCandidate', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            success: function(res) {
+                if (res.success) {
+                    reloadPlanDetail();
+                    loadPlans();
+                } else {
+                    alert(res.message);
+                }
+            }
+        });
+    }
+
+    function openAssessment(id, c, p, e, pot, ready, rank) {
+        $('#assessCandidateId').val(id);
+        $('#a_comp').val(c !== 'null' ? c : '');
+        $('#a_perf').val(p !== 'null' ? p : '');
+        $('#a_exp').val(e !== 'null' ? e : '');
+        $('#a_pot').val(pot !== 'null' ? pot : '');
+        $('#a_readiness').val(ready !== 'null' ? ready : '');
+        $('#a_rank').val(rank !== 'null' ? rank : '');
+        
+        $('#assessmentDrawer').addClass('open');
+    }
+
+    function submitAssessment() {
+        let data = {};
+        $('#frmAssessment').serializeArray().map(function(x){data[x.name] = x.value;});
+        $.ajax({
+            url: '/Succession/UpdateAssessment', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            success: function(res) { 
+                if (res.success) { 
+                    closeAssessmentDrawer(); 
+                    reloadPlanDetail();
+                    loadPlans();
+                } 
+            }
+        });
+    }
+
+    function openDevPlan(candidateId) {
+        $('#devCandidateId').val(candidateId);
+        $('#frmDevPlan')[0].reset();
+        
+        $.get('/Succession/GetDevelopmentPlan', { candidateId: candidateId }, function(res) {
+            if (res.success) {
+                $('#d_obj').val(res.data.objective);
+                $('#d_gap').val(res.data.developmentGap);
+                $('#d_act').val(res.data.activities);
+                $('#d_resp').val(res.data.responsiblePerson);
+                if(res.data.targetDate) $('#d_target').val(res.data.targetDate.split('T')[0]);
+                $('#d_prog').val(res.data.progress);
+            }
+            $('#devPlanDrawer').addClass('open');
+        });
+    }
+
+    function submitDevPlan() {
+        let data = {};
+        $('#frmDevPlan').serializeArray().map(function(x){data[x.name] = x.value;});
+        $.ajax({
+            url: '/Succession/SaveDevelopmentPlan', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            success: function(res) { 
+                if (res.success) { 
+                    closeDevPlanDrawer(); 
+                } 
+            }
+        });
+    }
+</script>
+}

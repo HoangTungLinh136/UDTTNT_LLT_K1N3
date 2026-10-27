@@ -1,0 +1,125 @@
+@model IEnumerable<giao_dien_demo.Models.Contract>
+@{
+    ViewData["Title"] = "Quản lý Hợp đồng (Lãnh đạo)";
+    var allowedDepts = ViewBag.AllowedDepts as List<string> ?? new List<string>();
+    var today = DateTime.Today;
+    var thirtyDays = today.AddDays(30);
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-file-signature"></i></span>
+            Quản lý Hợp đồng (Lãnh đạo)
+        </h1>
+        <div class="hrms-page-subtitle">Giám sát thông tin hợp đồng lao động và cảnh báo gia hạn trong phạm vi phụ trách.</div>
+    </div>
+</div>
+
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" action="@Url.Action("Index", "LeaderContract")" class="row g-3">
+            <div class="col-md-4">
+                <label class="hrms-form-label">Phòng ban</label>
+                <select name="department" class="hrms-form-select">
+                    <option value="">Tất cả phòng ban</option>
+                    @foreach (var dept in allowedDepts)
+                    {
+                        if (ViewBag.CurrentDept == dept)
+                        {
+                            <option value="@dept" selected>@dept</option>
+                        }
+                        else
+                        {
+                            <option value="@dept">@dept</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="hrms-form-label">Trạng thái hợp đồng</label>
+                <select name="status" class="hrms-form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Active" selected="@(ViewBag.CurrentStatus == "Active")">Đang hiệu lực (Active)</option>
+                    <option value="Expired" selected="@(ViewBag.CurrentStatus == "Expired")">Đã hết hạn (Expired)</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary flex-grow-1"><i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu</button>
+                <a href="@Url.Action("Index", "LeaderContract")" class="hrms-btn hrms-btn-ghost" title="Đặt lại bộ lọc"><i class="fa-solid fa-rotate-right"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-card">
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th>Nhân viên</th>
+                    <th>Phòng ban</th>
+                    <th>Loại hợp đồng</th>
+                    <th>Từ ngày</th>
+                    <th>Đến ngày</th>
+                    <th>Trạng thái</th>
+                    <th>Cảnh báo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="hrms-empty-state py-5">
+                                <div class="hrms-empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+                                <div class="hrms-empty-title">Không có dữ liệu hợp đồng</div>
+                                <div class="hrms-empty-desc">Không có bản ghi hợp đồng nào trong phạm vi quản lý của bạn.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        bool isExpiringSoon = item.EndDate <= thirtyDays && item.EndDate >= today;
+                        bool isExpired = item.EndDate < today;
+
+                        <tr>
+                            <td class="fw-semibold text-dark">@item.EmployeeName</td>
+                            <td>@(item.Employee?.Department)</td>
+                            <td>@item.Duration</td>
+                            <td>@(item.StartDate != default ? item.StartDate.ToString("dd/MM/yyyy") : "")</td>
+                            <td>@(item.EndDate != default ? item.EndDate.ToString("dd/MM/yyyy") : "Vô thời hạn")</td>
+                            <td>
+                                @if (item.Status == "Active")
+                                {
+                                    <span class="hrms-badge hrms-badge-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="hrms-badge hrms-badge-neutral">@item.Status</span>
+                                }
+                            </td>
+                            <td>
+                                @if (isExpired)
+                                {
+                                    <span class="text-danger fw-bold small"><i class="fa-solid fa-circle-exclamation me-1"></i> Đã hết hạn</span>
+                                }
+                                else if (isExpiringSoon)
+                                {
+                                    <span class="text-warning fw-bold small"><i class="fa-solid fa-triangle-exclamation me-1"></i> Sắp hết hạn</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Ổn định</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

@@ -1,0 +1,300 @@
+@{
+    ViewData["Title"] = "Đơn vị tổ chức";
+    var departments = ViewBag.Departments as IEnumerable<dynamic>;
+    var totalDepartments = ViewBag.TotalDepartments ?? 0;
+    var totalEmployees = ViewBag.TotalEmployees ?? 0;
+    var successMsg = TempData["SuccessMessage"] as string;
+    var errorMsg = TempData["ErrorMessage"] as string;
+}
+
+<style>
+/* Workspace Layout */
+.org-workspace { display: flex; gap: 20px; align-items: flex-start; }
+.org-sidebar { width: 320px; background: white; border-radius: var(--hrms-radius-lg, 12px); border: 1px solid var(--hrms-border, #e2e8f0); box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+.org-sidebar-header { padding: 16px; border-bottom: 1px solid var(--hrms-border, #f1f5f9); }
+.org-search { position: relative; }
+.org-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.org-search input { width: 100%; padding: 8px 12px 8px 36px; border: 1px solid var(--hrms-border, #e2e8f0); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s; }
+.org-search input:focus { border-color: var(--hrms-primary, #2563eb); }
+.org-list { max-height: 600px; overflow-y: auto; padding: 8px; }
+.org-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; border: 1px solid transparent; }
+.org-item:hover { background: var(--hrms-background, #f8fafc); }
+.org-item.active { background: #eff6ff; border-color: #bfdbfe; }
+.org-item-name { font-size: 14px; font-weight: 500; color: var(--hrms-text-main, #334155); }
+.org-item.active .org-item-name { color: #1d4ed8; font-weight: 600; }
+.org-item-count { font-size: 12px; color: var(--hrms-text-muted, #64748b); background: var(--hrms-background, #f1f5f9); padding: 2px 8px; border-radius: 12px; font-weight: 500; }
+.org-item.active .org-item-count { background: #dbeafe; color: #1e40af; }
+
+.org-detail { flex: 1; background: white; border-radius: var(--hrms-radius-lg, 12px); border: 1px solid var(--hrms-border, #e2e8f0); box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-height: 400px; display: flex; flex-direction: column; }
+.org-detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 48px 24px; color: var(--hrms-text-muted, #94a3b8); }
+.org-detail-empty i { font-size: 48px; margin-bottom: 16px; color: #cbd5e1; }
+.org-detail-content { display: none; flex-direction: column; height: 100%; }
+.org-detail-header { padding: 20px 24px; border-bottom: 1px solid var(--hrms-border, #f1f5f9); display: flex; justify-content: space-between; align-items: flex-start; }
+.org-detail-title { font-size: 18px; font-weight: 600; color: var(--hrms-text-main, #1e293b); margin-bottom: 6px; }
+.org-detail-meta { font-size: 13px; color: var(--hrms-text-muted, #64748b); display: flex; gap: 16px; align-items: center; }
+.org-detail-meta span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Modal scoped */
+.hrms-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 1050; justify-content: center; align-items: center; }
+.hrms-modal.active { display: flex; }
+.hrms-modal-content { background: white; border-radius: 12px; width: 100%; max-width: 440px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); overflow: hidden; }
+.hrms-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--hrms-border, #f1f5f9); display: flex; justify-content: space-between; align-items: center; }
+.hrms-modal-title { font-size: 16px; font-weight: 600; color: var(--hrms-text-main, #1e293b); margin: 0; }
+.hrms-modal-close { cursor: pointer; color: var(--hrms-text-muted, #94a3b8); border: none; background: transparent; font-size: 18px; padding: 4px; }
+.hrms-modal-close:hover { color: var(--hrms-text-main, #334155); }
+.hrms-modal-body { padding: 20px; }
+.hrms-modal-footer { padding: 16px 20px; border-top: 1px solid var(--hrms-border, #f1f5f9); display: flex; justify-content: flex-end; gap: 12px; background: var(--hrms-background, #f8fafc); }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>Đơn vị tổ chức</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-sitemap"></i></span>
+            Đơn vị tổ chức
+        </h1>
+        <p class="hrms-page-subtitle">Danh sách phòng ban và nhân sự trực thuộc</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(successMsg))
+{
+    <div class="hrms-alert hrms-alert-success mb-4">
+        <i class="fa-solid fa-circle-check me-2"></i> @successMsg
+    </div>
+}
+@if (!string.IsNullOrEmpty(errorMsg))
+{
+    <div class="hrms-alert hrms-alert-danger mb-4">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> @errorMsg
+    </div>
+}
+
+<div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="hrms-kpi-value">@totalDepartments</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng số đơn vị / phòng ban</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="hrms-kpi-value">@totalEmployees</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Nhân viên trực thuộc</div>
+        </div>
+    </div>
+
+    <div class="hrms-card d-flex align-items-center justify-content-center text-center p-3" style="border: 1px dashed var(--hrms-border, #cbd5e1); background: var(--hrms-background, #f8fafc);">
+        <div style="font-size: 13px; color: var(--hrms-text-muted, #64748b); line-height: 1.5;">
+            <i class="fa-solid fa-circle-info" style="color: #94a3b8; margin-bottom: 6px; font-size: 18px; display: block;"></i>
+            <strong>P4-ARCH-01 (Deferred):</strong> Phòng ban được nhận diện từ trường <code>Employee.Department</code>. Không tự động sinh cây phân cấp đa cấp.
+        </div>
+    </div>
+</div>
+
+<div class="org-workspace">
+    <!-- Sidebar List -->
+    <div class="org-sidebar">
+        <div class="org-sidebar-header">
+            <div class="org-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchDept" placeholder="Tìm kiếm đơn vị..." onkeyup="filterDepartments()">
+            </div>
+        </div>
+        <div class="org-list" id="deptList">
+            @if (departments != null && departments.Any())
+            {
+                foreach (var dept in departments)
+                {
+                    var dName = (string)dept.GetType().GetProperty("Name").GetValue(dept, null);
+                    var dCount = (int)dept.GetType().GetProperty("EmployeeCount").GetValue(dept, null);
+                    var dManager = (string)dept.GetType().GetProperty("ManagerName").GetValue(dept, null) ?? "Chưa rõ";
+                    
+                    <div class="org-item" onclick="loadDepartmentDetails('@dName', @dCount, '@dManager', this)" data-name="@dName.ToLower()">
+                        <div class="org-item-name">@dName</div>
+                        <div class="org-item-count">@dCount</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div style="padding: 20px; text-align: center; color: var(--hrms-text-muted, #94a3b8); font-size: 13px;">
+                    Không có dữ liệu đơn vị.
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="org-detail">
+        <div class="org-detail-empty" id="detailEmpty">
+            <i class="fa-regular fa-hand-pointer"></i>
+            <div>Chọn một đơn vị bên trái để xem chi tiết</div>
+        </div>
+        
+        <div class="org-detail-content" id="detailContent">
+            <div class="org-detail-header">
+                <div>
+                    <div class="org-detail-title" id="lblDeptName">Tên Đơn Vị</div>
+                    <div class="org-detail-meta">
+                        <span><i class="fa-solid fa-users" style="color: #94a3b8;"></i> <b id="lblDeptCount">0</b> nhân viên</span>
+                        <span><i class="fa-solid fa-user-tie" style="color: #94a3b8;"></i> Quản lý: <b id="lblDeptManager">N/A</b></span>
+                    </div>
+                </div>
+                <div>
+                    <button class="hrms-btn hrms-btn-secondary" onclick="openRenameModal()"><i class="fa-solid fa-pen"></i> Đổi tên</button>
+                </div>
+            </div>
+            
+            <div class="hrms-table-wrap" style="flex: 1;">
+                <table class="hrms-table" id="empTable">
+                    <thead>
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Mã NV</th>
+                            <th>Chức danh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="empTableBody">
+                        <!-- Ajax data goes here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Modal -->
+<div id="renameModal" class="hrms-modal">
+    <div class="hrms-modal-content">
+        <div class="hrms-modal-header">
+            <h3 class="hrms-modal-title">Đổi tên đơn vị</h3>
+            <button type="button" class="hrms-modal-close" onclick="closeRenameModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="renameForm" method="post" action="@Url.Action("RenameDepartment", "AdminOrg")">
+            @Html.AntiForgeryToken()
+            <div class="hrms-modal-body">
+                <div class="hrms-alert hrms-alert-info mb-3" style="font-size: 13px; line-height: 1.5;">
+                    <i class="fa-solid fa-circle-info me-1"></i> Việc đổi tên sẽ tự động cập nhật trường phòng ban của tất cả nhân viên thuộc đơn vị này.
+                </div>
+                
+                <input type="hidden" id="oldNameInput" name="oldName" value="" />
+                
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tên đơn vị hiện tại</label>
+                    <input type="text" id="oldNameDisplay" class="hrms-form-control" readonly style="background: var(--hrms-background, #f8fafc); color: var(--hrms-text-muted, #64748b);" />
+                </div>
+                
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tên đơn vị mới <span style="color: var(--hrms-danger, #ef4444);">*</span></label>
+                    <input type="text" id="newNameInput" name="newName" class="hrms-form-control" required placeholder="Nhập tên mới..." />
+                </div>
+            </div>
+            <div class="hrms-modal-footer">
+                <button type="button" class="hrms-btn hrms-btn-ghost" onclick="closeRenameModal()">Hủy bỏ</button>
+                <button type="submit" class="hrms-btn hrms-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentDeptName = '';
+
+    function filterDepartments() {
+        var filter = document.getElementById("searchDept").value.toLowerCase();
+        var items = document.querySelectorAll(".org-item");
+        
+        items.forEach(function(item) {
+            var name = item.getAttribute("data-name");
+            if (name.includes(filter)) {
+                item.style.display = "flex";
+            } else {
+                item.style.display = "none";
+            }
+        });
+    }
+
+    function loadDepartmentDetails(deptName, count, manager, element) {
+        document.querySelectorAll('.org-item').forEach(el => el.classList.remove('active'));
+        if(element) element.classList.add('active');
+        
+        currentDeptName = deptName;
+
+        document.getElementById('detailEmpty').style.display = 'none';
+        document.getElementById('detailContent').style.display = 'flex';
+        
+        document.getElementById('lblDeptName').textContent = deptName;
+        document.getElementById('lblDeptCount').textContent = count;
+        document.getElementById('lblDeptManager').textContent = manager;
+        
+        var tbody = document.getElementById('empTableBody');
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--hrms-text-muted, #94a3b8); padding: 24px;"><i class="fa-solid fa-spinner fa-spin me-2"></i> Đang tải danh sách nhân viên...</td></tr>';
+        
+        fetch('@Url.Action("GetDepartmentEmployees", "AdminOrg")?deptName=' + encodeURIComponent(deptName))
+            .then(response => response.json())
+            .then(data => {
+                tbody.innerHTML = '';
+                if(data && data.length > 0) {
+                    data.forEach(emp => {
+                        var tr = document.createElement('tr');
+                        
+                        var nameHtml = `
+                            <div class="hrms-employee-cell">
+                                <div class="hrms-employee-avatar">
+                                    ${(emp.name ? emp.name.charAt(0).toUpperCase() : '?')}
+                                </div>
+                                <div>
+                                    <div class="hrms-employee-name">${emp.name || 'N/A'}</div>
+                                    <div style="font-size: 12px; color: var(--hrms-text-muted, #64748b);">${emp.email || 'N/A'}</div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        var td1 = document.createElement('td');
+                        td1.innerHTML = nameHtml;
+                        
+                        var td2 = document.createElement('td');
+                        td2.textContent = emp.employeeCode || '-';
+                        
+                        var td3 = document.createElement('td');
+                        td3.innerHTML = emp.jobTitle ? `<span class="hrms-badge hrms-badge-info">${emp.jobTitle}</span>` : '-';
+                        
+                        tr.appendChild(td1);
+                        tr.appendChild(td2);
+                        tr.appendChild(td3);
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--hrms-text-muted, #94a3b8); padding: 24px;">Không có nhân viên nào.</td></tr>';
+                }
+            })
+            .catch(error => {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--hrms-danger, #ef4444); padding: 24px;">Lỗi tải dữ liệu.</td></tr>';
+            });
+    }
+
+    function openRenameModal() {
+        if(!currentDeptName) return;
+        document.getElementById('oldNameInput').value = currentDeptName;
+        document.getElementById('oldNameDisplay').value = currentDeptName;
+        document.getElementById('newNameInput').value = '';
+        document.getElementById('renameModal').classList.add('active');
+    }
+
+    function closeRenameModal() {
+        document.getElementById('renameModal').classList.remove('active');
+    }
+</script>
+}

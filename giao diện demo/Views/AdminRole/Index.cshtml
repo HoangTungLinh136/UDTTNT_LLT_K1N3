@@ -1,0 +1,330 @@
+@{
+    ViewData["Title"] = "Vai trò & phân quyền";
+    var rolesSummary = ViewBag.RolesSummary as IEnumerable<dynamic>;
+    var users = ViewBag.Users as IEnumerable<dynamic>;
+    var totalRoles = rolesSummary?.Count() ?? 0;
+    var totalUsers = users?.Count() ?? 0;
+    var adminCount = users?.Count(u => u.Role == "Admin") ?? 0;
+    var successMsg = TempData["SuccessMessage"] as string;
+}
+
+<style>
+/* Modal scoped override */
+.hrms-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 1050; justify-content: center; align-items: center; }
+.hrms-modal.active { display: flex; }
+.hrms-modal-content { background: white; border-radius: 12px; width: 100%; max-width: 460px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); overflow: hidden; }
+.hrms-modal-header { padding: 16px 20px; border-bottom: 1px solid var(--hrms-border, #f1f5f9); display: flex; justify-content: space-between; align-items: center; }
+.hrms-modal-title { font-size: 16px; font-weight: 600; color: var(--hrms-text-main, #1e293b); margin: 0; }
+.hrms-modal-close { cursor: pointer; color: var(--hrms-text-muted, #94a3b8); border: none; background: transparent; font-size: 18px; padding: 4px; }
+.hrms-modal-close:hover { color: var(--hrms-text-main, #334155); }
+.hrms-modal-body { padding: 20px; }
+.hrms-modal-footer { padding: 16px 20px; border-top: 1px solid var(--hrms-border, #f1f5f9); display: flex; justify-content: flex-end; gap: 12px; background: var(--hrms-background, #f8fafc); }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;">
+                <i class="fa-solid fa-house" style="font-size:11px;"></i>
+            </a>
+            <span>/</span><span>Vai trò & phân quyền</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-shield-halved"></i></span>
+            Vai trò & phân quyền
+        </h1>
+        <p class="hrms-page-subtitle">Quản lý vai trò và phân bổ quyền hạn cho người dùng hệ thống</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(successMsg))
+{
+    <div class="hrms-alert hrms-alert-success mb-4">
+        <i class="fa-solid fa-circle-check me-2"></i> @successMsg
+    </div>
+}
+
+<!-- LƯU Ý PHÂN QUYỀN (ROLE ≠ DATA SCOPE) -->
+<div class="hrms-alert hrms-alert-info mb-4" style="background:#eff6ff; border-left:4px solid #3b82f6; border-radius:8px; padding:12px 16px; color:#1e40af; font-size:13px; line-height:1.6;">
+    <i class="fa-solid fa-circle-info me-2"></i>
+    <strong>Nguyên tắc phân quyền:</strong> Vai trò (Role) xác định tính năng người dùng được phép thao tác. Vai trò <code>Manager</code> hoặc <code>Leader</code> <strong>không đồng nghĩa</strong> với việc truy cập toàn bộ dữ liệu tổ chức; phạm vi dữ liệu được kiểm soát qua phân công quản lý trực tiếp.
+</div>
+
+<!-- Summary Cards -->
+<div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-tag"></i></div>
+            <div class="hrms-kpi-value">@totalRoles</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng vai trò hệ thống</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="hrms-kpi-value">@totalUsers</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Người dùng được gán role</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-shield"></i></div>
+            <div class="hrms-kpi-value">@adminCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tài khoản Quản trị viên</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="hrms-tabs mb-4">
+    <button class="hrms-tab active admin-module-tab" onclick="switchTab('role', this)"><i class="fa-solid fa-tag me-1"></i> Vai trò</button>
+    <button class="hrms-tab admin-module-tab" onclick="switchTab('userrole', this)"><i class="fa-solid fa-users-gear me-1"></i> Người dùng - Vai trò</button>
+</div>
+
+<!-- Tab Content: Role -->
+<div id="tab-role" class="tab-content" style="display: block;">
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2" style="max-width: 360px; flex: 1;">
+                <div style="position: relative; width: 100%;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <input type="text" id="searchRole" class="hrms-form-control" style="padding-left: 36px;" placeholder="Tìm kiếm vai trò..." onkeyup="filterTable('roleTable', 'searchRole')">
+                </div>
+            </div>
+            <div>
+                <a href="@Url.Action("Index", "AdminRole")" class="hrms-btn hrms-btn-secondary"><i class="fa-solid fa-rotate-right"></i> Làm mới</a>
+            </div>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table" id="roleTable">
+                <thead>
+                    <tr>
+                        <th>Tên vai trò</th>
+                        <th>Số người dùng</th>
+                        <th>Loại vai trò</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (rolesSummary != null && rolesSummary.Any())
+                    {
+                        foreach (var role in rolesSummary)
+                        {
+                            var roleName = (string)role.GetType().GetProperty("RoleName").GetValue(role, null);
+                            var count = (int)role.GetType().GetProperty("UserCount").GetValue(role, null);
+                            var roleType = roleName == "Admin" ? "Hệ thống" : "Tùy chỉnh";
+                            
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600; color: var(--hrms-text-main, #0f172a);">@roleName</div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-user" style="color: #94a3b8; font-size: 12px;"></i>
+                                        <span>@count người dùng</span>
+                                    </div>
+                                </td>
+                                <td><span class="hrms-badge @(roleName == "Admin" ? "hrms-badge-info" : "hrms-badge-neutral")">@roleType</span></td>
+                                <td><span class="hrms-badge hrms-badge-success"><i class="fa-solid fa-circle-check me-1" style="font-size: 10px;"></i> Đang hoạt động</span></td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+                                    <div class="hrms-empty-text">Chưa có dữ liệu vai trò.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            
+            <div style="padding: 12px 16px; border-top: 1px solid var(--hrms-border, #f1f5f9); text-align: right; font-size: 13px; color: var(--hrms-text-muted, #64748b);">
+                Tổng số: <b>@totalRoles</b> vai trò
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tab Content: User - Role -->
+<div id="tab-userrole" class="tab-content" style="display: none;">
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2" style="max-width: 360px; flex: 1;">
+                <div style="position: relative; width: 100%;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <input type="text" id="searchUser" class="hrms-form-control" style="padding-left: 36px;" placeholder="Tìm kiếm tài khoản, email..." onkeyup="filterTable('userTable', 'searchUser')">
+                </div>
+            </div>
+            <div>
+                <a href="@Url.Action("Index", "AdminRole")" class="hrms-btn hrms-btn-secondary"><i class="fa-solid fa-rotate-right"></i> Làm mới</a>
+            </div>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table" id="userTable">
+                <thead>
+                    <tr>
+                        <th>Người dùng</th>
+                        <th>Tên đăng nhập</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th>Quyền đăng nhập</th>
+                        <th class="col-actions" style="text-align: right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (users != null && users.Any())
+                    {
+                        foreach (var user in users)
+                        {
+                            var userId = (int)user.GetType().GetProperty("Id").GetValue(user, null);
+                            var uName = (string)user.GetType().GetProperty("FullName").GetValue(user, null) ?? "N/A";
+                            var username = (string)user.GetType().GetProperty("Username").GetValue(user, null);
+                            var email = (string)user.GetType().GetProperty("Email").GetValue(user, null);
+                            var roleName = (string)user.GetType().GetProperty("Role").GetValue(user, null);
+                            var canLogin = (bool)user.GetType().GetProperty("CanLogin").GetValue(user, null);
+                            
+                            var loginBadge = canLogin ? "hrms-badge-success" : "hrms-badge-neutral";
+                            var loginText = canLogin ? "Được phép" : "Không được phép";
+                            var loginIcon = canLogin ? "fa-check" : "fa-ban";
+
+                            <tr>
+                                <td>
+                                    <div class="hrms-employee-cell">
+                                        <div class="hrms-employee-avatar">
+                                            @(string.IsNullOrEmpty(uName) ? "?" : uName.Substring(0,1).ToUpper())
+                                        </div>
+                                        <div class="hrms-employee-name">@uName</div>
+                                    </div>
+                                </td>
+                                <td><code>@username</code></td>
+                                <td style="color: var(--hrms-text-muted, #64748b);">@email</td>
+                                <td><span class="hrms-badge hrms-badge-info">@roleName</span></td>
+                                <td><span class="hrms-badge @loginBadge"><i class="fa-solid @loginIcon me-1" style="font-size: 10px;"></i> @loginText</span></td>
+                                <td style="text-align: right;">
+                                    <button type="button" class="hrms-btn hrms-btn-sm hrms-btn-secondary" onclick="openEditModal(@userId, '@username', '@roleName', @(canLogin.ToString().ToLower()))">Sửa quyền</button>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-icon"><i class="fa-solid fa-users-slash"></i></div>
+                                    <div class="hrms-empty-text">Chưa có người dùng nào được gán quyền.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div style="padding: 12px 16px; border-top: 1px solid var(--hrms-border, #f1f5f9); text-align: right; font-size: 13px; color: var(--hrms-text-muted, #64748b);">
+                Tổng số: <b>@totalUsers</b> người dùng
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Permission Modal -->
+<div id="editPermissionModal" class="hrms-modal">
+    <div class="hrms-modal-content">
+        <div class="hrms-modal-header">
+            <h3 class="hrms-modal-title">Sửa phân quyền người dùng</h3>
+            <button type="button" class="hrms-modal-close" onclick="closeEditModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="editPermissionForm" method="post" action="@Url.Action("UpdateUserPermission", "AdminRole")">
+            @Html.AntiForgeryToken()
+            <div class="hrms-modal-body">
+                <input type="hidden" id="editUserId" name="userId" value="" />
+                
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tài khoản</label>
+                    <input type="text" id="editUsername" class="hrms-form-control" readonly style="background: var(--hrms-background, #f8fafc); color: var(--hrms-text-muted, #64748b); cursor: not-allowed;" />
+                </div>
+                
+                <div class="mb-3">
+                    <label class="hrms-form-label">Vai trò</label>
+                    <select id="editRole" name="newRole" class="hrms-form-select" required>
+                        @foreach (var roleName in (IEnumerable<string>)(ViewBag.AvailableRoles ?? Array.Empty<string>()))
+                        {
+                            <option value="@roleName">@roleName</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-check d-flex align-items-center gap-2 mt-3">
+                    <input type="checkbox" id="editCanLogin" name="canLoginStr" value="true" class="form-check-input" style="cursor: pointer;" />
+                    <label for="editCanLogin" class="form-check-label" style="cursor: pointer; margin-bottom: 0;">Cho phép đăng nhập hệ thống</label>
+                </div>
+            </div>
+            <div class="hrms-modal-footer">
+                <button type="button" class="hrms-btn hrms-btn-ghost" onclick="closeEditModal()">Hủy bỏ</button>
+                <button type="submit" class="hrms-btn hrms-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function switchTab(tabId, btn) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.getElementById('tab-' + tabId).style.display = 'block';
+        
+        document.querySelectorAll('.admin-module-tab').forEach(el => el.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    function filterTable(tableId, inputId) {
+        var input, filter, table, tr, td, i, txtValue;
+        input = document.getElementById(inputId);
+        filter = input.value.toLowerCase();
+        table = document.getElementById(tableId);
+        tr = table.getElementsByTagName("tr");
+
+        for (i = 1; i < tr.length; i++) {
+            tr[i].style.display = "none";
+            td = tr[i].getElementsByTagName("td");
+            for (var j = 0; j < td.length; j++) {
+                if (td[j]) {
+                    txtValue = td[j].textContent || td[j].innerText;
+                    if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    function openEditModal(userId, username, role, canLogin) {
+        document.getElementById('editUserId').value = userId;
+        document.getElementById('editUsername').value = username;
+        document.getElementById('editRole').value = role || 'Employee';
+        document.getElementById('editCanLogin').checked = canLogin;
+        
+        document.getElementById('editPermissionModal').classList.add('active');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editPermissionModal').classList.remove('active');
+    }
+</script>
+}

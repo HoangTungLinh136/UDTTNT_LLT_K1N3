@@ -1,47 +1,66 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
 using System.Collections.Generic;
 using giao_dien_demo.Models;
+using Microsoft.EntityFrameworkCore;
+using giao_dien_demo.Data;
+using Microsoft.AspNetCore.Authorization;
+using giao_dien_demo.Authorization;
+using giao_dien_demo.Services;
 
 namespace giao_dien_demo.Controllers
 {
+    [Authorize]
     public class DashboardController : Controller
     {
-        // ================== DASHBOARD ==================
-        public IActionResult Index()
+        private readonly ApplicationDbContext _context;
+        private readonly IManagerScopeService _managerScope;
+        private readonly ILeadershipScopeService _leadershipScope;
+
+        public DashboardController(
+            ApplicationDbContext context,
+            IManagerScopeService managerScope,
+            ILeadershipScopeService leadershipScope)
         {
-            var user = HttpContext.Session.GetString("User");
-            var role = HttpContext.Session.GetString("Role");
+            _context = context;
+            _managerScope = managerScope;
+            _leadershipScope = leadershipScope;
+        }
 
-            // chưa đăng nhập
-            if (string.IsNullOrEmpty(user))
-                return RedirectToAction("Login", "Account");
+        private IQueryable<Employee>? GetScopedEmployeeQuery()
+        {
+            var role = CurrentActor.Role(User);
+            if (role == AppRoles.HR)
+            {
+                return _context.Employees.AsQueryable();
+            }
+            if (role == AppRoles.Manager)
+            {
+                return _managerScope.GetScopedEmployeeQuery();
+            }
+            if (role == AppRoles.Leader)
+            {
+                return _leadershipScope.GetScopedEmployeeQuery();
+            }
+            return null; // Employee and Admin are not granted directory access on this HR business dashboard
+        }
 
-            // chỉ HR được vào dashboard này
-            if (role != "HR")
-                return RedirectToAction("Login", "Account");
+        // ================== DASHBOARD ==================
+        public async Task<IActionResult> Index()
+        {
+            var query = GetScopedEmployeeQuery();
+            if (query == null)
+            {
+                return Forbid();
+            }
 
-            // giữ nguyên dữ liệu cũ
-            var totalEmployees = EmployeeController.list.Count;
+            var employees = await query.ToListAsync();
+            var totalEmployees = employees.Count;
 
-            // danh sách người nghỉ việc từ LeaveController
-            var resignedNames = LeaveController.list
-                .Select(x => x.EmployeeName)
-                .Distinct()
-                .ToList();
+            var workingEmployees = employees.Count(e => e.Status == "Active" || e.Status == "Probation");
+            var resignedEmployees = employees.Count(e => e.Status == "Offboarded" || e.Status == "Terminated");
 
-            // số nghỉ việc
-            var resignedEmployees = resignedNames.Count;
-
-            // số đang làm = tổng - nghỉ việc
-            var workingEmployees = totalEmployees - resignedEmployees;
-
-            // tránh âm số
-            if (workingEmployees < 0)
-                workingEmployees = 0;
-
-            // truyền qua view
             ViewBag.Total = totalEmployees;
             ViewBag.Working = workingEmployees;
             ViewBag.Leave = resignedEmployees;
@@ -50,38 +69,28 @@ namespace giao_dien_demo.Controllers
         }
 
         // ================== EMPLOYEE LIST ==================
-        public IActionResult EmployeeList(string status)
+        public async Task<IActionResult> EmployeeList(string status)
         {
-            var user = HttpContext.Session.GetString("User");
-            var role = HttpContext.Session.GetString("Role");
+            var query = GetScopedEmployeeQuery();
+            if (query == null)
+            {
+                return Forbid();
+            }
 
-            if (string.IsNullOrEmpty(user))
-                return RedirectToAction("Login", "Account");
+            var employees = await query.ToListAsync();
 
-            // chỉ HR được xem
-            if (role != "HR")
-                return RedirectToAction("Login", "Account");
-
-            var employees = EmployeeController.list;
-
-            List<Employee> result = new List<Employee>();
-
-            // lấy danh sách nghỉ việc
-            var resignedNames = LeaveController.list
-                .Select(x => x.EmployeeName)
-                .Distinct()
-                .ToList();
+            List<Employee> result;
 
             if (status == "working")
             {
                 result = employees
-                    .Where(e => !resignedNames.Contains(e.Name))
+                    .Where(e => e.Status == "Active" || e.Status == "Probation")
                     .ToList();
             }
             else if (status == "quit")
             {
                 result = employees
-                    .Where(e => resignedNames.Contains(e.Name))
+                    .Where(e => e.Status == "Offboarded" || e.Status == "Terminated")
                     .ToList();
             }
             else

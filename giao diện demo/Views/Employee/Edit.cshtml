@@ -1,208 +1,222 @@
 ﻿@model giao_dien_demo.Models.Employee
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@{
+    ViewData["Title"] = "Chỉnh sửa nhân viên";
+}
 
 <style>
-    body {
-        background: #f5f7fa;
-    }
+/* ============================================================
+   MODULE NHÂN VIÊN — EDIT PAGE STYLES
+   ============================================================ */
+.employee-page { padding: 0; }
 
-    .form-container {
-        width: 500px;
-        margin: 50px auto;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        background: white;
-        animation: fadeIn 0.5s ease;
-    }
+.employee-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.employee-header-left { display: flex; flex-direction: column; gap: 6px; }
+.employee-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.employee-page-title .employee-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+.employee-back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px;
+    font-weight: 600; color: #64748b; text-decoration: none; transition: 0.2s;
+}
+.employee-back-link:hover { color: #3b82f6; }
 
-    h2 {
-        text-align: center;
-        margin-bottom: 20px;
-    }
+/* --- FORM CARD --- */
+.employee-form-card {
+    background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    border: 1px solid #f1f5f9; overflow: hidden; max-width: 700px; margin: 0 auto;
+}
+.employee-form-header {
+    padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc; display: flex; justify-content: space-between; align-items: center;
+}
+.employee-form-title { font-size: 16px; font-weight: 700; color: #0f172a; margin: 0; }
+.employee-form-sub { font-size: 13px; color: #64748b; margin-top: 4px; }
+.employee-code-badge { background: #e2e8f0; color: #334155; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 13px; }
 
-    label {
-        font-weight: bold;
-        display: block;
-        margin-top: 10px;
-    }
+.employee-form-body { padding: 24px; }
+.employee-form-footer {
+    padding: 16px 24px; border-top: 1px solid #f1f5f9; background: #f8fafc;
+    display: flex; justify-content: flex-end; gap: 12px;
+}
 
-    input, select {
-        width: 100%;
-        padding: 10px;
-        margin: 5px 0 5px 0;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        transition: 0.3s;
-        box-sizing: border-box;
-        font-family: inherit;
-        font-size: 15px;
-    }
-
-    input:focus, select:focus {
-        border-color: #4A90E2;
-        box-shadow: 0 0 5px #4A90E2;
-        outline: none;
-    }
-        
-    .note-text {
-        font-size: 12px;
-        color: #7f8c8d;
-        margin-bottom: 10px;
-        display: block;
-        font-style: italic;
-    }
-
-    .btn-save {
-        width: 100%;
-        padding: 12px;
-        margin-top: 15px;
-        border: none;
-        border-radius: 8px;
-        background: #4A90E2;
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.3s;
-        font-size: 16px;
-    }
-
-    .btn-save:hover {
-        background: #357ABD;
-        transform: scale(1.02);
-    }
-
-    .back-link {
-        display: block;
-        text-align: center;
-        margin-top: 15px;
-        color: #4A90E2;
-        text-decoration: none;
-    }
-
-    .back-link:hover {
-        text-decoration: underline;
-    }
-
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+/* --- FORM ELEMENTS --- */
+.form-group { margin-bottom: 20px; }
+.form-label {
+    display: block; font-size: 13.5px; font-weight: 600; color: #334155; margin-bottom: 8px;
+}
+.form-control, .form-select {
+    width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; color: #334155; background: #fff; transition: all 0.2s; outline: none;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.form-control[readonly] { background: #f1f5f9; color: #64748b; }
+.form-text { font-size: 12px; color: #94a3b8; margin-top: 6px; }
 </style>
 
-<div class="form-container">
-    <h2>✏️ Sửa nhân viên & Phụ cấp</h2>
+<div class="employee-page">
 
-    <form id="editForm" method="post">
-        <input type="hidden" name="Id" value="@Model.Id" />
-        <input type="hidden" name="EmployeeCode" value="@Model.EmployeeCode" />
+    <div class="employee-page-header">
+        <div class="employee-header-left">
+            <a href="/Employee/Index" class="employee-back-link">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+            <h1 class="employee-page-title">
+                <span class="employee-icon"><i class="fas fa-user-edit"></i></span>
+                Chỉnh sửa nhân viên
+            </h1>
+        </div>
+    </div>
 
-        <label>Tên nhân viên:</label>
-        <input name="Name" value="@Model.Name" required />
-
-        <label>Phòng ban:</label>
-        <input name="Department" value="@Model.Department" required />
-
-        <label>Trạng thái hợp đồng:</label>
-        <select name="Position" id="PositionSelect" required>
-            <option value="Chính thức">Chính thức</option>
-            <option value="Thử việc">Thử việc</option>
-            <option value="Thực tập">Thực tập</option>
-            <option value="Thời vụ">Thời vụ</option>
-        </select>
-
-        <label>Vị trí công việc (Chức vụ):</label>
-        <select name="JobTitle" id="JobTitleSelect" required>
-            <option value="" disabled>-- Chọn chức vụ --</option>
+    <div class="employee-form-card">
+        <div class="employee-form-header">
+            <div>
+                <h3 class="employee-form-title">Thông tin hồ sơ</h3>
+                <div class="employee-form-sub">Cập nhật thông tin nhân viên trong hệ thống.</div>
+            </div>
+            <div class="employee-code-badge">Mã NV: @(string.IsNullOrWhiteSpace(Model.EmployeeCode) ? "Chưa được cấp mã" : Model.EmployeeCode)</div>
+        </div>
+        <form id="editForm" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" value="@Model.Id" />
             
-            <optgroup label="1. Ban Giám đốc">
-                <option value="Giám đốc điều hành (CEO)">Giám đốc điều hành (CEO)</option>
-                <option value="Giám đốc Kỹ thuật (CTO)">Giám đốc Kỹ thuật (CTO)</option>
-                <option value="Giám đốc Nhân sự (CHRO)">Giám đốc Nhân sự (CHRO)</option>
-            </optgroup>
-            
-            <optgroup label="2. Cấp Quản lý">
-                @* 🔥 ĐÃ THÊM: Vị trí Quản trị viên hệ thống *@
-                <option value="Quản trị viên hệ thống (System Admin)">Quản trị viên hệ thống (System Admin)</option>
-                <option value="Quản lý Dự án (PM)">Quản lý Dự án (PM)</option>
-                <option value="Trưởng phòng Kỹ thuật">Trưởng phòng Kỹ thuật</option>
-                <option value="Trưởng phòng Nhân sự (HR)">Trưởng phòng Nhân sự (HR)</option>
-                <option value="Trưởng phòng Kinh doanh (Sales)">Trưởng phòng Kinh doanh (Sales)</option>
-            </optgroup>
-            
-            <optgroup label="3. Cấp Nhân viên">
-                <option value="Lập trình viên (Senior)">Lập trình viên (Senior)</option>
-                <option value="Lập trình viên (Junior/Mid)">Lập trình viên (Junior/Mid)</option>
-                <option value="Phân tích nghiệp vụ (BA)">Phân tích nghiệp vụ (BA)</option>
-                <option value="Kiểm thử phần mềm (Tester/QA)">Kiểm thử phần mềm (Tester/QA)</option>
-            </optgroup>
-            
-            <optgroup label="4. Khối Back-Office">
-                <option value="Chuyên viên Nhân sự">Chuyên viên Nhân sự</option>
-                <option value="Kế toán viên">Kế toán viên</option>
-                <option value="Nhân viên Kinh doanh (Sales)">Nhân viên Kinh doanh (Sales)</option>
-                <option value="Thực tập sinh (Intern)">Thực tập sinh (Intern)</option>
-            </optgroup>
-        </select>
-
-        <hr style="margin: 20px 0; border-top: 1px dashed #ccc;" />
-
-        <label style="color: #e74c3c;">Lương cơ bản (VNĐ):</label>
-        <input name="Salary" value="@Model.Salary" required type="number" />
-
-        <label style="color: #27ae60;">Phụ cấp chức vụ (VNĐ):</label>
-        <input name="PositionAllowance" value="@Model.PositionAllowance" type="number" />
-        <span class="note-text">VD: Trưởng phòng nhập 3000000</span>
-
-        <label style="color: #27ae60;">Phụ cấp độc hại / Nguy hiểm (VNĐ):</label>
-        <input name="HazardousAllowance" value="@Model.HazardousAllowance" type="number" />
-        <span class="note-text">VD: Mức 1 nhập 1000000</span>
-
-        <label style="color: #27ae60;">Hệ số khu vực (Vùng khó khăn):</label>
-        <input name="RegionalAllowanceSystem" value="@Model.RegionalAllowanceSystem" type="number" step="0.1" min="0" max="1" />
-        <span class="note-text">VD: Nhập 0.1 đến 0.7 (Hệ thống tự nhân với lương CB)</span>
-
-        <button type="submit" class="btn-save">💾 Cập nhật dữ liệu</button>
-    </form>
-
-    <a href="@(Context.Request.Query["returnUrl"].ToString() == "" 
-                              ? "/Employee"
-                              : Context.Request.Query["returnUrl"].ToString())"
-           class="back-link">
-        ⬅ Quay lại
-    </a>
+            <div class="employee-form-body">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Tên nhân viên <span class="text-danger">*</span></label>
+                            <input name="Name" value="@Model.Name" class="form-control" placeholder="Nhập họ và tên..." required autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Phòng ban <span class="text-danger">*</span></label>
+                            <input name="Department" value="@Model.Department" class="form-control" placeholder="Ví dụ: Ban Giám đốc hoặc Phòng IT" required autocomplete="off" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Trạng thái hợp đồng <span class="text-danger">*</span></label>
+                            <select name="Position" class="form-select" required>
+                                <option value="Chính thức" selected="@(Model.Position == "Chính thức")">Chính thức</option>
+                                <option value="Thử việc" selected="@(Model.Position == "Thử việc")">Thử việc</option>
+                                <option value="Thực tập" selected="@(Model.Position == "Thực tập")">Thực tập</option>
+                                <option value="Thời vụ" selected="@(Model.Position == "Thời vụ")">Thời vụ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Vị trí công việc (Chức vụ) <span class="text-danger">*</span></label>
+                            <select name="JobTitle" class="form-select" required>
+                                <option value="" disabled selected="@(string.IsNullOrEmpty(Model.JobTitle))">-- Chọn chức vụ --</option>
+                                <optgroup label="1. Ban Giám đốc">
+                                    <option value="Giám đốc điều hành (CEO)" selected="@(Model.JobTitle == "Giám đốc điều hành (CEO)")">Giám đốc điều hành (CEO)</option>
+                                    <option value="Giám đốc Kỹ thuật (CTO)" selected="@(Model.JobTitle == "Giám đốc Kỹ thuật (CTO)")">Giám đốc Kỹ thuật (CTO)</option>
+                                    <option value="Giám đốc Nhân sự (CHRO)" selected="@(Model.JobTitle == "Giám đốc Nhân sự (CHRO)")">Giám đốc Nhân sự (CHRO)</option>
+                                </optgroup>
+                                <optgroup label="2. Cấp Quản lý">
+                                    <option value="Quản trị viên hệ thống (System Admin)" selected="@(Model.JobTitle == "Quản trị viên hệ thống (System Admin)")">Quản trị viên hệ thống (System Admin)</option>
+                                    <option value="Quản lý Dự án (PM)" selected="@(Model.JobTitle == "Quản lý Dự án (PM)")">Quản lý Dự án (PM)</option>
+                                    <option value="Trưởng phòng Kỹ thuật" selected="@(Model.JobTitle == "Trưởng phòng Kỹ thuật")">Trưởng phòng Kỹ thuật</option>
+                                    <option value="Trưởng phòng Nhân sự (HR)" selected="@(Model.JobTitle == "Trưởng phòng Nhân sự (HR)")">Trưởng phòng Nhân sự (HR)</option>
+                                    <option value="Trưởng phòng Kinh doanh (Sales)" selected="@(Model.JobTitle == "Trưởng phòng Kinh doanh (Sales)")">Trưởng phòng Kinh doanh (Sales)</option>
+                                </optgroup>
+                                <optgroup label="3. Cấp Nhân viên">
+                                    <option value="Lập trình viên (Senior)" selected="@(Model.JobTitle == "Lập trình viên (Senior)")">Lập trình viên (Senior)</option>
+                                    <option value="Lập trình viên (Junior/Mid)" selected="@(Model.JobTitle == "Lập trình viên (Junior/Mid)")">Lập trình viên (Junior/Mid)</option>
+                                    <option value="Phân tích nghiệp vụ (BA)" selected="@(Model.JobTitle == "Phân tích nghiệp vụ (BA)")">Phân tích nghiệp vụ (BA)</option>
+                                    <option value="Kiểm thử phần mềm (Tester/QA)" selected="@(Model.JobTitle == "Kiểm thử phần mềm (Tester/QA)")">Kiểm thử phần mềm (Tester/QA)</option>
+                                </optgroup>
+                                <optgroup label="4. Khối Back-Office">
+                                    <option value="Chuyên viên Nhân sự" selected="@(Model.JobTitle == "Chuyên viên Nhân sự")">Chuyên viên Nhân sự</option>
+                                    <option value="Kế toán viên" selected="@(Model.JobTitle == "Kế toán viên")">Kế toán viên</option>
+                                    <option value="Nhân viên Kinh doanh (Sales)" selected="@(Model.JobTitle == "Nhân viên Kinh doanh (Sales)")">Nhân viên Kinh doanh (Sales)</option>
+                                    <option value="Thực tập sinh (Intern)" selected="@(Model.JobTitle == "Thực tập sinh (Intern)")">Thực tập sinh (Intern)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Trình độ học vấn</label>
+                            <select name="AcademicLevel" class="form-select">
+                                <option value="" selected="@(string.IsNullOrEmpty(Model.AcademicLevel))">-- Chưa xác định --</option>
+                                <option value="Phổ thông" selected="@(Model.AcademicLevel == "Phổ thông")">Phổ thông</option>
+                                <option value="Trung cấp" selected="@(Model.AcademicLevel == "Trung cấp")">Trung cấp</option>
+                                <option value="Cao đẳng" selected="@(Model.AcademicLevel == "Cao đẳng")">Cao đẳng</option>
+                                <option value="Đại học" selected="@(Model.AcademicLevel == "Đại học")">Đại học</option>
+                                <option value="Sau đại học" selected="@(Model.AcademicLevel == "Sau đại học")">Sau đại học (Thạc sĩ / Tiến sĩ)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Lương cơ bản (VNĐ) <span class="text-danger">*</span></label>
+                            <input name="Salary" value="@Math.Round(Model.Salary, 0)" type="number" class="form-control" required />
+                            <div class="form-text">Mức lương cơ bản dùng để tính lương thực tế.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="employee-form-footer">
+                <a href="/Employee/Index" class="btn btn-outline-secondary" style="border-radius:10px; font-weight: 500;">Hủy bỏ</a>
+                <button type="submit" class="btn btn-primary" style="border-radius:10px; font-weight: 600;">
+                    <i class="fas fa-save me-1"></i> Cập nhật thay đổi
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<script>
-    // 🔥 TỰ ĐỘNG CHỌN ĐÚNG DỮ LIỆU CŨ KHI MỞ FORM
-    document.addEventListener("DOMContentLoaded", function() {
-        let currentPosition = '@Html.Raw(Model.Position)';
-        let currentJobTitle = '@Html.Raw(Model.JobTitle)';
-        
-        if(currentPosition) {
-            document.getElementById('PositionSelect').value = currentPosition;
-        }
-        if(currentJobTitle) {
-            document.getElementById('JobTitleSelect').value = currentJobTitle;
-        }
-    });
-
-    document.getElementById("editForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        Swal.fire({
-            title: 'Xác nhận?',
-            text: "Bạn muốn lưu các cập nhật về chức vụ, lương và phụ cấp?",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Cập nhật',
-            cancelButtonText: 'Hủy',
-            confirmButtonColor: '#4A90E2'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                e.target.submit();
-            }
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.getElementById("editForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Xác nhận cập nhật?',
+                text: 'Bạn có chắc chắn muốn lưu các thay đổi này?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3b82f6',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Lưu thay đổi',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    e.target.submit();
+                }
+            });
         });
-    });
-</script>
+    </script>
+}

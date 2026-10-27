@@ -1,0 +1,791 @@
+@model List<giao_dien_demo.Models.TransferRecord>
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Quyết định thuyên chuyển";
+    var role = ViewBag.Role as string ?? Context.Session.GetString("Role") ?? "";
+
+    var departments = ViewBag.Departments as List<string> ?? new List<string>();
+    string searchName   = ViewBag.CurrentSearch as string ?? "";
+    string currentDept  = ViewBag.CurrentDept   as string ?? "";
+    string currentStatus= ViewBag.CurrentStatus as string ?? "";
+    string currentEffectiveDate = ViewBag.CurrentEffectiveDate as string ?? "";
+
+    int statPending     = ViewBag.StatPending      ?? 0;
+    int statApproved    = ViewBag.StatApproved     ?? 0;
+    int statUpcoming    = ViewBag.StatUpcoming     ?? 0;
+    int statRejected    = ViewBag.StatRejected     ?? 0;
+    int statTotal       = ViewBag.StatTotal ?? Model.Count;
+    int statPendingHR   = ViewBag.StatPendingHR ?? statPending;
+    int statPendingLead = ViewBag.StatPendingLeader ?? 0;
+    int statEffective   = ViewBag.StatEffective ?? 0;
+    int pageNumber      = ViewBag.PageNumber ?? 1;
+    int totalPages      = ViewBag.TotalPages ?? 0;
+    int totalItems      = ViewBag.TotalItems ?? Model.Count;
+
+    bool hasFilter = !string.IsNullOrWhiteSpace(searchName) ||
+                     !string.IsNullOrWhiteSpace(currentDept) ||
+                     !string.IsNullOrWhiteSpace(currentStatus) ||
+                     !string.IsNullOrWhiteSpace(currentEffectiveDate);
+}
+
+<style>
+/* --- PAGE WRAPPER --- */
+.ob-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* --- PAGE HEADER --- */
+.ob-page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.ob-page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 10px; }
+.ob-page-title .ob-icon { width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 17px; flex-shrink: 0; }
+.ob-header-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+.ob-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* --- STATISTICS CARDS --- */
+.ob-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.ob-stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.ob-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ob-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+.ob-stat-icon.indigo { background: #eef2ff; color: #6366f1; }
+.ob-stat-icon.red    { background: #fef2f2; color: #ef4444; }
+.ob-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.ob-stat-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+.ob-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+/* --- TOOLBAR --- */
+.ob-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ob-filter-bar { background: #fff; border-radius: 12px; padding: 14px 18px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ob-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 340px; }
+.ob-search-wrap .sicon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+.ob-search-input { width: 100%; padding: 9px 12px 9px 34px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; outline: none; transition: all 0.2s; }
+.ob-search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.ob-filter-select, .ob-filter-date { padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; min-width: 140px; outline: none; }
+.ob-filter-select:focus, .ob-filter-date:focus { border-color: #3b82f6; }
+
+/* --- BUTTONS --- */
+.btn-ob-primary { background: #3b82f6; color: #fff; border: none; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: background 0.2s; }
+.btn-ob-primary:hover { background: #2563eb; color: #fff; }
+.btn-ob-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-outline:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.btn-ob-reset { background: #fff; color: #64748b; border: 1px solid #e2e8f0; padding: 9px 14px; border-radius: 9px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-reset:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+/* --- TABLE CARD --- */
+.ob-table-card { background: #fff; border-radius: 14px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-table-header { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.ob-table-title { font-size: 14px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.count-chip { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; border-radius: 20px; padding: 2px 9px; }
+.ob-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ob-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; padding: 11px 14px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.ob-table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+.ob-table tbody tr:hover td { background: #f8fafc; }
+
+/* --- EMPLOYEE CELL --- */
+.emp-cell { display: flex; align-items: center; gap: 10px; }
+.emp-av { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, #e2e8f0, #cbd5e1); display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 700; font-size: 14px; overflow: hidden; }
+.emp-av img { width: 100%; height: 100%; object-fit: cover; }
+.emp-name { font-weight: 600; color: #0f172a; font-size: 13.5px; display: block; }
+.emp-code { font-size: 11.5px; color: #64748b; display: block; margin-top: 1px; }
+
+/* --- STATUS BADGES --- */
+.badge-status { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; display: inline-block; }
+.badge-draft { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.badge-pending { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.badge-approved { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.badge-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.badge-cancelled { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+
+/* --- EFFECTIVE BADGES --- */
+.badge-eff { font-size: 11.5px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+.badge-eff-upcoming { background: #eff6ff; color: #1d4ed8; }
+.badge-eff-active { background: #ecfdf5; color: #059669; }
+
+/* --- DRAWER OVERLAY --- */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); }
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer-panel { position: fixed; top: 0; right: -600px; width: 100%; max-width: 550px; height: 100%; background: #fff; z-index: 9999; box-shadow: -4px 0 24px rgba(0,0,0,0.1); transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+.drawer-panel.open { right: 0; }
+.drawer-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+.drawer-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px; }
+.drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff; color: #64748b; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.drawer-close:hover { background: #f1f5f9; color: #0f172a; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; justify-content: flex-end; gap: 12px; }
+
+/* --- FORM STYLES --- */
+.form-section { background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 24px; }
+.form-section-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.form-group label span.req { color: #ef4444; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: #334155; background: #fff; transition: all 0.2s; }
+.form-control:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-control[readonly] { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Dropdown Search Box */
+.employee-search-container { position: relative; }
+.employee-dropdown { position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10000; display: none; margin-top: 4px; }
+.employee-dropdown.show { display: block; }
+.emp-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+.emp-item:hover { background: #f8fafc; }
+.emp-item-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; overflow: hidden; }
+.emp-item-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.emp-item-info { display: flex; flex-direction: column; }
+.emp-item-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+.emp-item-code { font-size: 12px; color: #64748b; }
+.emp-item-pos { font-size: 12px; color: #64748b; }
+
+/* History Timeline */
+.timeline { position: relative; padding-left: 20px; margin-top: 10px; border-left: 2px solid #e2e8f0; }
+.timeline-item { position: relative; margin-bottom: 16px; padding-left: 14px; }
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-dot { position: absolute; left: -25px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; border: 2px solid #fff; }
+.timeline-time { font-size: 11.5px; color: #64748b; margin-bottom: 2px; }
+.timeline-content { background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.timeline-content strong { color: #0f172a; }
+.timeline-content p { margin: 4px 0 0; font-size: 13px; color: #475569; }
+
+/* Grid for old/new */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.compare-box { background: #fff; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.compare-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+.compare-val { font-size: 14px; color: #0f172a; margin-bottom: 4px; font-weight: 500; }
+.compare-val span { color: #64748b; width: 70px; display: inline-block; font-size: 12.5px; font-weight: 400; }
+</style>
+
+<div class="ob-page">
+    
+    <!-- HEADER -->
+    <div class="ob-page-header">
+        <div>
+            <h1 class="ob-page-title">
+                <div class="ob-icon"><i class="fas fa-briefcase"></i></div>
+                Quản lý Thuyên chuyển
+            </h1>
+            <div class="ob-header-subtitle">Theo dõi và quản lý quyết định thuyên chuyển, điều chuyển nhân sự</div>
+        </div>
+        <div class="ob-header-actions">
+            @if (role == "Manager") { <button class="btn-ob-primary" onclick="openCreateDrawer()"><i class="fas fa-plus"></i> Tạo thuyên chuyển</button> }
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="ob-stats-grid">
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon amber"><i class="fas fa-clock"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Tổng hồ sơ</div><div class="ob-stat-value">@statTotal</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon blue"><i class="fas fa-check-circle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Chờ HR</div><div class="ob-stat-value">@statPendingHR</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon indigo"><i class="fas fa-calendar-alt"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Chờ Leader</div><div class="ob-stat-value">@statPendingLead</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon red"><i class="fas fa-times-circle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đã có hiệu lực</div><div class="ob-stat-value">@statEffective</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <form method="get" action="@Url.Action("Index", "Transfer")" class="ob-filter-bar">
+        <div class="ob-search-wrap">
+            <i class="fas fa-search sicon"></i>
+            <input type="text" name="searchName" value="@searchName" class="ob-search-input" placeholder="Tìm theo Mã NV, Tên NV, Số QĐ..." />
+        </div>
+        <select name="department" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Tất cả phòng ban mới --</option>
+            @foreach(var dp in departments)
+            {
+                if(currentDept == dp) { <option value="@dp" selected>@dp</option> }
+                else { <option value="@dp">@dp</option> }
+            }
+        </select>
+        <select name="status" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Tất cả trạng thái --</option>
+            <!option value="DRAFT" @(currentStatus == "DRAFT" ? "selected" : "")>Bản nháp</!option>
+            <!option value="PENDING_HR_REVIEW" @(currentStatus == "PENDING_HR_REVIEW" ? "selected" : "")>Chờ HR xác minh</!option>
+            <!option value="PENDING_LEADER_APPROVAL" @(currentStatus == "PENDING_LEADER_APPROVAL" ? "selected" : "")>Chờ Lãnh đạo duyệt</!option>
+            <!option value="APPROVED" @(currentStatus == "APPROVED" ? "selected" : "")>Đã duyệt</!option>
+            <!option value="EFFECTIVE" @(currentStatus == "EFFECTIVE" ? "selected" : "")>Có hiệu lực</!option>
+            <!option value="REJECTED" @(currentStatus == "REJECTED" ? "selected" : "")>Từ chối</!option>
+            <!option value="CANCELLED" @(currentStatus == "CANCELLED" ? "selected" : "")>Đã hủy</!option>
+        </select>
+        <input type="date" name="effectiveDate" class="ob-filter-date" value="@currentEffectiveDate" onchange="this.form.submit()" />
+        
+        <button type="submit" class="btn-ob-primary" style="padding: 9px 12px;"><i class="fas fa-filter"></i> Lọc</button>
+        @if(hasFilter)
+        {
+            <a href="@Url.Action("Index", "Transfer")" class="btn-ob-reset"><i class="fas fa-times"></i> Xóa lọc</a>
+        }
+    </form>
+
+    <!-- TABLE -->
+    <div class="ob-table-card">
+        <div class="ob-table-header">
+            <div class="ob-table-title">
+                <i class="fas fa-list-ul" style="color:#64748b"></i>
+                Danh sách quyết định
+                <span class="count-chip">@totalItems</span>
+            </div>
+        </div>
+        <div class="ob-table-wrap">
+            <table class="ob-table">
+                <thead>
+                    <tr>
+                        <th>Nhân viên</th>
+                        <th>Phòng ban mới</th>
+                        <th>Chức vụ mới</th>
+                        <th>Ngày hiệu lực</th>
+                        <th>Trạng thái duyệt</th>
+                        <th>Hiệu lực</th>
+                        <th style="text-align:center; width:80px">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if(Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 30px; color: #94a3b8;">
+                                <i class="fas fa-inbox fa-3x" style="margin-bottom:10px; color:#cbd5e1;"></i><br/>
+                                Chưa có hồ sơ thuyên chuyển nào.
+                            </td>
+                        </tr>
+                    }
+                    @foreach(var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="emp-cell">
+                                    <div class="emp-av">
+                                        @if(!string.IsNullOrEmpty(item.Employee?.AvatarPath))
+                                        {
+                                            <img src="@item.Employee.AvatarPath" alt="Avatar"/>
+                                        }
+                                        else
+                                        {
+                                            <span>@(string.IsNullOrWhiteSpace(item.EmployeeNameSnapshot) ? "?" : item.EmployeeNameSnapshot.Substring(0,1).ToUpper())</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <a href="/Employee/Details/@item.EmployeeId" class="emp-name text-decoration-none" style="color:#0f172a;">@item.EmployeeNameSnapshot</a>
+                                        <span class="emp-code">@item.EmployeeCodeSnapshot</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span style="font-weight: 500;">@item.TargetDepartment</span></td>
+                            <td>@item.TargetPosition</td>
+                            <td>@item.EffectiveDate.ToString("dd/MM/yyyy")</td>
+                            <td>
+                                @if(item.ApprovalStatus == "DRAFT") { <span class="badge-status badge-draft">Bản nháp</span> }
+                                else if(item.ApprovalStatus == "PENDING_HR_REVIEW") { <span class="badge-status badge-pending" style="background:#e0e7ff; color:#3730a3; border-color:#c7d2fe;">Chờ HR</span> }
+                                else if(item.ApprovalStatus == "PENDING_LEADER_APPROVAL") { <span class="badge-status badge-pending">Chờ Lãnh đạo</span> }
+                                else if(item.ApprovalStatus == "APPROVED") { <span class="badge-status badge-approved">Đã duyệt</span> }
+                                else if(item.ApprovalStatus == "EFFECTIVE") { <span class="badge-status badge-approved" style="background:#ecfdf5; color:#065f46; border-color:#a7f3d0;">Có hiệu lực</span> }
+                                else if(item.ApprovalStatus == "REJECTED") { <span class="badge-status badge-rejected">Từ chối</span> }
+                                else { <span class="badge-status badge-cancelled">Đã hủy</span> }
+                            </td>
+                            <td>
+                                @if(item.EffectiveStatus == "EFFECTIVE") { <span class="badge-eff badge-eff-active">Đã áp dụng</span> }
+                                else if(item.EffectiveStatus == "UPCOMING") { <span class="badge-eff badge-eff-upcoming">Sắp tới</span> }
+                                else { <span style="color:#94a3b8; font-size: 11.5px;">---</span> }
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="btn-ob-outline" style="padding: 5px 10px; font-size: 12px;" onclick="viewDetail(@item.Id)">
+                                    <i class="fas fa-eye"></i> Xem
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@if (totalPages > 1)
+{
+    <nav aria-label="Phân trang danh sách thuyên chuyển" style="display:flex; justify-content:center; margin-top:16px;">
+        @if (pageNumber > 1) { <a class="btn-ob-outline" href="@Url.Action("Index", "Transfer", new { pageNumber = pageNumber - 1, searchName, department = currentDept, status = currentStatus, effectiveDate = currentEffectiveDate })">‹ Trước</a> }
+        <span style="margin:9px 12px; font-size:13px; color:#64748b;">Trang @pageNumber / @totalPages</span>
+        @if (pageNumber < totalPages) { <a class="btn-ob-outline" href="@Url.Action("Index", "Transfer", new { pageNumber = pageNumber + 1, searchName, department = currentDept, status = currentStatus, effectiveDate = currentEffectiveDate })">Sau ›</a> }
+    </nav>
+}
+
+<!-- ==============================================
+     DRAWER: TẠO MỚI / CHỈNH SỬA
+     ============================================== -->
+<div class="drawer-overlay" id="createDrawerOverlay" onclick="closeCreateDrawer()"></div>
+<div class="drawer-panel" id="createDrawerPanel">
+    <div class="drawer-header">
+        <h3 class="drawer-title"><i class="fas fa-plus-circle" style="color:#3b82f6;"></i> <span id="createDrawerTitle">Tạo quyết định thuyên chuyển</span></h3>
+        <button class="drawer-close" onclick="closeCreateDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-user"></i> 1. Chọn nhân viên</div>
+            
+            <div class="form-group employee-search-container">
+                <label>Tìm nhân viên (Tên / Mã) <span class="req">*</span></label>
+                <div style="position:relative;">
+                    <i class="fas fa-search" style="position:absolute; left:12px; top:12px; color:#94a3b8;"></i>
+                    <input type="text" id="empSearchInput" class="form-control" style="padding-left:36px;" placeholder="Gõ tên hoặc mã nhân viên..." autocomplete="off">
+                </div>
+                <div class="employee-dropdown" id="empDropdown"></div>
+                <input type="hidden" id="formEmployeeId">
+            </div>
+
+            <!-- Current Info (Readonly) -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phòng ban hiện tại</label>
+                    <input type="text" id="curDept" class="form-control" readonly placeholder="---">
+                </div>
+                <div class="form-group">
+                    <label>Chức vụ hiện tại</label>
+                    <input type="text" id="curPos" class="form-control" readonly placeholder="---">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Chức danh (Vai trò) hiện tại</label>
+                <input type="text" id="curTitle" class="form-control" readonly placeholder="---">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-arrow-circle-right"></i> 2. Thông tin thuyên chuyển mới</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phòng ban mới <span class="req">*</span></label>
+                    <select id="targetDept" class="form-control">
+                        <option value="">-- Chọn phòng ban --</option>
+                        @foreach(var dp in departments)
+                        {
+                            <option value="@dp">@dp</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Chức vụ mới <span class="req">*</span></label>
+                    <select id="targetPos" class="form-control">
+                        <option value="">-- Chọn chức vụ --</option>
+                        @if(ViewBag.JobPositions != null)
+                        {
+                            foreach(var jp in ViewBag.JobPositions)
+                            {
+                                <option value="@jp.Name">@jp.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Chức danh (Vai trò) mới</label>
+                <input type="text" id="targetTitle" class="form-control" placeholder="Vd: Nhóm trưởng, Team Lead...">
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title"><i class="fas fa-file-signature"></i> 3. Quyết định & Hiệu lực</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Số quyết định</label>
+                    <input type="text" id="decisionNum" class="form-control" placeholder="Số QĐ (nếu có)">
+                </div>
+                <div class="form-group">
+                    <label>Ngày ký quyết định</label>
+                    <input type="date" id="decisionDate" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ngày hiệu lực áp dụng <span class="req">*</span></label>
+                <input type="date" id="effectiveDate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label>Lý do thuyên chuyển <span class="req">*</span></label>
+                <textarea id="reason" class="form-control" rows="2" placeholder="Ghi chú lý do thuyên chuyển..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú khác</label>
+                <textarea id="notes" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeCreateDrawer()">Hủy bỏ</button>
+        <button class="btn-ob-outline" style="color:#0f172a; border-color:#94a3b8;" onclick="submitCreateForm(false)">Lưu nháp</button>
+        <button class="btn-ob-primary" onclick="submitCreateForm(true)">Trình duyệt ngay</button>
+    </div>
+</div>
+
+<!-- ==============================================
+     DRAWER: XEM CHI TIẾT
+     ============================================== -->
+<div class="drawer-overlay" id="detailDrawerOverlay" onclick="closeDetailDrawer()"></div>
+<div class="drawer-panel" id="detailDrawerPanel">
+    <div class="drawer-header">
+        <h3 class="drawer-title"><i class="fas fa-file-alt" style="color:#6366f1;"></i> Chi tiết quyết định</h3>
+        <button class="drawer-close" onclick="closeDetailDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" id="detailBody">
+        <div style="text-align:center; padding: 40px; color:#94a3b8;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p>Đang tải dữ liệu...</p>
+        </div>
+    </div>
+    <div class="drawer-footer" id="detailFooter">
+        <button class="btn-ob-outline" onclick="closeDetailDrawer()">Đóng</button>
+        <!-- Dynamic buttons appended here -->
+    </div>
+</div>
+
+<!-- TEMPLATE CHO DETAIL -->
+<template id="detailTemplate">
+    <div class="form-section" style="display:flex; align-items:center; gap: 16px; padding: 16px;">
+        <div class="emp-av" style="width:50px; height:50px; font-size:20px;" id="dt_avatar"></div>
+        <div>
+            <div style="font-size:16px; font-weight:700; color:#0f172a;" id="dt_empName"></div>
+            <div style="font-size:13px; color:#64748b;" id="dt_empCode"></div>
+        </div>
+        <div style="margin-left:auto; text-align:right;">
+            <div id="dt_statusBadge"></div>
+            <div style="font-size:12px; font-weight:600; margin-top:6px; color:#3b82f6;" id="dt_effBadge"></div>
+        </div>
+    </div>
+
+    <div class="compare-grid">
+        <div class="compare-box">
+            <div class="compare-title" style="color:#94a3b8;">THÔNG TIN CŨ</div>
+            <div class="compare-val"><span>Phòng:</span> <strong id="dt_oldDept"></strong></div>
+            <div class="compare-val"><span>Chức vụ:</span> <strong id="dt_oldPos"></strong></div>
+            <div class="compare-val"><span>Vai trò:</span> <strong id="dt_oldTitle"></strong></div>
+        </div>
+        <div class="compare-box" style="background:#f0fdf4; border-color:#bbf7d0;">
+            <div class="compare-title" style="color:#166534;"><i class="fas fa-arrow-right"></i> THÔNG TIN MỚI</div>
+            <div class="compare-val"><span>Phòng:</span> <strong id="dt_targetDept"></strong></div>
+            <div class="compare-val"><span>Chức vụ:</span> <strong id="dt_targetPos"></strong></div>
+            <div class="compare-val"><span>Vai trò:</span> <strong id="dt_targetTitle"></strong></div>
+        </div>
+    </div>
+
+    <div class="form-section" style="padding: 16px;">
+        <div class="form-section-title"><i class="fas fa-info-circle"></i> Chi tiết Quyết định</div>
+        <div class="compare-val"><span>Số QĐ:</span> <b id="dt_decNum"></b></div>
+        <div class="compare-val"><span>Ngày ký:</span> <b id="dt_decDate"></b></div>
+        <div class="compare-val" style="color:#ef4444;"><span>Hiệu lực từ:</span> <b id="dt_effDate"></b></div>
+        <hr style="border:none; border-top:1px dashed #cbd5e1; margin:10px 0;"/>
+        <div class="compare-val"><span>Lý do:</span> <span style="width:auto; color:#0f172a;" id="dt_reason"></span></div>
+        <div class="compare-val" id="dt_rejectReasonBox" style="display:none; color:#ef4444; background:#fef2f2; padding:8px; border-radius:6px; margin-top:8px;">
+            <b>Lý do từ chối:</b> <span style="width:auto; color:#991b1b;" id="dt_rejectReason"></span>
+        </div>
+    </div>
+
+    <div class="form-section" style="padding: 16px;">
+        <div class="form-section-title"><i class="fas fa-history"></i> Lịch sử duyệt</div>
+        <div class="timeline" id="dt_history"></div>
+    </div>
+</template>
+
+@section Scripts {
+<script>
+// =============== CREATE DRAWER LOGIC ===============
+function openCreateDrawer() {
+    document.getElementById('createDrawerOverlay').classList.add('open');
+    document.getElementById('createDrawerPanel').classList.add('open');
+    
+    // Clear form
+    document.getElementById('formEmployeeId').value = '';
+    document.getElementById('empSearchInput').value = '';
+    document.getElementById('curDept').value = '';
+    document.getElementById('curPos').value = '';
+    document.getElementById('curTitle').value = '';
+    document.getElementById('targetDept').value = '';
+    document.getElementById('targetPos').value = '';
+    document.getElementById('targetTitle').value = '';
+    document.getElementById('decisionNum').value = '';
+    document.getElementById('decisionDate').value = '';
+    document.getElementById('effectiveDate').value = '';
+    document.getElementById('reason').value = '';
+    document.getElementById('notes').value = '';
+}
+
+function closeCreateDrawer() {
+    document.getElementById('createDrawerOverlay').classList.remove('open');
+    document.getElementById('createDrawerPanel').classList.remove('open');
+}
+
+// Search Employee logic
+const empSearchInput = document.getElementById('empSearchInput');
+const empDropdown = document.getElementById('empDropdown');
+let searchTimeout = null;
+
+empSearchInput.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const q = this.value.trim();
+    if (q.length < 2) {
+        empDropdown.classList.remove('show');
+        return;
+    }
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`/Transfer/GetEmployees?q=${encodeURIComponent(q)}`)
+            .then(res => res.json())
+            .then(data => {
+                empDropdown.innerHTML = '';
+                if (data.length === 0) {
+                    empDropdown.innerHTML = '<div style="padding: 10px 14px; color: #64748b;">Không tìm thấy kết quả.</div>';
+                } else {
+                    data.forEach(emp => {
+                        let avHtml = emp.avatarPath ? `<img src="${emp.avatarPath}">` : (emp.name ? emp.name.charAt(0).toUpperCase() : '?');
+                        let div = document.createElement('div');
+                        div.className = 'emp-item';
+                        div.innerHTML = `
+                            <div class="emp-item-avatar">${avHtml}</div>
+                            <div class="emp-item-info">
+                                <span class="emp-item-name">${emp.name}</span>
+                                <span class="emp-item-code">${emp.employeeCode} | ${emp.department || 'Không phòng ban'}</span>
+                            </div>
+                        `;
+                        div.onclick = () => selectEmployee(emp);
+                        empDropdown.appendChild(div);
+                    });
+                }
+                empDropdown.classList.add('show');
+            });
+    }, 400);
+});
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', function(e) {
+    if (!empSearchInput.contains(e.target) && !empDropdown.contains(e.target)) {
+        empDropdown.classList.remove('show');
+    }
+});
+
+function selectEmployee(emp) {
+    empSearchInput.value = `${emp.name} - ${emp.employeeCode}`;
+    document.getElementById('formEmployeeId').value = emp.id;
+    document.getElementById('curDept').value = emp.department || '';
+    document.getElementById('curPos').value = emp.position || '';
+    document.getElementById('curTitle').value = emp.jobTitle || '';
+    
+    // Auto-fill new info with current info for convenience
+    document.getElementById('targetDept').value = emp.department || '';
+    document.getElementById('targetPos').value = emp.position || '';
+    document.getElementById('targetTitle').value = emp.jobTitle || '';
+
+    empDropdown.classList.remove('show');
+}
+
+function submitCreateForm(isSubmit) {
+    const empId = document.getElementById('formEmployeeId').value;
+    const targetDept = document.getElementById('targetDept').value;
+    const targetPos = document.getElementById('targetPos').value;
+    const effDate = document.getElementById('effectiveDate').value;
+    const reason = document.getElementById('reason').value;
+
+    if(!empId) { alert('Vui lòng chọn nhân viên.'); return; }
+    if(!targetDept || !targetPos) { alert('Vui lòng chọn phòng ban và chức vụ mới.'); return; }
+    if(!effDate) { alert('Vui lòng chọn ngày hiệu lực.'); return; }
+    if(!reason.trim()) { alert('Vui lòng nhập lý do thuyên chuyển.'); return; }
+
+    const payload = {
+        employeeId: parseInt(empId),
+        newDepartment: targetDept,
+        targetPosition: targetPos,
+        newJobTitle: document.getElementById('targetTitle').value,
+        effectiveDate: effDate,
+        reason: reason,
+        notes: document.getElementById('notes').value,
+        decisionNumber: document.getElementById('decisionNum').value,
+        decisionDate: document.getElementById('decisionDate').value || null
+    };
+
+    fetch(`/Transfer/Create?isSubmit=${isSubmit}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert('Lỗi: ' + data.message);
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Có lỗi xảy ra khi kết nối server.');
+    });
+}
+
+// =============== DETAIL DRAWER LOGIC ===============
+let currentRecordId = null;
+
+function viewDetail(id) {
+    currentRecordId = id;
+    document.getElementById('detailDrawerOverlay').classList.add('open');
+    document.getElementById('detailDrawerPanel').classList.add('open');
+    
+    const body = document.getElementById('detailBody');
+    body.innerHTML = '<div style="text-align:center; padding: 40px; color:#94a3b8;"><i class="fas fa-spinner fa-spin fa-2x"></i><p>Đang tải dữ liệu...</p></div>';
+    document.getElementById('detailFooter').innerHTML = '<button class="btn-ob-outline" onclick="closeDetailDrawer()">Đóng</button>';
+
+    fetch(`/Transfer/Detail/${id}`)
+    .then(res => { if(!res.ok) throw new Error(); return res.json(); })
+    .then(data => {
+        renderDetail(data);
+    })
+    .catch(err => {
+        body.innerHTML = '<div style="color:#ef4444; padding:20px;">Lỗi tải dữ liệu.</div>';
+    });
+}
+
+function closeDetailDrawer() {
+    document.getElementById('detailDrawerOverlay').classList.remove('open');
+    document.getElementById('detailDrawerPanel').classList.remove('open');
+    currentRecordId = null;
+}
+
+function renderDetail(data) {
+    const template = document.getElementById('detailTemplate').content.cloneNode(true);
+    
+    // Avatar
+    let avDiv = template.getElementById('dt_avatar');
+    if (data.avatarPath) {
+        avDiv.innerHTML = `<img src="${data.avatarPath}" style="width:100%; height:100%; object-fit:cover;">`;
+    } else {
+        avDiv.textContent = data.employeeName ? data.employeeName.charAt(0).toUpperCase() : '?';
+    }
+
+    template.getElementById('dt_empName').textContent = data.employeeName;
+    template.getElementById('dt_empCode').textContent = data.employeeCode;
+    
+    // Status Badge
+    let stHtml = '';
+    if(data.approvalStatus == "DRAFT") stHtml = '<span class="badge-status badge-draft">Bản nháp</span>';
+    else if(data.approvalStatus == "PENDING_HR_REVIEW") stHtml = '<span class="badge-status badge-pending" style="background:#e0e7ff; color:#3730a3; border-color:#c7d2fe;">Chờ HR</span>';
+    else if(data.approvalStatus == "PENDING_LEADER_APPROVAL") stHtml = '<span class="badge-status badge-pending">Chờ Lãnh đạo</span>';
+    else if(data.approvalStatus == "APPROVED") stHtml = '<span class="badge-status badge-approved">Đã duyệt</span>';
+    else if(data.approvalStatus == "EFFECTIVE") stHtml = '<span class="badge-status badge-approved" style="background:#ecfdf5; color:#065f46; border-color:#a7f3d0;">Có hiệu lực</span>';
+    else if(data.approvalStatus == "REJECTED") stHtml = '<span class="badge-status badge-rejected">Từ chối</span>';
+    else stHtml = '<span class="badge-status badge-cancelled">Đã hủy</span>';
+    template.getElementById('dt_statusBadge').innerHTML = stHtml;
+
+    // Eff Badge
+    let effHtml = '';
+    if(data.effectiveStatus == "EFFECTIVE") effHtml = '<i class="fas fa-check-circle" style="color:#059669;"></i> Đã áp dụng';
+    else if(data.effectiveStatus == "UPCOMING" || data.effectiveStatus == "READY_TO_APPLY") effHtml = '<i class="fas fa-clock"></i> Sắp hiệu lực';
+    template.getElementById('dt_effBadge').innerHTML = effHtml;
+
+    template.getElementById('dt_oldDept').textContent = data.previousDepartment;
+    template.getElementById('dt_oldPos').textContent = data.previousPosition;
+    template.getElementById('dt_oldTitle').textContent = data.previousJobTitle;
+
+    template.getElementById('dt_targetDept').textContent = data.newDepartment;
+    template.getElementById('dt_targetPos').textContent = data.targetPosition;
+    template.getElementById('dt_targetTitle').textContent = data.newJobTitle;
+
+    template.getElementById('dt_decNum').textContent = data.decisionNumber;
+    template.getElementById('dt_decDate').textContent = data.decisionDate || '---';
+    template.getElementById('dt_effDate').textContent = data.effectiveDate;
+    template.getElementById('dt_reason').textContent = data.reason;
+
+    if (data.approvalStatus == 'REJECTED' && data.rejectionReason) {
+        template.getElementById('dt_rejectReasonBox').style.display = 'block';
+        template.getElementById('dt_rejectReason').textContent = data.rejectionReason;
+    }
+
+    // Timeline
+    let histContainer = template.getElementById('dt_history');
+    if (data.histories && data.histories.length > 0) {
+        data.histories.forEach(h => {
+            let color = "#3b82f6";
+            if (h.action == "APPROVE" || h.action == "APPLY") color = "#22c55e";
+            if (h.action == "REJECT" || h.action == "CANCEL") color = "#ef4444";
+            
+            let html = `
+            <div class="timeline-item">
+                <div class="timeline-dot" style="background:${color}"></div>
+                <div class="timeline-time">${h.timestamp} - <b>${h.actor}</b></div>
+                <div class="timeline-content">
+                    <strong>${h.action}</strong>
+                    <p>${h.details}</p>
+                </div>
+            </div>`;
+            histContainer.insertAdjacentHTML('beforeend', html);
+        });
+    } else {
+        histContainer.innerHTML = '<div style="color:#94a3b8; font-size:13px; font-style:italic;">Không có lịch sử</div>';
+    }
+
+    // Attach to DOM
+    const body = document.getElementById('detailBody');
+    body.innerHTML = '';
+    body.appendChild(template);
+
+    // Footer actions
+    let footerHtml = '<button class="btn-ob-outline" onclick="closeDetailDrawer()">Đóng</button>';
+    
+    var currentRole = '@role';
+    if (data.approvalStatus == 'DRAFT' && currentRole === 'Manager') {
+        footerHtml += `<button class="btn-ob-primary" onclick="actionRecord('Submit', ${data.id})">Trình duyệt</button>`;
+        footerHtml += `<button class="btn-ob-reset" onclick="actionRecord('Cancel', ${data.id}, true)">Hủy bỏ</button>`;
+    } 
+    else if (data.approvalStatus == 'PENDING_HR_REVIEW' && currentRole === 'HR') {
+        footerHtml += `<button class="btn-ob-reset" onclick="actionRecord('Reject', ${data.id}, true)">Từ chối</button>`;
+        footerHtml += `<button class="btn-ob-primary" style="background:#16a34a;" onclick="actionRecord('Approve', ${data.id})">Xác minh</button>`;
+    }
+    else if (data.approvalStatus == 'PENDING_LEADER_APPROVAL' && currentRole === 'Leader') {
+        footerHtml += `<button class="btn-ob-reset" onclick="actionRecord('Reject', ${data.id}, true)">Từ chối</button>`;
+        footerHtml += `<button class="btn-ob-primary" style="background:#16a34a;" onclick="actionRecord('Approve', ${data.id})">Phê duyệt</button>`;
+    }
+    
+    document.getElementById('detailFooter').innerHTML = footerHtml;
+}
+
+function actionRecord(action, id, requireReason = false) {
+    const buttons = document.querySelectorAll('#detailFooter button');
+    buttons.forEach(b => b.disabled = true);
+    let url = `/Transfer/${action}/${id}`;
+    
+    if (requireReason) {
+        let reason = prompt(`Vui lòng nhập lý do để ${action}:`);
+        if (reason === null) { buttons.forEach(b => b.disabled = false); return; }
+        if (reason.trim() === '') {
+            alert('Lý do không được để trống.');
+            buttons.forEach(b => b.disabled = false);
+            return;
+        }
+        url += `?reason=${encodeURIComponent(reason)}`;
+    } else {
+        if (!confirm(`Xác nhận thực hiện: ${action}?`)) return;
+    }
+
+    fetch(url, { method: 'POST' })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message || 'Thành công');
+        window.location.reload();
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Có lỗi xảy ra.');
+    });
+}
+</script>
+}

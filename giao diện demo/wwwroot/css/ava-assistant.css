@@ -1,0 +1,49 @@
+.ava-assistant { position: fixed; right: 24px; bottom: 24px; z-index: 10000; font-family: 'Inter', sans-serif; }
+.ava-assistant.ava-positioned { right: auto; bottom: auto; }
+.ava-trigger { width: 58px; height: 58px; border: 0; border-radius: 50%; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); box-shadow: 0 8px 24px rgba(37, 99, 235, .35); cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; font-size: 22px; transition: transform .2s ease, box-shadow .2s ease; }
+.ava-trigger:hover, .ava-trigger:focus-visible { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(37, 99, 235, .45); outline: 3px solid rgba(96, 165, 250, .35); outline-offset: 2px; }
+.ava-assistant.ava-dragging .ava-trigger { cursor: grabbing; transform: scale(1.06); box-shadow: 0 14px 34px rgba(37, 99, 235, .48); outline: 3px solid rgba(96, 165, 250, .32); }
+.ava-drawer { position: absolute; right: 0; bottom: 72px; display: flex; flex-direction: column; width: min(460px, calc(100vw - 32px)); height: min(650px, calc(100vh - 110px)); overflow: hidden; background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; box-shadow: 0 20px 60px rgba(15, 23, 42, .22); opacity: 0; visibility: hidden; transform: translateY(10px) scale(.98); transition: opacity .2s ease, transform .2s ease, visibility .2s ease; }
+.ava-assistant.ava-anchor-left .ava-drawer { right: auto; left: 0; }
+.ava-assistant.ava-anchor-top .ava-drawer { top: 72px; bottom: auto; }
+.ava-drawer.open { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+.ava-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); }
+.ava-drawer-title { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 700; }
+.ava-drawer-actions { display: flex; gap: 6px; }
+.ava-icon-button { width: 30px; height: 30px; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; color: #fff; background: rgba(255,255,255,.12); cursor: pointer; }
+.ava-icon-button:hover, .ava-icon-button:focus-visible { background: rgba(255,255,255,.24); outline: 0; }
+.ava-messages { display: flex; flex: 1; flex-direction: column; gap: 10px; overflow-y: auto; padding: 18px 15px; background: #f8fafc; }
+.ava-empty-state { align-self: flex-start; max-width: 88%; padding: 11px 14px; color: #334155; background: #e2e8f0; border-radius: 13px 13px 13px 4px; font-size: 13.5px; line-height: 1.5; }
+.ava-message { max-width: 88%; padding: 10px 14px; border-radius: 13px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ava-message.user { align-self: flex-end; color: #fff; background: linear-gradient(135deg, #2563eb, #4f46e5); border-radius: 13px 13px 4px 13px; }
+.ava-message.assistant { align-self: flex-start; color: #334155; background: #e2e8f0; border-radius: 13px 13px 13px 4px; }
+.ava-message.loading { color: #64748b; }
+.ava-speak { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin: 7px 0 0 8px; padding: 0; border: 0; border-radius: 999px; color: #475569; background: rgba(255,255,255,.72); cursor: pointer; vertical-align: middle; }
+.ava-speak:hover, .ava-speak:focus-visible, .ava-speak.speaking { color: #1d4ed8; background: #fff; outline: 2px solid rgba(37,99,235,.25); }
+.ava-error { margin: 0 14px 8px; padding: 9px 11px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px; font-size: 12.5px; }
+.ava-error-with-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ava-error-action { flex: 0 0 auto; padding: 6px 9px; border: 1px solid #fca5a5; border-radius: 7px; color: #991b1b; background: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+.ava-error-action:hover, .ava-error-action:focus-visible { border-color: #ef4444; background: #fff7f7; outline: 2px solid rgba(239,68,68,.18); outline-offset: 1px; }
+.ava-composer { display: flex; align-items: flex-end; gap: 8px; padding: 11px 13px; background: #fff; border-top: 1px solid #e2e8f0; }
+.ava-composer textarea { flex: 1; min-height: 38px; max-height: 120px; resize: none; padding: 9px 11px; color: #334155; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; font: inherit; font-size: 13.5px; line-height: 1.4; outline: 0; }
+.ava-composer textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
+.ava-send { width: 38px; height: 38px; flex: 0 0 auto; border: 0; border-radius: 10px; color: #fff; background: #2563eb; cursor: pointer; }
+.ava-send:disabled { opacity: .55; cursor: wait; }
+.ava-composer { flex-wrap: wrap; }
+.ava-tool-button { flex: 0 0 34px; width: 34px; height: 34px; color: #475569; background: #f1f5f9; border: 1px solid #cbd5e1; }
+.ava-composer textarea { min-width: 100px; }
+.ava-attachments { display: flex; flex-wrap: wrap; gap: 7px; padding: 7px 12px; background: #fff; }
+.ava-attachments:empty { display: none; }
+.ava-attachment { display: flex; align-items: center; gap: 7px; max-width: 100%; padding: 5px 7px; color: #334155; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 9px; font-size: 11px; }
+.ava-attachment img { width: 34px; height: 34px; object-fit: cover; border-radius: 5px; }
+.ava-attachment-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ava-attachment-remove { border: 0; color: #64748b; background: transparent; cursor: pointer; }
+.ava-upload-status { padding: 3px 14px 8px; color: #475569; background: #fff; font-size: 11px; }
+.ava-upload-status[hidden] { display: none; }
+.ava-upload-status.ava-validation-notice { margin: 0 14px 8px; padding: 10px 12px; color: #854d0e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; font-size: 13px; line-height: 1.4; }
+.ava-upload-row { display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #fff; }
+.ava-upload-row > #ava-cancel-request { margin: 0 0 6px auto; border: 1px solid #cbd5e1; border-radius: 7px; padding: 4px 8px; color: #475569; background: #fff; font-size: 11px; cursor: pointer; }
+.ava-upload-row > #ava-cancel-request[hidden] { display: none; }
+.ava-upload-progress { height: 3px; margin: 0 12px 6px; overflow: hidden; background: #e2e8f0; border-radius: 4px; }
+.ava-upload-progress > span { display: block; height: 100%; width: 0; background: #2563eb; transition: width .15s linear; }
+@media (max-width: 640px) { .ava-assistant:not(.ava-positioned) { right: 16px; bottom: 16px; } .ava-drawer { width: calc(100vw - 16px); height: calc(100vh - 94px); } .ava-assistant:not(.ava-anchor-left) .ava-drawer { right: -8px; } .ava-assistant.ava-anchor-left .ava-drawer { left: -8px; } }

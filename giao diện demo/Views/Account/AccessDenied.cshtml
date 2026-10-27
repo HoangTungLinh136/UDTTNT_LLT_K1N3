@@ -1,0 +1,12 @@
+@{
+    ViewData["Title"] = "Không có quyền truy cập";
+}
+
+<main class="container py-5" role="main">
+    <section class="mx-auto text-center" style="max-width: 560px;">
+        <div class="display-1 text-warning" aria-hidden="true">403</div>
+        <h1 class="h3 mb-3">Bạn không có quyền truy cập trang này</h1>
+        <p class="text-muted mb-4">Tài khoản hiện tại không được cấp quyền cho chức năng này. Nếu bạn cần quyền truy cập, hãy liên hệ quản trị viên.</p>
+        <a class="btn btn-primary" asp-controller="Account" asp-action="Login">Quay lại đăng nhập</a>
+    </section>
+</main>

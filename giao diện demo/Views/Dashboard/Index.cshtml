@@ -117,21 +117,23 @@
 
     <!-- SIDEBAR -->
     <div class="sidebar">
-        <h2>🚀 HRMS</h2>
+        <h2>d? HRMS</h2>
 
         <div class="menu">
             <a asp-controller="Dashboard" asp-action="Index">🏠 Trang chủ</a>
-            <a asp-controller="Employee" asp-action="Index">👨‍💼 Nhân viên</a>
+            <a asp-controller="Employee" asp-action="Index">🔹‍🔹 Nhân viên</a>
             <a asp-controller="Attendance" asp-action="Index">⏱️ Chấm công</a>
             <a asp-controller="Salary" asp-action="Index">💰 Lương</a>
-            <a asp-controller="Leave" asp-action="Index">📄 Nghỉ phép</a>
-            <a asp-controller="Account" asp-action="Logout">🚪 Đăng xuất</a>
+            <a asp-controller="Leave" asp-action="Index">🏖️ Nghỉ phép</a>
+            <form asp-controller="Account" asp-action="Logout" method="post">
+                <button type="submit">Đăng xuất</button>
+            </form>
         </div>
     </div>
 
     <!-- MAIN -->
     <div class="main">
-        <h2>📊 Trang chủ hệ thống</h2>
+        <h2>d? Trang chủ hệ thống</h2>
 
         <div class="cards">
 
@@ -140,7 +142,7 @@
                    asp-action="EmployeeList"
                    asp-route-status="all">
                 <div class="card blue">
-                    👨‍💼 Tổng nhân viên
+                    🔹‍🔹 Tổng nhân viên
                     <div class="number">@ViewBag.Total</div>
                 </div>
             </a>

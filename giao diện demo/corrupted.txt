@@ -1,0 +1,593 @@
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:2 Layout = null; // �? kh�ng hi?n Menu khi dang ? trang qu�n m?t kh?u
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:9 <title>Qu�n m?t kh?u - HRMS</title>
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:56 <h5 class="mb-3 text-secondary">Kh�i ph?c m?t kh?u</h5>
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:57 <p class="small text-muted mb-4">Vui l�ng cung c?p ch�nh x�c T�n dang nh?p v� Email d? h? th?ng g?i m� x�c nh?n.</p>
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:66 @* ?? TH�M M?I: Nh?p T�n dang nh?p d? d?nh danh t�i kho?n *@
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:67 <input type="text" name="username" class="form-control" placeholder="T�n dang nh?p c?a b?n" required />
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:69 @* Nh?p Email dang k� *@
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:70 <input type="email" name="email" class="form-control" placeholder="Email dang k� (Gmail)" required />
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:73 <button type="submit" class="btn btn-primary w-100 mb-3">Gửi m� x�c nh?n</button>
+d:\giao diện demo\giao diện demo\Views\Account\ForgotPassword.cshtml:77 ? Quay l?i �ang nh?p
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:65 max-width: 65%; /* Thu nhỏ kA�ch thước logo cho vừa hộp đăng nhập */
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:67 border-radius: 12px; /* Bo gA�c mượt mã cho nền đen của logo */
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:68 box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Đổ bA�ng nổi bật */
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:191 Bạn quA�n mật khẩu?
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:204 error.innerHTML = "Vui lA�ng nhập tài khoản";
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:209 error.innerHTML = "Vui lA�ng nhập mật khẩu";
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:216 // Dịch lỗi ViewBag (nếu cA�) khi render
+d:\giao diện demo\giao diện demo\Views\Account\Login.cshtml:220 if (serverError.includes("TA�n đăng nhập") || serverError.includes("mật khẩu")) {
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:4 ViewData["Title"] = "T?o t�i kho?n";
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:9 @* ?? �� �?I: T? "�ang k�" th�nh "T?o t�i kho?n" *@
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:10 <h2 class="text-center fw-bold mb-4" style="color: #333 !important;">?? T?o t�i kho?n</h2>
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:22 <label class="form-label fw-bold">H? t�n</label>
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:23 <input asp-for="FullName" class="form-control" placeholder="Nh?p h? v� t�n th?t..." required />
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:34 <label class="form-label fw-bold">T�n dang nh?p</label>
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:35 <input asp-for="Username" class="form-control" placeholder="Nh?p t�n t�i kho?n..." required />
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:45 @* ?? �� �?I: Ch? tr�n n�t b?m *@
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:47 <i class="fas fa-plus-circle me-1"></i> T?o t�i kho?n ngay
+d:\giao diện demo\giao diện demo\Views\Account\Register.cshtml:58 <i class="fas fa-sign-in-alt me-1"></i> �� c� t�i kho?n? �ang nh?p
+d:\giao diện demo\giao diện demo\Views\Account\ResetPassword.cshtml:38 <p class="text-muted small mb-4">Vui l�ng thi?t l?p m?t kh?u m?i c?c m?nh d? b?o v? t�i kho?n c?a b?n.</p>
+d:\giao diện demo\giao diện demo\Views\Account\ResetPassword.cshtml:45 @* ?? QUAN TR?NG: Action ph?i l� ResetPassword *@
+d:\giao diện demo\giao diện demo\Views\Account\ResetPassword.cshtml:49 <input type="password" name="newPassword" class="form-control" placeholder="��������" required autofocus />
+d:\giao diện demo\giao diện demo\Views\Account\ResetPassword.cshtml:53 <label class="form-label small fw-bold">X�c nh?n m?t kh?u</label>
+d:\giao diện demo\giao diện demo\Views\Account\ResetPassword.cshtml:54 <input type="password" name="confirmPassword" class="form-control" placeholder="��������" required />
+d:\giao diện demo\giao diện demo\Views\Account\VerifyCode.cshtml:6 <title>X�c th?c m� - HRMS</title>
+d:\giao diện demo\giao diện demo\Views\Account\VerifyCode.cshtml:15 <h3 class="mb-4">?? X�c th?c</h3>
+d:\giao diện demo\giao diện demo\Views\Account\VerifyCode.cshtml:16 <p class="small text-muted">Vui l�ng nh?p m� x�c nh?n 6 ch? s? d� du?c g?i t?i Gmail c?a b?n.</p>
+d:\giao diện demo\giao diện demo\Views\Account\VerifyCode.cshtml:22 <button type="submit" class="btn btn-success w-100 mb-3">X�c nh?n m�</button>
+d:\giao diện demo\giao diện demo\Views\Account\VerifyCode.cshtml:23 <p class="small text-muted">Kh�ng nh?n du?c m�? <a href="javascript:history.back()">Gửi l?i</a></p>
+d:\giao diện demo\giao diện demo\Views\Admin\Details.cshtml:5 ViewData["Title"] = "Th�ng tin c� nh�n";
+d:\giao diện demo\giao diện demo\Views\Admin\Details.cshtml:9 <h2>?? Th�ng tin c� nh�n</h2>
+d:\giao diện demo\giao diện demo\Views\Admin\Details.cshtml:19 <th>H? t�n</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Details.cshtml:24 <th>Vai tr�</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Details.cshtml:29 <th>Tr?ng th�i</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Details.cshtml:31 @(Model.IsOnline ? "�ang ho?t d?ng" : "Ngo?i tuy?n")
+d:\giao diện demo\giao diện demo\Views\Admin\EditUser.cshtml:4 ViewData["Title"] = "S?a t�i kho?n";
+d:\giao diện demo\giao diện demo\Views\Admin\EditUser.cshtml:7 <h2>? S?a t�i kho?n</h2>
+d:\giao diện demo\giao diện demo\Views\Admin\EditUser.cshtml:13 <label>H? t�n</label>
+d:\giao diện demo\giao diện demo\Views\Admin\EditUser.cshtml:18 <label>T�n dang nh?p</label>
+d:\giao diện demo\giao diện demo\Views\Admin\EditUser.cshtml:23 <label>Vai tr�</label>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:17 ????? T?ng nh�n vi�n
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:22 ? �ang l�m
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:33 <!-- T�M KI?M + TH�M -->
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:39 placeholder="?? T�m ki?m t�i kho?n..."
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:45 ? Th�m t�i kho?n
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:50 <!-- B?NG T�I KHO?N -->
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:53 <h3 style="margin-bottom:20px;">?? Danh s�ch t�i kho?n</h3>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:60 <th>T�n dang nh?p</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:61 <th>Vai tr�</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:62 <th>Tr?ng th�i</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:63 <th style="min-width:420px;">H�nh d?ng</th>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:83 �ang ho?t d?ng
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:93 �� ho?t d?ng @minutes ph�t tru?c
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:117 ?? X�a
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:158 <td><span style="color:green;">�ang ho?t d?ng</span></td>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:159 <td>V?a th�m m?i</td>
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:176 // ===== T�M KI?M =====
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:193 // ===== X�A + KH�I PH?C =====
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:214 �� x�a t�i kho?n
+d:\giao diện demo\giao diện demo\Views\Admin\Index.cshtml:217 Kh�i ph?c
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:21 /* LA�m đẹp nA�t bấm */
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:25 /* TA�y chỉnh FullCalendar */
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:30 /* Box tA�m kiếm lịch */
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:33 /* LA�m đẹp thanh Tabs */
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:59 <i class="fas fa-calendar-alt me-2"></i> Lịch sử & Thống kA�
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:80 <input type="text" id="searchInput1" class="form-control border-0 shadow-none" placeholder="TA�m theo tA�n hoặc mã NV..." oninput="filterTable1()">
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:84 <button class="btn btn-primary px-3 fw-bold border-0" type="button" onclick="filterTable1()">TA�m kiếm</button>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:94 <h5 class="fw-bold mb-3"><i class="fas fa-list"></i> Danh sách thao tA�c hôm nay</h5>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:103 <th>Trạng thA�i / HA�nh động</th>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:227 <tr><td colspan="9" class="text-muted">Chưa có yêu cầu nA�o.</td></tr>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:241 <p class="text-muted small mb-2 mb-md-0">Bấm vào ngA�y bất kỳ để xem danh sách nhân viên chấm công chi tiết.</p>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:245 <label for="searchDate" class="fw-bold me-2 mb-0 text-dark"><i class="fas fa-search me-1 text-primary"></i>Đến ngA�y:</label>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:259 <!-- Modal Yêu cầu Điều chỉnh Chấm công M�?I -->
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:282 <textarea class="form-control" name="reason" id="reqReason" rows="3" placeholder="Và dụ: QuA�n Check-out..." required></textarea>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:291 <button type="submit" class="btn btn-primary" id="btnSubmitAdj">Gửi YA�u Cầu</button>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:331 <label class="fw-bold">Minh chứng đA�nh kA�m:</label>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:338 <button class="btn btn-success me-2" onclick="processReq('APPROVE')">Duyệt và A�p dụng</button>
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:375 today: 'HA�m nay', month: 'ThA�ng', week: 'Tuần', list: 'Danh sách'
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:407 Swal.fire('Lỗi', 'Yêu cầu điều chỉnh chấm công không cón tồn tại hoặc đã bị xA�a.', 'error');
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:424 Swal.fire('Trống', 'Không có dữ liệu chấm công trong ngA�y ' + displayDate, 'info');
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:434 '<th>' + 'Nhân viên' + '</th><th>' + 'Giờ vA�o' + '</th><th>' + 'Giờ ra' + '</th><th>' + 'Ghi chA�' + '</th></tr></thead><tbody>';
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:451 html: '<p class="text-muted mb-0">' + 'Dữ liệu ngA�y:' + ' <strong class="text-dark">' + displayDate + '</strong></p>' + html,
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:460 // --- HA�M XUẤT FILE EXCEL (.XLS) ---
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:464 // XA�a các biểu tượng icon (🔹) trước khi xuất để Excel khA�ng bị lỗi kA� tự lạ
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:468 var title = "<h2 style='text-align: center; color: #1f618d;'>" + 'BA�O CA�O CHẤM CA�NG - NGA�Y ' + dateStr + "</h2>";
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:484 showToast("Đã� tải xuống báo cáo Excel!", true);
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:491 showToast("Đã� chuyển đến ngA�y: " + selectedDate.split('-').reverse().join('/'), true);
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:493 showToast("Vui lA�ng chọn ngA�y để tra cứu!", false);
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:514 showToast('Thực hiện hA�nh động thA�nh cA�ng!'.replace('{0}', action), true);
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:517 showToast('Thao tA�c thất bại hoặc đã thực hiện!', false);
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:543 Swal.fire('Lỗi', 'Phải nhập A�t nhất thời gian Check-in hoặc Check-out đề xuất', 'error');
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:557 Swal.fire('ThA�nh cA�ng', res.message, 'success').then(() => {
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:566 Swal.fire('Lỗi', 'Đã� xảy ra lỗi khi gửi yêu cầu', 'error');
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:582 document.getElementById('detCiReq').textContent = res.request.requestedCheckIn || 'KhA�ng đổi';
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:583 document.getElementById('detCoReq').textContent = res.request.requestedCheckOut || 'KhA�ng đổi';
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:597 fileHtml = `<span class="text-muted">${'Không có đA�nh kA�m'}</span>`;
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:618 document.getElementById('detStatusBadge').textContent = '🔹 ' + 'Đã� duyệt';
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:622 document.getElementById('detStatusBadge').textContent = '🔹 ' + 'Đã� từ chối (Là do: ' + res.request.rejectionReason + ')';
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:627 Swal.fire('Lỗi', 'Yêu cầu điều chỉnh chấm công không cón tồn tại hoặc đã bị xA�a.', 'error');
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:635 Swal.fire('ThA�nh cA�ng', res.message, 'success').then(() => location.reload());
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:649 inputValidator: (val) => { if (!val) return 'Vui lA�ng nhập là do!' }
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:687 tbody1.insertAdjacentHTML('beforeend', '<tr id="noResult1"><td colspan="6" class="text-center text-danger">' + 'KhA�ng tA�m thấy nhân viên phA� hợp.' + '</td></tr>');
+d:\giao diện demo\giao diện demo\Views\Attendance\Index.cshtml:728 tbody3.insertAdjacentHTML('beforeend', '<tr id="noResult3"><td colspan="9" class="text-center text-danger">' + 'KhA�ng tA�m thấy nhân viên phA� hợp.' + '</td></tr>');
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:7 <h2 class="mb-4">�?�️ Quản lý Yêu cầu Điều chỉnh Chấm công</h2>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:17 <th>NgA�y tạo</th>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:18 <th>Trạng thA�i</th>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:19 <th>HA�nh động</th>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:35 @if (req.Status == "PENDING") { <span class="badge bg-warning text-dark">🔹 Chờ xử lý�</span> }
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:47 <tr><td colspan="6" class="text-muted">Chưa có yêu cầu nA�o.</td></tr>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:88 <label class="fw-bold">Minh chứng đA�nh kA�m:</label>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:95 <button class="btn btn-success me-2" onclick="processReq('APPROVE')">Duyệt và A�p dụng</button>
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:130 document.getElementById('detCiReq').textContent = res.request.requestedCheckIn || 'KhA�ng đổi';
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:131 document.getElementById('detCoReq').textContent = res.request.requestedCheckOut || 'KhA�ng đổi';
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:145 fileHtml = '<span class="text-muted">Không có đA�nh kA�m</span>';
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:164 Swal.fire('ThA�nh cA�ng', res.message, 'success').then(() => location.reload());
+d:\giao diện demo\giao diện demo\Views\AttendanceAdjustment\Manage.cshtml:178 inputValidator: (val) => { if (!val) return 'Vui lA�ng nhập là do!' }
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:6 /* Styling cho vA�ng chữ kA� giống với form nghỉ phA�p */
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:39 <label class="form-label fw-bold">Chọn nhân viên (BA�n B)</label>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:54 <label class="form-label fw-bold">NgA�y bắt đầu kA�</label>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:83 <h5 class="mb-0">CỘNG HA�A XA� HỘI CHỦ NGHĨA VIỆT NAM</h5>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:84 <p class="small">Độc lập - Tự do - Hạnh phA�c</p>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:89 <p>HA�m nay, ngA�y @DateTime.Now.Day tháng @DateTime.Now.Month năm @DateTime.Now.Year, chA�ng tA�i gồm:</p>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:91 <p><strong>BA?N A (HR):</strong> CA�NG TY HRMS (Đại diện: Nguyễn Đức Long)</p>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:92 <p><strong>BA?N B (NHA�N VIA?N):</strong> <span id="previewName" class="text-primary fw-bold" style="border-bottom: 1px dotted #000; min-width: 150px; display: inline-block;">................................</span></p>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:97 <small class="fst-italic text-muted">(Sẽ kA� sau khi nhận mail)</small>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:100 <strong style="font-size: 18px;">ĐẠI DIỆN CA�NG TY (HR KA�)</strong><br>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:101 <small class="fst-italic text-muted no-print">(Bấm vào dưới đA�y để kA�)</small>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:104 <div id="hr-cursive" style="font-family: 'Dancing Script', cursive; font-size: 36px; color: #000080;">(Chưa kA�)</div>
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:126 // 1. Đồng bộ tA�n Nhân viên khi chọn từ danh sách
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:131 // 2. Kiểm tra việc kA� hợp đồng trước khi Submit
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:135 Swal.fire('Thiếu chữ kA�', 'Vui lA�ng kA� xA�c nhận Đại diện HR trước khi gửi Hợp đồng!', 'warning');
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:141 // 3. HA�m kA�ch hoạt Popup KA� tA�n (Chỉ dA�nh cho HR ở trang Create nA�y)
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:144 title: 'KA� tA�n Đại diện HR',
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:146 inputLabel: 'Nhập họ và tA�n đầy đủ để xA�c nhận:',
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:147 inputValue: 'Nguyễn Đức Long', // Mặc định gợi A� tA�n người đại diện HR
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:150 confirmButtonText: 'XA�c nhận kA�',
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:153 if (!value) { return 'Bạn phải nhập tA�n để kA� hợp đồng!'; }
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:159 // Cắt lấy chữ cuối công trong tA�n để lA�m chữ kA� nghệ thuật
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:163 // Hiển thị 2 lớp chữ kA� lA�n giấy
+d:\giao diện demo\giao diện demo\Views\Contract\Create.cshtml:170 Swal.fire({ icon: 'success', title: 'Đã� kA� thA�nh cA�ng!', showConfirmButton: false, timer: 1000 });
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:29 /* 3. VA�NG KA� TA?N */
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:334 // 🔹 HA�M GỌI AJAX DUYỆT Và ĐẨY SANG NHA�N SỰ
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:337 title: 'Đang xử lý�...',
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:343 title: 'ThA�nh cA�ng!',
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:344 text: 'Hợp đồng đã có hiệu lực. Nhân viên đã được thA�m vào danh sách chA�nh thức!',
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:352 Swal.fire('Lỗi', 'KhA�ng thể duyệt hợp đồng lA�c nA�y.', 'error');
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:358 title: 'XA�c nhận hủy?',
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:363 confirmButtonText: 'Đồng ý� hủy',
+d:\giao diện demo\giao diện demo\Views\Contract\Index.cshtml:370 Swal.fire({ title: 'Đã� hủy!', icon: 'success', timer: 1500, showConfirmButton: false });
+d:\giao diện demo\giao diện demo\Views\Dashboard\EmployeeList.cshtml:49 /* n�t quay l?i */
+d:\giao diện demo\giao diện demo\Views\Dashboard\EmployeeList.cshtml:92 <h2>?? Danh s�ch nh�n vi�n</h2>
+d:\giao diện demo\giao diện demo\Views\Dashboard\EmployeeList.cshtml:102 <th>?? T�n</th>
+d:\giao diện demo\giao diện demo\Views\Dashboard\EmployeeList.cshtml:103 <th>?? Ph�ng ban</th>
+d:\giao diện demo\giao diện demo\Views\Dashboard\Index.cshtml:120 <h2>d�?� HRMS</h2>
+d:\giao diện demo\giao diện demo\Views\Dashboard\Index.cshtml:128 <a asp-controller="Account" asp-action="Logout">d�?� Đăng xuất</a>
+d:\giao diện demo\giao diện demo\Views\Dashboard\Index.cshtml:134 <h2>d��? Trang chủ hệ thống</h2>
+d:\giao diện demo\giao diện demo\Views\Dashboard\Index.cshtml:153 ✅ Đang lA�m
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:86 <h2>�?� ThA�m nhân viên</h2>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:89 <label>TA�n nhân viên:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:90 <input name="Name" placeholder="Nhập họ và tA�n..." required />
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:93 <input name="Department" placeholder="Và dụ: Ban GiA�m đốc hoặc PhA�ng IT" required />
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:95 <label>Trạng thA�i hợp đồng:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:97 <option value="ChA�nh thức">ChA�nh thức</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:103 <label>Vị trA� công việc (Chức vụ):</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:107 <optgroup label="1. Ban GiA�m đốc" data-i18n-group="employee.group_director">
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:108 <option value="GiA�m đốc điều hA�nh (CEO)">GiA�m đốc điều hA�nh (CEO)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:109 <option value="GiA�m đốc Kỹ thuật (CTO)">GiA�m đốc Kỹ thuật (CTO)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:110 <option value="GiA�m đốc NhA�n sự (CHRO)">GiA�m đốc NhA�n sự (CHRO)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:114 <option value="Quản trị viA�n hệ thống (System Admin)">Quản trị viA�n hệ thống (System Admin)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:115 <option value="Quản lý Dự A�n (PM)">Quản lý Dự A�n (PM)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:116 <option value="Trưởng phA�ng Kỹ thuật">Trưởng phA�ng Kỹ thuật</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:117 <option value="Trưởng phA�ng NhA�n sự (HR)">Trưởng phA�ng NhA�n sự (HR)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:118 <option value="Trưởng phA�ng Kinh doanh (Sales)">Trưởng phA�ng Kinh doanh (Sales)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:122 <option value="Lập trA�nh viA�n (Senior)">Lập trA�nh viA�n (Senior)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:123 <option value="Lập trA�nh viA�n (Junior/Mid)">Lập trA�nh viA�n (Junior/Mid)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:124 <option value="PhA�n tA�ch nghiệp vụ (BA)">PhA�n tA�ch nghiệp vụ (BA)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:129 <option value="ChuyA�n viA�n NhA�n sự">ChuyA�n viA�n NhA�n sự</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:130 <option value="Kế toA�n viA�n">Kế toA�n viA�n</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:136 <label>d�?� Trình độ học vấn:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:138 <option value="">-- Chưa xA�c định --</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:139 <option value="Phổ thA�ng">Phổ thA�ng</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:159 const title = 'XA�c nhận?';
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:160 const text = 'Bạn muốn thA�m nhân viên mới vào hệ thống?';
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:161 const confirmBtn = 'Đồng ý� thA�m';
+d:\giao diện demo\giao diện demo\Views\Employee\Create.cshtml:175 // Submit form thật sự sau khi người dA�ng đồng A� trA�n SweetAlert
+d:\giao diện demo\giao diện demo\Views\Employee\Details.cshtml:117 <div class="info-label">d�?� Trình độ học vấn</div>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:110 <label>TA�n nhân viên:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:116 <label>Trạng thA�i hợp đồng:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:118 <option value="ChA�nh thức">ChA�nh thức</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:124 <label>Vị trA� công việc (Chức vụ):</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:128 <optgroup label="1. Ban GiA�m đốc" data-i18n-group="employee.group_director">
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:129 <option value="GiA�m đốc điều hA�nh (CEO)">GiA�m đốc điều hA�nh (CEO)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:130 <option value="GiA�m đốc Kỹ thuật (CTO)">GiA�m đốc Kỹ thuật (CTO)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:131 <option value="GiA�m đốc NhA�n sự (CHRO)">GiA�m đốc NhA�n sự (CHRO)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:135 <option value="Quản trị viA�n hệ thống (System Admin)">Quản trị viA�n hệ thống (System Admin)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:136 <option value="Quản lý Dự A�n (PM)">Quản lý Dự A�n (PM)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:137 <option value="Trưởng phA�ng Kỹ thuật">Trưởng phA�ng Kỹ thuật</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:138 <option value="Trưởng phA�ng NhA�n sự (HR)">Trưởng phA�ng NhA�n sự (HR)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:139 <option value="Trưởng phA�ng Kinh doanh (Sales)">Trưởng phA�ng Kinh doanh (Sales)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:143 <option value="Lập trA�nh viA�n (Senior)">Lập trA�nh viA�n (Senior)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:144 <option value="Lập trA�nh viA�n (Junior/Mid)">Lập trA�nh viA�n (Junior/Mid)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:145 <option value="PhA�n tA�ch nghiệp vụ (BA)">PhA�n tA�ch nghiệp vụ (BA)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:150 <option value="ChuyA�n viA�n NhA�n sự">ChuyA�n viA�n NhA�n sự</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:151 <option value="Kế toA�n viA�n">Kế toA�n viA�n</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:159 <label style="color: #8e44ad;">d�?� Trình độ học vấn:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:161 <option value="">-- Chưa xA�c định --</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:162 <option value="Phổ thA�ng">Phổ thA�ng</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:168 Chọn trA�nh độ học vấn cao nhất của nhân viên
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:172 Lưu A�: DA�ng để tính toA�n Hệ số Kinh nghiệm
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:174 <label style="color: #8e44ad;">d�?� Điểm/Loại KPI:</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:176 <option value="">-- Chưa đA�nh giA� --</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:178 <option value="B">Loại B (KhA�)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:179 <option value="C">Loại C (Trung bA�nh)</option>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:182 Lưu A�: DA�ng để tính toA�n Hệ số KPI
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:196 VD: Trưởng phA�ng nhập 3000000
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:202 <label style="color: #27ae60;">Hệ số khu vực (VA�ng khA� khăn):</label>
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:205 VD: Nhập 0.1 đến 0.7 (hệ thống tự nhA�n với lương CB)
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:243 hint.innerHTML = `<span style="color:#d35400; font-weight:bold;">Gợi A� theo bậc lương cấu hA�nh: ${data.allowance.toLocaleString('vi-VN')} VNĐ</span>`;
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:245 hint.innerText = "Chưa có cấu hA�nh phụ cấp cho trA�nh độ nA�y trong bảng Bậc Lương.";
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:257 const title = 'XA�c nhận cập nhật?';
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:258 const text = 'Bạn muốn cập nhật tháng tin của nhân viên nA�y?';
+d:\giao diện demo\giao diện demo\Views\Employee\Edit.cshtml:259 const confirmBtn = 'XA�c nhận';
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:28 <h5 class="fw-bold text-dark">🔹 Danh sách hồ sơ nhA�n sự hệ thống</h5>
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:40 placeholder="TA�m tA�n hoặc mã nhân viên (VD: NV001)..." value="@ViewBag.CurrentSearch">
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:75 <th>Họ và TA�n</th>
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:79 <th>Trạng thA�i</th>
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:81 <th style="width:180px;">Thao tA�c</th>
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:95 @(string.IsNullOrEmpty(item.EmployeeCode) ? "NV-M�?I" : item.EmployeeCode)
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:135 <i class="fas fa-trash-alt"></i> XA�a
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:147 <h5 class="fw-bold">KhA�ng tA�m thấy dữ liệu nhA�n sự</h5>
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:148 <i>Vui lA�ng kiểm tra lại từ khA�a hoặc mã nhân viên.</i>
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:171 title: `Hệ thống: ${employeeName} đã được thA�m vào danh sách!`,
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:190 // Cập nhật colspan lA�n 10 ở đA�y nữa
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:197 title: 'XA�c nhận xA�a?',
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:198 text: 'Dữ liệu hồ sơ sẽ bị xA�a vĩnh viễn!',
+d:\giao diện demo\giao diện demo\Views\Employee\Index.cshtml:202 confirmButtonText: 'Đồng ý� xA�a'
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:23 /* Phần ảnh đại diện bA�n trA�i */
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:88 /* Phần nhập liệu bA�n phải */
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:118 <h2 class="profile-title">CẬP NHẬT HỒ SƠ Có NHA�N</h2>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:127 <h5 class="text-start fw-bold mb-4">THA�NG TIN Có NHA�N</h5>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:141 @* NA�t ảo để kA�ch hoạt input file ẩn *@
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:159 <label class="form-label">Họ và TA�n Nhập tA�n đầy đủ (khA�ng quA� 100 kA� tự)</label>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:164 <label class="form-label">Địa chỉ hiện tại Cung cấp địa chỉ liA�n lạc chi tiết nhất</label>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:165 <input asp-for="Address" class="form-control" placeholder="Địa chỉ - địa chỉ liA�n lạc chi tiết nhất" />
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:174 <label class="form-label">Ngày sinh Chọn ngA�y sinh theo định dạng</label>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:179 <label class="form-label">Giới tính Chọn giới tính phA� hợp nhất</label>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:181 <option value="">Chọn giới tA�nh</option>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:184 <option value="KhA�c">KhA�c</option>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:189 <label class="form-label">TA�n ngân hàng Nhập tA�n đầy đủ của NgA�n hA�ng (khA�ng viết tắt)</label>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:190 <input asp-for="BankName" class="form-control" placeholder="TA�n ngân hàng" />
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:194 <label class="form-label">Số tài khoản Nhập số tài khoản số sẵn chA�nh xA�c</label>
+d:\giao diện demo\giao diện demo\Views\Employee\MyProfile.cshtml:206 // 🔹 HA�m xem trước ảnh (Preview)
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:4 ViewData["Title"] = "Cấu hA�nh Hệ số Kinh nghiệm";
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:8 <h2 style="color: #2c3e50;">�?�️ Cấu hA�nh Hệ số Kinh nghiệm</h2>
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:9 <p style="color: #7f8c8d;">Thiết lập hệ số lương theo dải năm kinh nghiệm. Hệ số nA�y sẽ nhA�n trực tiếp vào lương cơ bản để tính Lương theo Hiệu suất.</p>
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:17 <th>Ghi chA�</th>
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:41 <button id="btnSave" class="btn btn-primary">🔹 Lưu Cấu HA�nh</button>
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:64 Swal.fire('ThA�nh cA�ng', 'Đã� lưu cấu hA�nh Hệ số Kinh nghiệm.', 'success');
+d:\giao diện demo\giao diện demo\Views\ExperienceConfig\Index.cshtml:66 Swal.fire('Lỗi', 'KhA�ng thể lưu cấu hA�nh.', 'error');
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:6 /* Style cho c�c Card Dashboard */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:22 /* M�u s?c chu?n theo ?nh c?a b?n */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:23 .bg-nv { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); } /* Nh�n vi�n - Xanh duong */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:24 .bg-cc { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); } /* Ch?m c�ng - Xanh l� */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:25 .bg-luong { background: linear-gradient(135deg, #ee9ae5 0%, #5961f9 100%); } /* Luong - T�m h?ng */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:26 .bg-nghi { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); } /* Ngh? ph�p - V�ng cam */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:27 .bg-hd { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); } /* H?p d?ng - Xanh t�m */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:28 .bg-bc { background: linear-gradient(135deg, #134e5e 0%, #71b280 100%); } /* B�o c�o - Xanh d?m */
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:38 <h5>?? Nh�n vi�n</h5>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:44 <h5>? Ch?m c�ng</h5>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:56 <h5>?? Ngh? ph�p</h5>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:68 <h5>?? B�o c�o</h5>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:75 <h4 class="mb-4"><i class="fas fa-bell text-warning me-2"></i> Nh?t k� ho?t d?ng & Tin nh?n t? c�c Actor</h4>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:82 <th style="width: 200px;">Ph�n lo?i</th>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:108 // 2. L?ng nghe s? ki?n C?p nh?t s? lu?ng nh�n vi�n
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:112 // Hi?u ?ng d?i m�u v� nh?y s?
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:119 // 3. L?ng nghe th�ng b�o v� ghi v�o nh?t k�
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:124 // Ch�n d�ng m?i l�n d?u b?ng nh?t k�
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:130 <td class="text-muted small">Th�ng b�o</td>
+d:\giao diện demo\giao diện demo\Views\Home\Index.cshtml:133 // Tr? l?i m�u sau 3 gi�y
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:2 ViewData["Title"] = "🔹‍🔹 NhA�n sự (Human Resources)";
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:44 <div class="card teal">d��? Báo cáo <div class="number" id="reportCount">@(ViewBag.ReportCount ?? 0)</div></div>
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:49 <h3>🔹 Nhật kA� hoạt động &amp; Tin nhắn từ các Actor</h3>
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:58 <th style="width: 250px;">PhA�n loại</th>
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:67 <td><span class="badge bg-danger need-process-badge">CẦN X�? LA�</span></td>
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:107 // 1. Cập nhật số lượng nhân viên (PhA�t từ ContractController/Approve)
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:118 // 2. Khi duyệt hợp đồng thA�nh cA�ng
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:121 const approveLog = '✅ PhA� duyệt';
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:122 const contractMsg = 'đA� được duyệt hợp đồng và trở thA�nh nhA�n sự chA�nh thức.';
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:123 const welcomeMsg = 'd�?� ChA�c mừng!';
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:154 const msg = 'vừa gửi đơn nghỉ phA�p';
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:163 const msg = 'yêu cầu kA� hợp đồng';
+d:\giao diện demo\giao diện demo\Views\HR\Index.cshtml:183 el.textContent = "" || 'CẦN X�? LA�';
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:4 ViewData["Title"] = "Cấu hA�nh Hệ số Vị trA� (Job Title)";
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:8 <h2 style="color: #2c3e50;">�?�️ Cấu hA�nh Hệ số Vị trA� (Job Title)</h2>
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:9 <p style="color: #7f8c8d;">Thiết lập hệ số lương theo chức vụ/vị trA�. Hệ số nA�y sẽ nhA�n trực tiếp vào lương cơ bản để tính Lương theo Hiệu suất.</p>
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:14 <th>Chức vụ / Vị trA�</th>
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:16 <th>Ghi chA�</th>
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:35 <button id="btnSave" class="btn btn-primary">🔹 Lưu Cấu HA�nh</button>
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:57 Swal.fire('ThA�nh cA�ng', 'Đã� lưu cấu hA�nh Hệ số Vị trA�.', 'success');
+d:\giao diện demo\giao diện demo\Views\JobTitleConfig\Index.cshtml:59 Swal.fire('Lỗi', 'KhA�ng thể lưu cấu hA�nh.', 'error');
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:4 ViewData["Title"] = "Cấu hA�nh Hệ số KPI";
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:8 <h2 style="color: #2c3e50;">�?�️ Cấu hA�nh Hệ số KPI</h2>
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:9 <p style="color: #7f8c8d;">Thiết lập hệ số lương theo điểm/xếp loại KPI. Hệ số nA�y sẽ nhA�n trực tiếp vào lương cơ bản để tính Lương theo Hiệu suất.</p>
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:16 <th>Ghi chA�</th>
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:35 <button id="btnSave" class="btn btn-primary">🔹 Lưu Cấu HA�nh</button>
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:57 Swal.fire('ThA�nh cA�ng', 'Đã� lưu cấu hA�nh Hệ số KPI.', 'success');
+d:\giao diện demo\giao diện demo\Views\KPIConfig\Index.cshtml:59 Swal.fire('Lỗi', 'KhA�ng thể lưu cấu hA�nh.', 'error');
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:2 ViewData["Title"] = "?? Ban l�nh d?o";
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:3 // L?y d? li?u d� du?c Controller t�nh to�n g?p c? h? th?ng + file upload
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:11 // L?y danh s�ch File d�nh k�m d? in ra b?ng du?i bi?u d?
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:15 <h2>?? B�o c�o & Th?ng k�</h2>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:19 ?? B�o c�o nh�n s?
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:24 ? Lu?t ch?m c�ng
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:29 ?? B�o c�o luong
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:41 <h4>?? S? lu?ng b�o c�o</h4>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:46 <h4>?? Tr?ng th�i b�o c�o</h4>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:52 <h3>?? T?ng quan b�o c�o</h3>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:56 <th>Lo?i b�o c�o</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:57 <th>Tr?ng th�i</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:63 <td>B�o c�o nh�n s?</td>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:64 <td>Ho�n t?t</td>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:68 <td>B�o c�o luong</td>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:69 <td>@((salCount > 0) ? "�� g?i" : "Ch? x? l�")</td>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:73 <td>B�o c�o ch?m c�ng</td>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:74 <td>Ho�n t?t</td>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:83 <h5 class="fw-bold text-dark"><i class="fas fa-file-pdf text-danger me-2"></i> B�o c�o d�nh k�m t? HR</h5>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:91 <th>Ti�u d?</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:92 <th>Ph�n lo?i</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:93 <th>T�n File</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:94 <th>Ngu?i t?i l�n</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:96 <th class="text-center">H�nh d?ng</th>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:120 <p class="text-muted mb-0"><i>Chua c� file b�o c�o n�o du?c g?i t? HR.</i></p>
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:127 <i class="fas fa-file-pdf"></i> ?? Xu?t b�o c�o m�n h�nh (PDF)
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:130 <i class="fas fa-list"></i> Xem KPI nh�n vi�n chi ti?t
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:147 // V? BI?U �? C?T (S? hi?n 1, 2, 3... theo s? lu?ng b�o c�o)
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:151 labels: ['Nh�n s?', 'Ch?m c�ng', 'Luong'],
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:153 label: 'S? lu?ng b�o c�o',
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:162 ticks: { stepSize: 1 } // �?m b?o ch? hi?n s? nguy�n 1, 2, 3...
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:168 // V? BI?U �? TR�N
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:172 labels: ['Ho�n t?t', '�ang x? l�'],
+d:\giao diện demo\giao diện demo\Views\Leader\Index.cshtml:190 title: 'B�o c�o m?i!',
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:4 ViewData["Title"] = "🔹 Tạo đơn nghỉ phA�p";
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:28 /* A� Input dA�ng kẻ chấm chấm */
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:47 /* A� chọn ngA�y */
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:66 /* VA�ng Chữ kA� */
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:114 <h5 class="fw-bold mb-1" style="font-size: 20px;">CỘNG HA�A XA� HỘI CHỦ NGHĨA VIỆT NAM</h5>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:115 <h6 class="fw-bold" style="text-decoration: underline; font-size: 18px;">Độc lập - Tự do - Hạnh phA�c</h6>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:117 <h2 class="fw-bold mt-3 mb-4" style="font-size: 28px;">ĐƠN XIN NGHỈ PHA�P</h2>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:122 KA�nh gửi: <strong>Ban GiA�m đốc & PhA�ng HA�nh chA�nh NhA�n sự</strong>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:126 TA�i tA�n lA�:
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:127 <input type="text" name="EmployeeName" class="input-word flex-grow-1 ms-2" required placeholder="Nhập họ và tA�n..." id="empNameInput" />
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:131 Nay tA�i lA�m đơn nA�y xin phA�p được nghỉ từ ngA�y
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:133 đến hết ngA�y
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:139 <textarea name="Reason" class="input-textarea" rows="2" required placeholder="Ghi rA� là do (Và dụ: Nghỉ ốm, việc gia đA�nh...)"></textarea>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:143 TA�i xin cam đoan sẽ bA�n giao công việc đầy đủ cho người có liA�n quan và đi lA�m lại đA�ng thời gian quy định. KA�nh mong Ban GiA�m đốc xem xA�t và chấp thuận.<br />
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:144 Xin trA�n trọng cảm ơn!
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:151 <i>ThA�i NguyA�n, ngA�y @DateTime.Now.Day tháng @DateTime.Now.Month năm @DateTime.Now.Year</i>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:153 <strong style="font-size: 18px;">Người lA�m đơn</strong><br>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:154 <small class="fst-italic text-muted">(Bấm vào dưới đA�y để kA� tA�n)</small>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:157 <div id="cursive-part" style="font-family: 'Dancing Script', cursive; font-size: 36px; color: #000080;">(Chưa kA�)</div>
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:168 d�?� Gửi đơn ngay
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:192 title: 'KA� tA�n điện tử',
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:194 inputLabel: 'Nhập họ tA�n của bạn để xA�c nhận đơn:',
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:196 placeholder: 'Và dụ: Nguyễn ThA�y Trang',
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:198 confirmButtonText: 'XA�c nhận kA�',
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:201 if (!value) { return 'Bạn phải nhập tA�n để kA� đơn!'; }
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:207 // Lấy từ cuối công trong chuỗi họ tA�n để lA�m chữ kA� nghệ thuật
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:211 // GA�n vào 2 phần HTML tương ứng
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:215 // Lưu giA� trị thực tế vào Form để nộp lA�n Server
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:218 Swal.fire({ icon: 'success', title: 'Đã� kA� thA�nh cA�ng', showConfirmButton: false, timer: 1000 });
+d:\giao diện demo\giao diện demo\Views\Leave\Create.cshtml:226 Swal.fire('Cảnh bA�o', 'Vui lA�ng kA� tA�n vào đơn trước khi gửi!', 'warning');
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:3 ViewData["Title"] = "Chi tiết đơn nghỉ phA�p";
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:12 /* Khung giấy A4 chuẩn hiển thị trA�n Web */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:25 /* DA�ng kẻ chấm chấm cho dữ liệu */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:34 /* CẤU HA�NH IN (QUAN TRỌNG ĐỂ XA�A SIDEBAR/TOPBAR)            */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:37 /* 1. A�p ẩn Sidebar, Topbar của hệ thống và các nA�t bấm */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:41 /* 2. A�p nội dung trA�n viền 100% khA�ng bị lệch trA�i do margin của Layout */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:52 padding: 0 !important; /* MA�y in sẽ tự lấy lề theo cấu trA�c @@page */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:61 /* Giữ mA�u cho chữ kA� và các dA�ng tháng tin khi in */
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:75 <i class="fas fa-print"></i> In đơn nA�y (Xuất PDF)
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:81 <h5 class="fw-bold">CỘNG HA�A XA� HỘI CHỦ NGHĨA VIỆT NAM</h5>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:82 <h6 class="fw-bold" style="text-decoration: underline;">Độc lập - Tự do - Hạnh phA�c</h6>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:84 <h2 class="fw-bold" style="font-size: 28px;">ĐƠN XIN NGHỈ PHA�P</h2>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:88 <p>KA�nh gửi: <strong>Ban GiA�m đốc & PhA�ng HA�nh chA�nh NhA�n sự</strong></p>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:90 <p>TA�i tA�n lA�: <span class="info-line">@Model.EmployeeName</span></p>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:93 Xin phA�p được nghỉ từ ngA�y: <span class="info-line">@Model.FromDate.ToString("dd/MM/yyyy")</span>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:94 đến hết ngA�y: <span class="info-line">@Model.ToDate.ToString("dd/MM/yyyy")</span>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:106 TA�i xin cam đoan sẽ bA�n giao công việc đầy đủ cho người có liA�n quan và đi lA�m lại đA�ng thời gian quy định.
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:107 KA�nh mong Ban GiA�m đốc xem xA�t chấp thuận.
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:109 <p class="fst-italic">Xin trA�n trọng cảm ơn!</p>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:117 <i>ThA�i NguyA�n, ngA�y @DateTime.Now.ToString("dd") tháng @DateTime.Now.ToString("MM") năm @DateTime.Now.ToString("yyyy")</i>
+d:\giao diện demo\giao diện demo\Views\Leave\Details.cshtml:119 <strong style="font-size: 18px;">Người lA�m đơn</strong><br>
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:6 // Lấy danh sách nhân viên từ Controller truyền sang để dA� Mã NV
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:102 @(role == "HR" ? Html.Raw("<span data-i18n='common.delete'>XA�a</span>") : Html.Raw("<span data-i18n='leave.cancel_form'>Hủy đơn</span>"))
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:112 <td colspan="@(role == "HR" ? 8 : 7)" class="text-center text-muted">Chưa có dữ liệu nghỉ phA�p.</td>
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:126 const msgTpl = action === 'Approve' ? 'Bạn có chắc chắn muốn DUYỆT đơn nghỉ phA�p nA�y?' : 'Bạn có chắc chắn muốn TỪ CHỐI đơn nghỉ phA�p nA�y?';
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:129 title: 'XA�c nhận',
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:135 confirmButtonText: 'XA�c nhận',
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:140 Swal.fire({ title: 'ThA�nh cA�ng!', text: 'Đơn đã được xử lý..', icon: 'success', timer: 1500 })
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:142 }).fail(() => { Swal.fire('Lỗi!', 'KhA�ng thể thực hiện thao tA�c.', 'error'); });
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:149 const confirmMsg = role === "HR" ? "Bạn chắc chắn muốn xA�a đơn nA�y khỏi hệ thống?" : "Bạn muốn hủy đơn xin nghỉ nA�y?";
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:151 title: 'Cảnh bA�o', text: confirmMsg, icon: 'warning', showCancelButton: true,
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:152 confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Đồng ý�', cancelButtonText: 'Quay lại'
+d:\giao diện demo\giao diện demo\Views\Leave\Index.cshtml:157 Swal.fire('Đã� xA�a!', 'Dữ liệu đã được cập nhật.', 'success');
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:7 // Lấy danh sách chấm công từ ViewBag (đA� được Controller lọc chuẩn)
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:11 // Sử dụng trực tiếp con số từ Controller (Đọc từ Database SQL cho chA�nh xA�c)
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:42 🔹 Tổng công thA�ng
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:49 🔹 Đơn nghỉ phA�p
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:70 <h3 class="fw-bold mb-3">🔹 Nhật kA� chấm cA�ng</h3>
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:73 <tr><th>NgA�y</th><th>Check-in</th><th>Check-out</th><th>Trạng thA�i</th></tr>
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:82 <td><span class="badge @(item.CheckOut == null ? "bg-warning text-dark" : "bg-success")">@(item.CheckOut == null ? "Đang lA�m việc" : "HoA�n thA�nh")</span></td>
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:86 <tr><td colspan="4" class="py-4 text-muted">Chưa có dữ liệu chấm cA�ng.</td></tr>
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:115 // 2. Nhận tA�n hiệu duyệt Hợp đồng Real-time
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:124 title: 'ChA�c mừng!',
+d:\giao diện demo\giao diện demo\Views\NhanVien\Index.cshtml:125 text: 'Hợp đồng của bạn đã được phA� duyệt!',
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:8 // 1. Lấy danh sách nhân viên từ ViewBag (đA� đồng bộ từ Controller lấy toA�n bộ nhA�n sự)
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:38 .card-private { border-left-color: #9c27b0 !important; } /* Gửi cá nhân - TA�m */
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:56 @* --- PHẦN 1: FORM GỬI THA�NG BA�O (CHỈ HIỆN V�?I QUẢN LA�) --- *@
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:69 <option value="HR" data-i18n-opt="notif.send_hr">🔹 Gửi cho NhA�n sự (HR)</option>
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:70 <option value="Admin" data-i18n-opt="notif.send_admin">�?�️ Gửi cho Admin hệ thống</option>
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:71 <option value="Ban lA�nh đạo" data-i18n-opt="notif.send_leader">🔹️ Gửi cho Ban lA�nh đạo</option>
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:74 <optgroup id="notif-optgroup-emp" label="Gửi đA�ch danh nhân viên">
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:84 placeholder="Nhập tin nhắn cần phA�t đi..." style="border-radius: 8px; height: 38px;" />
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:88 d�?� Gửi đi
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:96 @* --- PHẦN 2: DANH SA�CH THA�NG BA�O --- *@
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:123 // HA�M VẼ DANH SA�CH THA�NG BA�O
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:129 const emptyText = 'Chưa có thông báo nA�o dA�nh cho bạn.';
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:136 const deleteLabel = '🔹 XA�a';
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:143 if (item.sender === "Hệ thống") { cardClass = "card-system"; icon = "�?�️"; }
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:145 else if (["HR", "Admin", "Ban lA�nh đạo"].includes(item.receiver)) { cardClass = "card-management"; icon = "🔹️"; }
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:147 // Chỉ Quản lý mới thấy nA�t XA�a/Thu hồi
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:186 // === A�M THANH (BỔ SUNG - KHA�NG ẢNH HƯ�?NG LOGIC CŨ) ===
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:209 // --- CA�C HA�M GỬI/XA�A (CHỈ DA�NH CHO QUẢN LA�) ---
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:216 const sentText = 'Đã� phA�t đi!';
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:226 const recallText = 'Tin nhắn sẽ biến mất ở mọi mA�y khA�ch!';
+d:\giao diện demo\giao diện demo\Views\Notification\Index.cshtml:227 const recallOk = 'Đồng ý�';
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:3 ViewData["Title"] = "Tạo đợt thanh toA�n lương";
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:31 <span class="step-badge">🔹 Module Thanh ToA�n Lương</span>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:32 <h4 class="mb-1 fw-bold">Tạo đợt thanh toA�n lương</h4>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:34 Chọn nhân viên cần thanh toA�n. Net Salary được lấy trực tiếp từ bảng lương hiện tại — khA�ng tính lại.
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:82 Chọn nhân viên thanh toA�n
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:93 <strong>@noBankCount nhân viên</strong> chưa có tháng tin tài khoản ngân hàng và sẽ khA�ng thể đưa vào file chuyển khoản.
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:101 <strong>@dupCount nhân viên</strong> đã có payment trong kỳ <strong>@currentPeriod</strong> — sẽ khA�ng tạo trA�ng.
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:105 <!-- TA�m tắt -->
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:110 <div><span class="text-muted small">Đã� có trong kỳ nA�y:</span> <strong class="text-danger">@dupCount</strong></div>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:117 <label class="form-label small fw-bold">Ghi chA� thanh toA�n (tA�y chọn)</label>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:130 <th>Họ tA�n</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:132 <th>NgA�n hA�ng</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:135 <th>TA�nh trạng</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:164 <input type="checkbox" class="form-check-input" disabled title="KhA�ng đủ điều kiện thanh toA�n">
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:196 <i class="fas fa-ban me-1"></i>Đã� có trong kỳ nA�y
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:212 <i class="fas fa-check me-1"></i>Sẵn sA�ng
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:235 <i class="fas fa-plus-circle me-1"></i> Tạo đợt thanh toA�n
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:241 <i class="fas fa-plus-circle me-1"></i> Tạo đợt thanh toA�n
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:253 Nhập kỳ lương và nhấn "Xem danh sách nhân viên" để bắt đầu tạo đợt thanh toA�n.
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:286 // Cập nhật trạng thA�i checkbox "Chọn tất cả"
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:306 // Bật/tắt nA�t submit
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:319 Swal.fire('Chưa chọn nhân viên', 'Vui lA�ng chọn A�t nhất một nhân viên.', 'warning');
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Create.cshtml:324 Swal.fire('Thiếu kỳ lương', 'Vui lA�ng nhập kỳ lương trước khi tạo.', 'warning');
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:53 <!-- Thanh tA�m tắt -->
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:60 <div class="label">Tổng tiền thanh toA�n (đA� chọn)</div>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:65 <i class="fas fa-plus me-1"></i> Tạo đợt thanh toA�n
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:71 <i class="fas fa-check-circle me-1"></i> XA�c nhận đã thanh toA�n
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:100 <label class="form-label small fw-bold text-muted">Trạng thA�i</label>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:103 <option value="0" selected="@(currentStatus == "0" ? "selected" : null)">Chưa thanh toA�n</option>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:104 <option value="1" selected="@(currentStatus == "1" ? "selected" : null)">Chờ thanh toA�n</option>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:105 <option value="2" selected="@(currentStatus == "2" ? "selected" : null)">Đã� thanh toA�n</option>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:110 <i class="fas fa-undo me-1"></i> XA�a bộ lọc
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:116 <!-- Bảng thanh toA�n -->
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:127 <th>Họ tA�n</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:129 <th>NgA�n hA�ng</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:133 <th>Trạng thA�i</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:134 <th>NgA�y tạo</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:135 <th>NgA�y thanh toA�n</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:136 <th class="text-center d-print-none">Thao tA�c</th>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:157 PaymentStatus.ChuaThanhToan => "Chưa thanh toA�n",
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:158 PaymentStatus.ChoThanhToan => "Chờ thanh toA�n",
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:159 PaymentStatus.DaThanhToan => "Đã� thanh toA�n",
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:160 _ => "KhA�ng rA�"
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:173 <i class="fas fa-check text-success" title="Đã� hoA�n tất"></i>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:201 title="XA�c nhận đã thanh toA�n">
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:209 title="XA�a">
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:223 Chưa có dữ liệu thanh toA�n.
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:224 <a asp-action="Create" class="d-block mt-2 text-primary">Tạo đợt thanh toA�n mới →</a>
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:242 <!-- Form ẩn để đA�nh dấu hA�ng loạt -->
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:248 <!-- Form ẩn để đA�nh dấu từng cA�i -->
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:254 <!-- Form ẩn để xA�a -->
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:262 // === CHỌN / B�? CHỌN ===
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:284 Swal.fire('Chưa chọn nhân viên', 'Vui lA�ng chọn A�t nhất một nhân viên để xuất file.', 'warning');
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:296 // Xuất file KHA�NG thay đổi trạng thA�i thanh toA�n
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:300 // === Đã�NH DẤU HA�NG LOẠT Đã THANH TOA�N ===
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:304 Swal.fire('Chưa chọn nhân viên', 'Vui lA�ng chọn A�t nhất một nhân viên.', 'warning');
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:313 title: '�?�️ XA�c nhận đã thanh toA�n?',
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:314 html: `Bạn có chắc muốn xA�c nhận thanh toA�n cho <strong>${checks.length} khoản lương</strong> với tổng số tiền <strong>${formattedTotal} ₫</strong>?<br><br><small class="text-success"><i class="fas fa-bell"></i> Sau khi xA�c nhận, hệ thống sẽ tự động gửi thông báo đến tài khoản nhân viên.</small><br><small class="text-danger">�?�️ HA�nh động nA�y chỉ thực hiện sau khi giao dịch ngân hàng đã hoA�n tất thực tế.</small>`,
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:317 confirmButtonText: 'XA�c nhận thanh toA�n',
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:327 // ThA�m token bảo mật
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:338 Swal.fire('✅ ThA�nh cA�ng', `Đã� xA�c nhận thanh toA�n và gửi thông báo cho ${data.count} nhân viên.`, 'success')
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:345 Swal.fire('Lỗi', 'KhA�ng thể kết nối đến mA�y chủ.', 'error');
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:351 // === Đã�NH DẤU TỪNG CA�I Đã THANH TOA�N ===
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:354 title: 'XA�c nhận đã thanh toA�n?',
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:355 html: `XA�c nhận <strong>${name}</strong> đã nhận lương?<br><small class="text-danger">Chỉ xA�c nhận sau khi giao dịch ngân hàng đã thực sự hoA�n tất.</small>`,
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:358 confirmButtonText: '✅ XA�c nhận',
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:376 Swal.fire('✅ ThA�nh cA�ng', `Đã� xA�c nhận thanh toA�n và gửi thông báo đến ${name}.`, 'success')
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:383 Swal.fire('Lỗi', 'KhA�ng thể kết nối đến mA�y chủ.', 'error');
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:389 // === XA�A ===
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:392 title: 'XA�a bản ghi?',
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:393 html: `Bạn muốn xA�a bản ghi thanh toA�n của <strong>${name}</strong>?`,
+d:\giao diện demo\giao diện demo\Views\PayrollPayment\Index.cshtml:396 confirmButtonText: '🔹️ XA�a',
+d:\giao diện demo\giao diện demo\Views\Report\Edit.cshtml:13 <label>Thưởng ChuyA�n cần</label>
+d:\giao diện demo\giao diện demo\Views\Report\Edit.cshtml:25 <label>Số ngA�y nghỉ</label>
+d:\giao diện demo\giao diện demo\Views\Report\Edit.cshtml:31 <option value="Có phA�p">Có phA�p</option>
+d:\giao diện demo\giao diện demo\Views\Report\Edit.cshtml:32 <option value="KhA�ng phA�p">KhA�ng phA�p</option>
+d:\giao diện demo\giao diện demo\Views\Report\Edit.cshtml:36 <label>Trạng thA�i nhiệm vụ</label>
+d:\giao diện demo\giao diện demo\Views\Report\Edit.cshtml:38 <option value="HoA�n thA�nh">HoA�n thA�nh</option>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:5 // 🔹 Lấy danh sách File đA�nh kA�m từ Controller truyền sang
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:24 <label class="fw-bold mb-2 text-primary">🔹 Chọn báo cáo đA�nh kA�m từ HR để xem nội dung:</label>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:26 <option value="">-- Mặc định: Xem bảng tổng kết KPI NhA�n sự --</option>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:41 <h6 class="fw-bold">CA�NG TY TNHH HRMS DEMO</h6>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:45 <h6 class="fw-bold">CỘNG HA�A XA� HỘI CHỦ NGHĨA VIỆT NAM</h6>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:46 <h6 class="fw-bold text-decoration-underline">Độc lập - Tự do - Hạnh phA�c</h6>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:47 <p class="mt-2 text-end fst-italic">HA� Nội, ngA�y @DateTime.Now.ToString("dd") tháng @DateTime.Now.ToString("MM") năm @DateTime.Now.ToString("yyyy")</p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:51 <h3 class="text-center fw-bold mt-3 mb-4 text-dark" id="reportDocTitle">BA�O CA�O TỔNG KẾT NHA�N SỰ & CHẤM CA�NG</h3>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:55 <p><strong>Người xuất báo cáo:</strong> Ban LA�nh Đạo (Leader)</p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:56 <p><strong>KA�nh gửi:</strong> Bộ phận HA�nh chA�nh NhA�n sự (HR)</p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:57 <p><strong>Nội dung:</strong> Dưới đA�y là danh sách chi tiết số liệu báo cáo nhA�n sự đang được ghi nhận trA�n hệ thống để bộ phận HR nắm bắt và đồng bộ xử lý�.</p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:64 <th>Họ và TA�n</th>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:68 <th>TA�nh trạng nhiệm vụ</th>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:81 <td>@item.LeaveDays ngA�y</td>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:89 <td colspan="6" class="text-center py-4"><i>Chưa có dữ liệu nhA�n sự nA�o được ghi nhận.</i></td>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:99 <p><i>(KA� và ghi rA� họ tA�n)</i></p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:103 <p class="fw-bold mb-0">LA�nh đạo phA� duyệt</p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:104 <p><i>(KA� và ghi rA� họ tA�n)</i></p>
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:121 /* Ẩn mọi thứ ngoA�i lề */
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:144 // Lưu lại đoạn HTML gốc (Bảng KPI) để khA�i phục khi LA�nh đạo chọn "Mặc định"
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:155 // KhA�i phục về bảng KPI
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:157 titleEl.innerText = 'BA�O CA�O TỔNG KẾT NHA�N SỰ & CHẤM CA�NG';
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:161 // Đổi tiA�u đề tờ trA�nh theo file đã chọn
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:164 // Hiện trạng thA�i Loading
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:165 container.innerHTML = "<div class='text-center mt-5 text-dark'><div class='spinner-border text-primary'></div><p class='mt-2 fw-bold'>" + 'Hệ thống đang trA�ch xuất nội dung file...' + "</p></div>";
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:180 container.innerHTML = "<div class='alert alert-danger'>" + '❌ KhA�ng thể đọc file Word nA�y. Hệ thống yêu cầu định dạng chuẩn .docx từ Microsoft Word.' + "</div>";
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:186 ${'TrA�nh duyệt chỉ hỗ trợ xem trực tiếp <b>.PDF</b> và <b>.DOCX</b>.<br>'}
+d:\giao diện demo\giao diện demo\Views\Report\Export.cshtml:187 <a href='${filePath}' class='btn btn-primary mt-3' download>${'Nhấn vào đA�y để tải về mA�y'}</a>
+d:\giao diện demo\giao diện demo\Views\Report\Index.cshtml:158 <h5 class="fw-bold text-dark"><i class="fas fa-file-pdf text-danger me-2"></i> File Báo cáo đính kèm (DA?nh cho Ban LA?nh �?o)</h5>
+d:\giao diện demo\giao diện demo\Views\Report\Index.cshtml:240 <button type="submit" class="btn btn-success"><i class="fas fa-paper-plane me-1"></i> Gửi Ban LA?nh �?o</button>
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:5 // 🔹 Lấy quyền của User để hiển thị tiA�u đề cho phA� hợp
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:10 /* Style chuyA�n nghiệp cho bảng lương */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:12 .group-income { background-color: #e0f2fe !important; color: #0369a1 !important; } /* NhA�m Thu nhập - Xanh dương */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:13 .group-deduction { background-color: #ffedd5 !important; color: #9a3412 !important; } /* NhA�m Giảm trừ - Cam */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:23 /* CẤU HA�NH GIAO DIỆN IN RIA?NG CHO BẢNG LƯƠNG                */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:32 /* 2. Ẩn toA�n bộ Menu trA�i, Topbar và các thA�nh phần khA�ng cần thiết */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:37 /* 3. A�p vA�ng nội dung bung trA�n 100% khổ giấy */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:46 /* 4. Tinh chỉnh Bảng lương để in nA�t hơn */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:51 font-size: 11px !important; /* Giảm size chữ 1 xA�u để vừa khổ giấy */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:59 /* 5. A�p trA�nh duyệt in Đã?NG mA�u nền của các nhA�m cột */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:65 /* 6. Ẩn cột "Thao tA�c" (cột có chữ In phiếu) và in ra giấy thA� khA�ng bấm được */
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:102 <th rowspan="2" class="d-print-none">Thao tA�c</th>
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:106 <th class="group-income">Giờ lA�m</th>
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:112 <th class="group-deduction">KhA�c</th>
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:122 <small class="text-muted">MA�: #@item.Id</small>
+d:\giao diện demo\giao diện demo\Views\Salary\Index.cshtml:139 <i class="bi bi-info-circle badge-tax d-print-none" title="TA�nh theo biểu thuế lũy tiến 5 bậc."></i>
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:4 ViewData["Title"] = "Cấu hA�nh Bậc Lương Tham Chiếu";
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:65 <h2><i class="fas fa-layer-group"></i> Cấu hA�nh Bậc Lương & Phụ cấp bằng cấp</h2>
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:68 <strong>Lưu A� quan trọng:</strong> Bảng nA�y là <b>bảng tham chiếu</b>. Khi HR sửa tháng tin nhân viên và chọn "Trình độ học vấn", hệ thống sẽ gợi A� mức phụ cấp tương ứng ở cột "Phụ cấp gợi A�". Hệ thống KHA�NG tự động thay đổi lương của nhân viên nếu không có sự xA�c nhận của HR.
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:77 <th>Phụ cấp gợi A� (VNĐ)</th>
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:78 <th>Ghi chA�</th>
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:89 <td><input type="text" class="ipt-notes" value="@item.Notes" placeholder="Và dụ: Chỉ A�p dụng HĐ chA�nh thức..." /></td>
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:96 <button type="button" class="btn-save" id="btnSaveConfig">🔹 Lưu Cấu HA�nh</button>
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:125 Swal.fire('ThA�nh cA�ng!', 'Đã� lưu cấu hA�nh bậc lương tham chiếu.', 'success');
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:127 Swal.fire('Lỗi!', 'KhA�ng thể lưu cấu hA�nh. Vui lA�ng thử lại.', 'error');
+d:\giao diện demo\giao diện demo\Views\SalaryGrade\Index.cshtml:132 Swal.fire('Lỗi!', 'Lỗi kết nối mA�y chủ.', 'error');
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:14 /* CẤU TRA?C LAYOUT 2 THANH ĐIỀU HƯ�?NG (CỐ Đ�?NH SIDEBAR)      */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:19 background-color: #f4f6f9; /* MA�u nền xA�m nhạt */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:23 display: block; /* Thả lỏng để cuộn tự nhiA�n theo trA�nh duyệt */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:26 /* 1. THANH ĐIỀU HƯ�?NG BA?N TRA�I (SIDEBAR) - GHIM CHẶT */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:64 /* 2. VA�NG BA?N PHẢI (CHỨA TOPBAR & NỘI DUNG) */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:66 /* Đẩy nội dung sang phải 260px để khA�ng bị Sidebar đã lA�n */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:73 /* 3. THANH ĐIỀU HƯ�?NG NGANG (TOPBAR) - GHIM TRA?N CA�NG */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:95 /* CA�C STYLE CHỨC NĂNG CỦA BẠN (GIỮ NGUYA?N)                  */
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:300 <!-- Notification Sound (sau Bootstrap để dA�ng được AudioContext) -->
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:317 return; // Bỏ qua nếu khA�ng phải gửi cho mA�nh
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:321 // === A�M THANH THA�NG BA�O (BỔ SUNG - KHA�NG ẢNH HƯ�?NG LOGIC CŨ) ===
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:331 } catch(e) { /* Không crash nếu lỗi A�m thanh */ }
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:374 <button onclick="resetChatHistory()" style="background: rgba(255,255,255,0.2); border: 1px solid white; color: white; border-radius: 5px; font-size: 11px; padding: 3px 8px; cursor: pointer;">LA�m mới</button>
+d:\giao diện demo\giao diện demo\Views\Shared\_Layout.cshtml:378 Chào Bạn! Tôi là trợ lý AI. Bạn cần tA�i giúp gì về nhA�n sự hôm nay?

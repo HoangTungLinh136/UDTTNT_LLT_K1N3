@@ -1,0 +1,429 @@
+@{
+    ViewData["Title"] = "Quy tắc chấm công";
+    var role = Context.Session.GetString("Role");
+}
+
+<div class="hrms-page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="hrms-page-title">Quy tắc chấm công</h2>
+            <p class="hrms-page-subtitle">Thiết lập các quy tắc áp dụng cho việc chấm công và tính thời gian làm việc.</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" id="btnCreateVersion" onclick="createDraft()"><i class="fa-solid fa-plus"></i> Tạo phiên bản</button>
+            <button class="btn btn-success d-none" id="btnSave" onclick="saveDraft()"><i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi</button>
+            <button class="btn btn-warning d-none" id="btnActivate" onclick="activateVersion()"><i class="fa-solid fa-check-double"></i> Kích hoạt</button>
+            <button class="btn btn-outline-secondary ms-2" onclick="toggleHistoryDrawer()"><i class="fa-solid fa-clock-rotate-left"></i> Lịch sử</button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Main Content -->
+    <div class="col-12" id="mainRuleContent">
+        <!-- Summary Card -->
+        <div class="card mb-4 border-primary shadow-sm" id="summaryCard">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <small class="text-muted text-uppercase fw-bold">Phiên bản hiện hành</small>
+                        <h4 class="mb-0 text-primary" id="lblVersionCode">Đang tải...</h4>
+                        <span class="badge bg-secondary mt-1" id="lblStatus">Draft</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted text-uppercase fw-bold">Hiệu lực từ</small>
+                        <h5 class="mb-0" id="lblEffectiveFrom">--/--/----</h5>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted text-uppercase fw-bold">Phạm vi áp dụng</small>
+                        <h5 class="mb-0" id="lblScope">Toàn công ty</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form id="ruleForm">
+            <input type="hidden" id="Id" name="Id" />
+            <input type="hidden" id="VersionCode" name="VersionCode" />
+            <input type="hidden" id="Status" name="Status" />
+            <input type="hidden" id="EffectiveFrom" name="EffectiveFrom" />
+
+            <!-- Row 1: Đi muộn / Về sớm -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom-0 pb-0">
+                            <h5 class="card-title fw-bold text-danger"><i class="fa-solid fa-person-running me-2"></i>Đi muộn</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Thời gian đi muộn được chấp nhận (Phút)</label>
+                                <input type="number" class="form-control" name="LateGraceMinutes" id="LateGraceMinutes" min="0" />
+                                <small class="text-muted">Nhân viên check-in trong khoảng thời gian này sẽ không bị tính là đi muộn.</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Hình thức xử lý</label>
+                                <select class="form-select" name="LateHandlingMode" id="LateHandlingMode">
+                                    <option value="DeductMinutes">Trừ thời gian đi muộn vào giờ công</option>
+                                    <option value="NoCredit">Không tính công buổi đó</option>
+                                    <option value="WarningOnly">Chỉ cảnh báo, không trừ giờ</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Giới hạn trừ tối đa (Phút)</label>
+                                <input type="number" class="form-control" name="LateMaxDeductionMinutes" id="LateMaxDeductionMinutes" min="0" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom-0 pb-0">
+                            <h5 class="card-title fw-bold text-warning"><i class="fa-solid fa-person-walking-arrow-right me-2"></i>Về sớm</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Thời gian về sớm được chấp nhận (Phút)</label>
+                                <input type="number" class="form-control" name="EarlyLeaveGraceMinutes" id="EarlyLeaveGraceMinutes" min="0" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Hình thức xử lý</label>
+                                <select class="form-select" name="EarlyLeaveHandlingMode" id="EarlyLeaveHandlingMode">
+                                    <option value="DeductMinutes">Trừ thời gian về sớm vào giờ công</option>
+                                    <option value="NoCredit">Không tính công buổi đó</option>
+                                    <option value="WarningOnly">Chỉ cảnh báo, không trừ giờ</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Giới hạn trừ tối đa (Phút)</label>
+                                <input type="number" class="form-control" name="EarlyLeaveMaxDeductionMinutes" id="EarlyLeaveMaxDeductionMinutes" min="0" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Làm tròn & Thiếu Punch -->
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom-0 pb-0">
+                            <h5 class="card-title fw-bold text-info"><i class="fa-solid fa-clock me-2"></i>Làm tròn thời gian</h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="fw-semibold">Check-in</h6>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <select class="form-select" name="CheckInRoundingMode" id="CheckInRoundingMode">
+                                        <option value="None">Không làm tròn</option>
+                                        <option value="Up">Làm tròn lên (VD: 8:02 -> 8:15)</option>
+                                        <option value="Down">Làm tròn xuống</option>
+                                        <option value="Nearest">Gần nhất</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="CheckInRoundingStepMinutes" id="CheckInRoundingStepMinutes" min="0" />
+                                        <span class="input-group-text">Phút</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h6 class="fw-semibold mt-4">Check-out</h6>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <select class="form-select" name="CheckOutRoundingMode" id="CheckOutRoundingMode">
+                                        <option value="None">Không làm tròn</option>
+                                        <option value="Up">Làm tròn lên</option>
+                                        <option value="Down">Làm tròn xuống (VD: 17:14 -> 17:00)</option>
+                                        <option value="Nearest">Gần nhất</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="CheckOutRoundingStepMinutes" id="CheckOutRoundingStepMinutes" min="0" />
+                                        <span class="input-group-text">Phút</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-white border-bottom-0 pb-0">
+                            <h5 class="card-title fw-bold text-secondary"><i class="fa-solid fa-fingerprint me-2"></i>Thiếu Check-in / Check-out</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Thiếu Check-in xử lý ntn?</label>
+                                <select class="form-select" name="MissingCheckInMode" id="MissingCheckInMode">
+                                    <option value="RequireAdjustment">Yêu cầu tạo đơn Xác nhận công</option>
+                                    <option value="AssumeShiftStart">Giả sử đúng giờ bắt đầu ca</option>
+                                    <option value="DeductFullDay">Không tính công cả ngày</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Thiếu Check-out xử lý ntn?</label>
+                                <select class="form-select" name="MissingCheckOutMode" id="MissingCheckOutMode">
+                                    <option value="RequireAdjustment">Yêu cầu tạo đơn Xác nhận công</option>
+                                    <option value="AssumeShiftEnd">Giả sử đúng giờ kết thúc ca</option>
+                                    <option value="DeductFullDay">Không tính công cả ngày</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Làm thêm giờ OT -->
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-white border-bottom-0 pb-0">
+                            <h5 class="card-title fw-bold text-success"><i class="fa-solid fa-business-time me-2"></i>Làm thêm giờ (Overtime)</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Ngưỡng tính OT trong ngày (Giờ)</label>
+                                    <input type="number" step="0.5" class="form-control" name="DailyOtThreshold" id="DailyOtThreshold" />
+                                    <small class="text-muted">Làm vượt mức này mới được tính OT.</small>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Ngưỡng tính OT trong tuần (Giờ)</label>
+                                    <input type="number" step="1" class="form-control" name="WeeklyOtThreshold" id="WeeklyOtThreshold" />
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" id="AutoCalculateOt" name="AutoCalculateOt">
+                                        <label class="form-check-label" for="AutoCalculateOt">Tự động tính OT (Không cần duyệt)</label>
+                                    </div>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" id="AllowAfterShiftOt" name="AllowAfterShiftOt">
+                                        <label class="form-check-label" for="AllowAfterShiftOt">Cho phép OT ngay sau giờ ca làm</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right Drawer for History -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="historyDrawer" aria-labelledby="historyDrawerLabel">
+        <div class="offcanvas-header bg-light">
+            <h5 class="offcanvas-title" id="historyDrawerLabel"><i class="fa-solid fa-clock-rotate-left me-2"></i>Lịch sử phiên bản</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body" id="historyList">
+            <!-- Rendered by JS -->
+            <div class="text-center text-muted mt-5">
+                <i class="fa-solid fa-spinner fa-spin fa-2x mb-3"></i>
+                <p>Đang tải lịch sử...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let isReadonly = true;
+
+    $(document).ready(function() {
+        loadCurrentActive();
+    });
+
+    function toggleHistoryDrawer() {
+        var myOffcanvas = document.getElementById('historyDrawer');
+        var bsOffcanvas = new bootstrap.Offcanvas(myOffcanvas);
+        bsOffcanvas.show();
+        loadHistory();
+    }
+
+    function setReadonly(readonly) {
+        isReadonly = readonly;
+        $('#ruleForm input, #ruleForm select').prop('disabled', readonly);
+        
+        if (readonly) {
+            $('#btnSave').addClass('d-none');
+            $('#btnActivate').addClass('d-none');
+        } else {
+            $('#btnSave').removeClass('d-none');
+            $('#btnActivate').removeClass('d-none');
+        }
+    }
+
+    function loadCurrentActive() {
+        $.get('/AttendanceRule/GetCurrentActive', function(res) {
+            if (res.success && res.data) {
+                bindDataToForm(res.data);
+            } else {
+                // Empty state
+                $('#lblVersionCode').text("Chưa có phiên bản");
+                $('#lblStatus').text("N/A").removeClass().addClass("badge bg-secondary mt-1");
+                $('#lblEffectiveFrom').text("--/--/----");
+                setReadonly(true);
+            }
+        });
+    }
+
+    function bindDataToForm(data) {
+        $('#Id').val(data.id);
+        $('#VersionCode').val(data.versionCode);
+        $('#Status').val(data.status);
+        
+        // Format Date
+        let effDate = new Date(data.effectiveFrom);
+        $('#EffectiveFrom').val(data.effectiveFrom.split('T')[0]); // simplified
+        $('#lblEffectiveFrom').text(effDate.toLocaleDateString('vi-VN'));
+
+        $('#lblVersionCode').text(data.versionCode);
+        
+        let statusBadge = data.status === 'Active' ? 'bg-success' : (data.status === 'Draft' ? 'bg-warning text-dark' : 'bg-secondary');
+        $('#lblStatus').text(data.status).removeClass().addClass("badge " + statusBadge + " mt-1");
+
+        // Late
+        $('#LateGraceMinutes').val(data.lateGraceMinutes);
+        $('#LateHandlingMode').val(data.lateHandlingMode);
+        $('#LateMaxDeductionMinutes').val(data.lateMaxDeductionMinutes);
+
+        // Early Leave
+        $('#EarlyLeaveGraceMinutes').val(data.earlyLeaveGraceMinutes);
+        $('#EarlyLeaveHandlingMode').val(data.earlyLeaveHandlingMode);
+        $('#EarlyLeaveMaxDeductionMinutes').val(data.earlyLeaveMaxDeductionMinutes);
+
+        // Rounding
+        $('#CheckInRoundingMode').val(data.checkInRoundingMode);
+        $('#CheckInRoundingStepMinutes').val(data.checkInRoundingStepMinutes);
+        $('#CheckOutRoundingMode').val(data.checkOutRoundingMode);
+        $('#CheckOutRoundingStepMinutes').val(data.checkOutRoundingStepMinutes);
+
+        // Missing Punch
+        $('#MissingCheckInMode').val(data.missingCheckInMode);
+        $('#MissingCheckOutMode').val(data.missingCheckOutMode);
+
+        // OT
+        $('#DailyOtThreshold').val(data.dailyOtThreshold);
+        $('#WeeklyOtThreshold').val(data.weeklyOtThreshold);
+        $('#AutoCalculateOt').prop('checked', data.autoCalculateOt);
+        $('#AllowAfterShiftOt').prop('checked', data.allowAfterShiftOt);
+
+        if (data.status === 'Draft') {
+            setReadonly(false);
+            $('#btnCreateVersion').addClass('d-none');
+        } else {
+            setReadonly(true);
+            $('#btnCreateVersion').removeClass('d-none');
+        }
+    }
+
+    function createDraft() {
+        if (!confirm("Tạo phiên bản Draft mới từ phiên bản hiện tại?")) return;
+        
+        $.post('/AttendanceRule/CreateDraft', function(res) {
+            if (res.success) {
+                alert("Tạo phiên bản thành công");
+                bindDataToForm(res.data);
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+
+    function saveDraft() {
+        if (isReadonly) return;
+
+        let dto = {
+            id: $('#Id').val(),
+            effectiveFrom: $('#EffectiveFrom').val(),
+            lateGraceMinutes: $('#LateGraceMinutes').val(),
+            lateHandlingMode: $('#LateHandlingMode').val(),
+            lateMaxDeductionMinutes: $('#LateMaxDeductionMinutes').val(),
+            earlyLeaveGraceMinutes: $('#EarlyLeaveGraceMinutes').val(),
+            earlyLeaveHandlingMode: $('#EarlyLeaveHandlingMode').val(),
+            earlyLeaveMaxDeductionMinutes: $('#EarlyLeaveMaxDeductionMinutes').val(),
+            checkInRoundingMode: $('#CheckInRoundingMode').val(),
+            checkInRoundingStepMinutes: $('#CheckInRoundingStepMinutes').val(),
+            checkOutRoundingMode: $('#CheckOutRoundingMode').val(),
+            checkOutRoundingStepMinutes: $('#CheckOutRoundingStepMinutes').val(),
+            missingCheckInMode: $('#MissingCheckInMode').val(),
+            missingCheckOutMode: $('#MissingCheckOutMode').val(),
+            dailyOtThreshold: $('#DailyOtThreshold').val(),
+            weeklyOtThreshold: $('#WeeklyOtThreshold').val(),
+            autoCalculateOt: $('#AutoCalculateOt').is(':checked'),
+            allowAfterShiftOt: $('#AllowAfterShiftOt').is(':checked')
+        };
+
+        $.ajax({
+            url: '/AttendanceRule/UpdateDraft',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(dto),
+            success: function(res) {
+                if (res.success) {
+                    alert("Lưu thành công!");
+                } else {
+                    alert(res.message);
+                }
+            }
+        });
+    }
+
+    function activateVersion() {
+        let id = $('#Id').val();
+        if (!confirm("Bạn có chắc muốn Kích hoạt phiên bản này? Các phiên bản Active khác sẽ được đưa vào lưu trữ (Archived).")) return;
+
+        $.post('/AttendanceRule/Activate', { id: id }, function(res) {
+            if (res.success) {
+                alert(res.message);
+                loadCurrentActive();
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+
+    function loadHistory() {
+        $.get('/AttendanceRule/GetHistory', function(res) {
+            if (res.success) {
+                let html = '';
+                if (res.data.length === 0) {
+                    html = '<div class="text-center text-muted mt-5"><i class="fa-solid fa-box-open fa-2x mb-3"></i><p>Chưa có phiên bản nào.</p></div>';
+                } else {
+                    html = '<div class="list-group list-group-flush">';
+                    res.data.forEach(item => {
+                        let badge = item.status === 'Active' ? 'bg-success' : (item.status === 'Draft' ? 'bg-warning text-dark' : 'bg-secondary');
+                        let eff = new Date(item.effectiveFrom).toLocaleDateString('vi-VN');
+                        html += `
+                            <a href="javascript:void(0)" onclick="viewVersion(${item.id})" class="list-group-item list-group-item-action py-3">
+                                <div class="d-flex w-100 justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0 fw-bold">${item.versionCode}</h6>
+                                    <span class="badge ${badge}">${item.status}</span>
+                                </div>
+                                <small class="text-muted"><i class="fa-regular fa-calendar me-1"></i> Hiệu lực: ${eff}</small>
+                            </a>
+                        `;
+                    });
+                    html += '</div>';
+                }
+                $('#historyList').html(html);
+            }
+        });
+    }
+
+    function viewVersion(id) {
+        $.get('/AttendanceRule/GetVersion?id=' + id, function(res) {
+            if (res.success) {
+                var myOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('historyDrawer'));
+                myOffcanvas.hide();
+                bindDataToForm(res.data);
+            }
+        });
+    }
+</script>
+}

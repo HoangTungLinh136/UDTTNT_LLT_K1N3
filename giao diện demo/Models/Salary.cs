@@ -1,15 +1,20 @@
-﻿using System;
+using System;
 
 namespace giao_dien_demo.Models
 {
     public class Salary
     {
         public int Id { get; set; }
-        public int EmployeeId { get; set; }
+        public string? EmployeeNameSnapshot { get; set; }
 
-        // Thêm dấu ? để sửa cảnh báo vàng "Non-nullable property"
-        public string? EmployeeName { get; set; }
+        public int? EmployeeId { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.ForeignKey("EmployeeId")]
+        public Employee? Employee { get; set; }
 
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? EmployeeName { get => EmployeeNameSnapshot; set => EmployeeNameSnapshot = value; }
+
+        // Removed legacy EmployeeName
         // --- ĐẦU VÀO (INPUT) ---
         public double BasicSalary { get; set; } // Lương cơ bản để tính bảo hiểm
         public double HoursWorked { get; set; } // Số giờ làm thực tế
@@ -37,5 +42,23 @@ namespace giao_dien_demo.Models
         public double NetSalary { get; set; } // Lương thực nhận cuối cùng
 
         public DateTime SalaryMonth { get; set; } // Tháng tính lương
+
+        // --- BÁO CÁO CHI PHÍ (NOT MAPPED) ---
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public double OvertimeCost { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public double AllowanceCost { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public double PerformanceSalary { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? DepartmentName { get; set; }
+
+        // --- BÁO CÁO THUẾ (NOT MAPPED) ---
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public double TaxableIncome { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public double TotalDeduction { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? TaxCode { get; set; }
     }
 }

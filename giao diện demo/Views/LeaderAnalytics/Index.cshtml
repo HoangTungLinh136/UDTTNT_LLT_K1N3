@@ -1,0 +1,267 @@
+@model giao_dien_demo.Models.LeaderAnalyticsViewModel
+@{
+    ViewData["Title"] = "Phân tích - Ban lãnh đạo";
+}
+
+<style>
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .kpi-card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--hrms-border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .kpi-title { color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    .kpi-value { color: #1e293b; font-size: 24px; font-weight: 700; }
+    
+    .chart-container { background: #fff; padding: 24px; border-radius: 12px; border: 1px solid var(--hrms-border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px; height: 400px; }
+</style>
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+            Phân tích nâng cao
+        </h1>
+        <div class="hrms-page-subtitle">Trung tâm phân tích tương quan dữ liệu, dự báo xu hướng và phát hiện bất thường.</div>
+    </div>
+</div>
+
+<!-- BỘ LỌC -->
+<div class="card mb-4" style="border: 1px solid var(--hrms-border-light); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div class="card-body p-3">
+        <form method="get" class="row gx-3 gy-2 align-items-center">
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Kỳ phân tích (Từ)</label>
+                <input type="month" name="from" class="form-control form-control-sm" style="width: 150px;" value="@Model.From.ToString("yyyy-MM")" onchange="this.form.submit()" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Đến</label>
+                <input type="month" name="to" class="form-control form-control-sm" style="width: 150px;" value="@Model.To.ToString("yyyy-MM")" onchange="this.form.submit()" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Phòng ban</label>
+                <select name="department" class="form-select form-select-sm" style="width: 250px;" onchange="this.form.submit()">
+                    <option value="">-- Tất cả đơn vị quản lý --</option>
+                    @if (Model.ScopeDepartments != null)
+                    {
+                        foreach (var dept in Model.ScopeDepartments)
+                        {
+                            var isSelected = Model.SelectedDepartment == dept;
+                            @if (isSelected) {
+                                <option value="@dept" selected>@dept</option>
+                            } else {
+                                <option value="@dept">@dept</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto ms-auto d-flex align-items-end">
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-light mt-4" style="border: 1px solid #cbd5e1;"><i class="fa-solid fa-rotate-right me-1"></i> Làm mới</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-nav-grid mb-4">
+    <a href="javascript:void(0)" class="hrms-nav-card active" onclick="switchTab('tab1', this)">
+        <i class="fa-solid fa-project-diagram nav-icon"></i>
+        <span class="nav-title">Tương quan dữ liệu</span>
+    </a>
+    <a href="javascript:void(0)" class="hrms-nav-card" onclick="switchTab('tab2', this)">
+        <i class="fa-solid fa-triangle-exclamation nav-icon"></i>
+        <span class="nav-title">Phát hiện bất thường</span>
+    </a>
+    <a href="javascript:void(0)" class="hrms-nav-card" onclick="switchTab('tab3', this)">
+        <i class="fa-solid fa-arrow-trend-up nav-icon"></i>
+        <span class="nav-title">Xu hướng dự báo</span>
+    </a>
+</div>
+
+@if (!Model.HasSufficientData)
+{
+    <div class="hrms-alert hrms-alert-warning">
+        <i class="fa-solid fa-inbox me-2"></i> Không đủ dữ liệu để thực hiện phân tích trong phạm vi đã chọn (cần ít nhất dữ liệu của 3 nhân viên hoặc 3 phòng ban).
+    </div>
+}
+else
+{
+    <!-- TAB 1: TƯƠNG QUAN DỮ LIỆU -->
+    <div id="tab1" class="tab-content active">
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="kpi-card">
+                    <div class="kpi-title">Số nhân viên phân tích</div>
+                    <div class="kpi-value text-primary">@Model.ScopedEmployeeCount</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card">
+                    <div class="kpi-title">Số đơn vị</div>
+                    <div class="kpi-value text-primary">@Model.Departments.Count</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card">
+                    <div class="kpi-title">Thời gian</div>
+                    <div class="kpi-value text-primary">@Model.From.ToString("MM/yyyy") - @Model.To.ToString("MM/yyyy")</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Ma trận Tương quan (Pearson)</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0 hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Chỉ số A</th>
+                            <th>Chỉ số B</th>
+                            <th>Hệ số tương quan (r)</th>
+                            <th>Mức độ</th>
+                            <th>Kích thước mẫu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Correlations.Any())
+                        {
+                            <tr><td colspan="5" class="text-center text-muted">Không đủ dữ liệu tương quan</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var corr in Model.Correlations)
+                            {
+                                <tr>
+                                    <td>@corr.MetricA</td>
+                                    <td>@corr.MetricB</td>
+                                    <td>@corr.PearsonCoefficient.ToString("0.00")</td>
+                                    <td>
+                                        @if (corr.Strength == "Mạnh") { <span class="badge bg-success">@corr.Strength</span> }
+                                        else if (corr.Strength == "Trung bình") { <span class="badge bg-warning text-dark">@corr.Strength</span> }
+                                        else { <span class="badge bg-secondary">@corr.Strength</span> }
+                                    </td>
+                                    <td>@corr.SampleSize</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: PHÁT HIỆN BẤT THƯỜNG -->
+    <div id="tab2" class="tab-content">
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Danh sách Bất thường (Z-Score)</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0 hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Đơn vị</th>
+                            <th>Chỉ số</th>
+                            <th>Giá trị thực tế</th>
+                            <th>Giá trị tham chiếu (Trung bình)</th>
+                            <th>Độ chênh lệch</th>
+                            <th>Mức độ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Anomalies.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted">Không phát hiện sự kiện bất thường đáng kể</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var item in Model.Anomalies.OrderByDescending(a => Math.Abs(a.ZScore)))
+                            {
+                                <tr>
+                                    <td class="fw-medium">@item.Department</td>
+                                    <td>@item.Metric</td>
+                                    <td>@item.ActualValue.ToString("0.##")</td>
+                                    <td>@item.ExpectedValue.ToString("0.##")</td>
+                                    <td>
+                                        @if (item.DifferencePercent > 0)
+                                        {
+                                            <span class="text-danger"><i class="fa-solid fa-arrow-up"></i> @item.DifferencePercent.ToString("0.0")%</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-success"><i class="fa-solid fa-arrow-down"></i> @Math.Abs(item.DifferencePercent).ToString("0.0")%</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (item.Severity == "Bất thường mạnh")
+                                        {
+                                            <span class="badge bg-danger">@item.Severity</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">@item.Severity</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: XU HƯỚNG DỰ BÁO -->
+    <div id="tab3" class="tab-content">
+        <div class="hrms-alert hrms-alert-info mb-4">
+            <i class="fa-solid fa-info-circle me-2"></i> Xu hướng được tính toán bằng phương pháp Linear Trend dựa trên dữ liệu lịch sử.
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">Dự báo Chi phí nhân sự (Gross)</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0 hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Kỳ (Tháng/Năm)</th>
+                            <th>Chi phí thực tế</th>
+                            <th>Chi phí ước tính (Trend)</th>
+                            <th>Loại dữ liệu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var forecast in Model.Forecasts)
+                        {
+                            <tr class="@(forecast.IsForecast ? "table-warning" : "")">
+                                <td>@forecast.Month</td>
+                                <td>@(forecast.IsForecast ? "-" : forecast.ActualPersonnelCost.ToString("N0") + " ₫")</td>
+                                <td>@(forecast.EstimatedPersonnelCost.HasValue ? forecast.EstimatedPersonnelCost.Value.ToString("N0") + " ₫" : "-")</td>
+                                <td>
+                                    @if (forecast.IsForecast)
+                                    {
+                                        <span class="badge bg-primary">Dự báo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Lịch sử</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    function switchTab(tabId, element) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        document.querySelectorAll('.hrms-nav-card').forEach(n => n.classList.remove('active'));
+        if(element) element.classList.add('active');
+    }
+</script>

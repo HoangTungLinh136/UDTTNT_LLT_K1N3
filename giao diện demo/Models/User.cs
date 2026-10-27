@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace giao_dien_demo.Models
 {
@@ -11,8 +12,9 @@ namespace giao_dien_demo.Models
         [Required(ErrorMessage = "Tên đăng nhập không được để trống")]
         public string Username { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Mật khẩu không được để trống")]
-        public string Password { get; set; } = string.Empty;
+        public string? Password { get; set; } = string.Empty;
+
+        public string? PasswordHash { get; set; }
 
         public string FullName { get; set; } = string.Empty;
 
@@ -29,5 +31,9 @@ namespace giao_dien_demo.Models
 
         // ✅ QUYỀN ĐĂNG NHẬP (Mặc định là false, Admin phải duyệt)
         public bool CanLogin { get; set; } = false;
+
+        public int? EmployeeId { get; set; }
+        [ForeignKey("EmployeeId")]
+        public Employee? Employee { get; set; }
     }
 }

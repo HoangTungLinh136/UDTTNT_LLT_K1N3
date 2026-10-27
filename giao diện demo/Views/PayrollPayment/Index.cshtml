@@ -1,0 +1,454 @@
+﻿@model List<giao_dien_demo.Models.PayrollPayment>
+@using giao_dien_demo.Models
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Thanh toán lương";
+    var role = Context.Session.GetString("Role");
+    var allPeriods = ViewBag.AllPeriods as List<string> ?? new List<string>();
+    var allDepts = ViewBag.AllDepts as List<string> ?? new List<string>();
+    var currentPeriod = ViewBag.CurrentPeriod as string ?? "";
+    var currentDept = ViewBag.CurrentDept as string ?? "";
+    var currentStatus = ViewBag.CurrentStatus as string ?? "";
+}
+
+<style>
+    /* PayrollPayment — Design System aligned */
+    .payroll-page { font-family: 'Inter', sans-serif; }
+
+    /* Summary Bar */
+    .summary-bar {
+        background: linear-gradient(135deg, #0f2744 0%, #1e3a5f 50%, #162d4a 100%);
+        color: white; border-radius: var(--radius-lg, 16px);
+        padding: 22px 28px; margin-bottom: 20px;
+        box-shadow: 0 8px 28px rgba(15,39,68,0.25);
+        display: flex; justify-content: space-between;
+        align-items: center; flex-wrap: wrap; gap: 16px;
+    }
+    .summary-bar .sum-item { display: flex; flex-direction: column; gap: 4px; }
+    .summary-bar .label { color: rgba(255,255,255,0.6); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-bar .value { font-size: 26px; font-weight: 800; color: #38bdf8; font-variant-numeric: tabular-nums; }
+    .summary-bar .sum-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Filter Card */
+    .filter-card {
+        background: white; border-radius: var(--radius-md, 12px);
+        padding: 16px 20px; margin-bottom: 20px;
+        box-shadow: var(--shadow-sm); border: 1px solid var(--hrms-border-light);
+    }
+
+    /* Status Badges */
+    .status-badge { padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; display: inline-block; }
+    .status-badge-0 { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .status-badge-1 { background: #fefce8; color: #854d0e; border: 1px solid #fef08a; }
+    .status-badge-2 { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+
+    /* Table */
+    .table-payment { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .table-payment thead th {
+        background: var(--hrms-surface-2, #f8fafc);
+        font-size: 11.5px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.5px; color: var(--hrms-text-secondary, #64748b);
+        border-bottom: 2px solid var(--hrms-border, #e2e8f0);
+        padding: 12px 14px; white-space: nowrap; vertical-align: middle;
+    }
+    .table-payment tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+    .table-payment tbody tr:hover td { background: #f8fafc; }
+    .table-payment tbody tr:last-child td { border-bottom: none; }
+
+    .bank-masked { font-family: monospace; letter-spacing: 1px; color: #475569; }
+    .net-salary-col { font-weight: 700; color: #166534; font-size: 14px; font-variant-numeric: tabular-nums; }
+    .checkbox-col { width: 40px; }
+
+    /* Buttons */
+    .btn-export { background: linear-gradient(135deg, #059669, #10b981); border: none; color: white; font-family: 'Inter', sans-serif; }
+    .btn-export:hover { background: linear-gradient(135deg, #047857, #059669); color: white; }
+    .btn-paid { background: linear-gradient(135deg, #2563eb, #3b82f6); border: none; color: white; font-family: 'Inter', sans-serif; }
+    .btn-paid:hover { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: white; }
+
+    /* Table card wrapper */
+    .payroll-table-card {
+        background: white; border-radius: var(--radius-lg, 16px);
+        box-shadow: var(--shadow-sm); border: 1px solid var(--hrms-border-light);
+        overflow: hidden;
+    }
+    .payroll-table-header {
+        padding: 16px 20px; border-bottom: 1px solid var(--hrms-border-light);
+        display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    }
+    .payroll-table-title { font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+</style>
+
+<div class="container-fluid mt-3">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Thanh tâm tắt -->
+    <div class="summary-bar d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <div class="label">Số nhân viên đang chọn</div>
+            <div class="value" id="selectedCount">0</div>
+        </div>
+        <div>
+            <div class="label">Tổng tiền thanh toàn (đã chọn)</div>
+            <div class="value" id="totalAmount">0 ₫</div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a asp-controller="PayrollPayment" asp-action="Create" class="btn btn-light fw-bold">
+                <i class="fas fa-plus me-1"></i> Tạo đợt thanh toàn
+            </a>
+            <button type="button" class="btn btn-export fw-bold" id="btnExportCsv" onclick="exportSelected()">
+                <i class="fas fa-file-csv me-1"></i> Xuất file CSV
+            </button>
+            <button type="button" class="btn btn-paid fw-bold" id="btnMarkPaid" onclick="markSelectedPaid()">
+                <i class="fas fa-check-circle me-1"></i> Xác nhận đã thanh toàn
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc -->
+    <div class="filter-card">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Kỳ lương</label>
+                <select name="period" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">-- Tất cả kỳ --</option>
+                    @foreach (var p in allPeriods)
+                    {
+                        <option value="@p" selected="@(p == currentPeriod ? "selected" : null)">@p</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Phòng ban</label>
+                <select name="department" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">-- Tất cả phòng ban --</option>
+                    @foreach (var d in allDepts)
+                    {
+                        <option value="@d" selected="@(d == currentDept ? "selected" : null)">@d</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-bold text-muted">Trạng thái</label>
+                <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">-- Tất cả --</option>
+                    <option value="0" selected="@(currentStatus == "0" ? "selected" : null)">Chưa thanh toàn</option>
+                    <option value="1" selected="@(currentStatus == "1" ? "selected" : null)">Chờ thanh toàn</option>
+                    <option value="2" selected="@(currentStatus == "2" ? "selected" : null)">Đã thanh toàn</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="fas fa-undo me-1"></i> Xóa bộ lọc
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Bảng thanh toàn -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 table-payment" id="paymentTable">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col text-center">
+                                <input type="checkbox" id="selectAll" title="Chọn tất cả">
+                            </th>
+                            <th>Mã NV</th>
+                            <th>Họ tên</th>
+                            <th>Phòng ban</th>
+                            <th>Ngân hàng</th>
+                            <th>Số tài khoản</th>
+                            <th class="text-end">Lương thực nhận</th>
+                            <th>Kỳ lương</th>
+                            <th>Trạng thái</th>
+                            <th>Ngày tạo</th>
+                            <th>Ngày thanh toàn</th>
+                            <th class="text-center d-print-none">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                // Che số tài khoản: chỉ hiển thị 4 số cuối
+                                string maskedAccount = "";
+                                if (!string.IsNullOrEmpty(item.BankAccountNumber))
+                                {
+                                    var acct = item.BankAccountNumber;
+                                    maskedAccount = acct.Length > 4
+                                        ? new string('*', acct.Length - 4) + acct.Substring(acct.Length - 4)
+                                        : acct;
+                                }
+
+                                string statusClass = $"status-badge-{(int)item.Status}";
+                                string statusText = item.Status switch
+                                {
+                                    PaymentStatus.ChuaThanhToan => "Chưa thanh toàn",
+                                    PaymentStatus.ChoThanhToan => "Chờ thanh toàn",
+                                    PaymentStatus.DaThanhToan => "Đã thanh toàn",
+                                    _ => "Không rA"
+                                };
+
+                                bool isDone = item.Status == PaymentStatus.DaThanhToan;
+
+                                <tr data-id="@item.Id" data-net="@item.NetSalary" data-status="@((int)item.Status)">
+                                    <td class="text-center">
+                                        @if (!isDone)
+                                        {
+                                            <input type="checkbox" class="row-check" value="@item.Id" data-net="@item.NetSalary">
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-check text-success" title="Đã hoàn tất"></i>
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@item.EmployeeCode</span></td>
+                                    <td class="fw-semibold">@item.EmployeeName</td>
+                                    <td><small class="text-muted">@item.Department</small></td>
+                                    <td>@item.BankName</td>
+                                    <td><span class="bank-masked">@maskedAccount</span></td>
+                                    <td class="text-end net-salary-col">@item.NetSalary.ToString("N0") ₫</td>
+                                    <td><span class="badge bg-light text-dark border">@item.PayrollPeriod</span></td>
+                                    <td><span class="status-badge @statusClass">@statusText</span></td>
+                                    <td><small>@item.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                    <td>
+                                        @if (item.PaidAt.HasValue)
+                                        {
+                                            <small class="text-success fw-bold">@item.PaidAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                            <small class="text-muted">—</small>
+                                        }
+                                    </td>
+                                    <td class="text-center d-print-none">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            @if (item.Status == PaymentStatus.ChoThanhToan)
+                                            {
+                                                <button class="btn btn-sm btn-success"
+                                                        onclick="confirmMarkPaid(@item.Id, '@item.EmployeeName')"
+                                                        title="Xác nhận đã thanh toàn">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            }
+                                            @if (!isDone)
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                        onclick="deletePayment(@item.Id, '@item.EmployeeName')"
+                                                        title="Xóa">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="12" class="text-center py-5 text-muted">
+                                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                    Chưa có dữ liệu thanh toàn.
+                                    <a asp-action="Create" class="d-block mt-2 text-primary">Tạo đợt thanh toàn mới →</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form ẩn để xuất CSV -->
+<form id="exportForm" method="post" asp-action="ExportCsv">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="payrollPeriod" value="@currentPeriod" id="exportPeriod">
+    <div id="exportIdsContainer"></div>
+</form>
+
+<!-- Form ẩn để đánh dấu hàng loạt -->
+<form id="markPaidForm" method="post" asp-action="MarkMultipleAsPaid">
+    @Html.AntiForgeryToken()
+    <div id="markPaidIdsContainer"></div>
+</form>
+
+<!-- Form ẩn để đánh dấu từng cái -->
+<form id="markOnePaidForm" method="post" asp-action="MarkAsPaid">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="markOnePaidId">
+</form>
+
+<!-- Form ẩn để xóa -->
+<form id="deleteForm" method="post" asp-action="Delete">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteId">
+</form>
+
+@section Scripts {
+    <script>
+        // === CHỌN / B? CHỌN ===
+        document.getElementById('selectAll').addEventListener('change', function () {
+            document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+            updateSummary();
+        });
+
+        document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('row-check')) updateSummary();
+        });
+
+        function updateSummary() {
+            const checks = document.querySelectorAll('.row-check:checked');
+            let total = 0;
+            checks.forEach(cb => total += parseFloat(cb.dataset.net || 0));
+            document.getElementById('selectedCount').textContent = checks.length;
+            document.getElementById('totalAmount').textContent = new Intl.NumberFormat('vi-VN').format(total) + ' ₫';
+        }
+
+        // === XUẤT CSV ===
+        function exportSelected() {
+            const checks = document.querySelectorAll('.row-check:checked');
+            if (checks.length === 0) {
+                Swal.fire('Chưa chọn nhân viên', 'Vui lòng chọn Ít nhất một nhân viên để xuất file.', 'warning');
+                return;
+            }
+            const container = document.getElementById('exportIdsContainer');
+            container.innerHTML = '';
+            checks.forEach(cb => {
+                const inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'paymentIds';
+                inp.value = cb.value;
+                container.appendChild(inp);
+            });
+            // Xuất file KHÔNG thay đổi trạng thái thanh toàn
+            document.getElementById('exportForm').submit();
+        }
+
+        // === ĐãNH DẤU HÀNG LOẠT Đã THANH TOÀN ===
+        function markSelectedPaid() {
+            const checks = document.querySelectorAll('.row-check:checked');
+            if (checks.length === 0) {
+                Swal.fire('Chưa chọn nhân viên', 'Vui lòng chọn Ít nhất một nhân viên.', 'warning');
+                return;
+            }
+
+            let totalAmount = 0;
+            checks.forEach(cb => totalAmount += parseFloat(cb.dataset.net || 0));
+            const formattedTotal = new Intl.NumberFormat('vi-VN').format(totalAmount);
+
+            Swal.fire({
+                title: '?️ Xác nhận đã thanh toàn?',
+                html: `Bạn có chắc muốn xác nhận thanh toàn cho <strong>${checks.length} khoản lương</strong> với tổng số tiền <strong>${formattedTotal} ₫</strong>?<br><br><small class="text-success"><i class="fas fa-bell"></i> Sau khi xác nhận, hệ thống sẽ tự động gửi thông báo đến tài khoản nhân viên.</small><br><small class="text-danger">?️ Hành động này chỉ thực hiện sau khi giao dịch ngân hàng đã hoàn tất thực tế.</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Xác nhận thanh toàn',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#2563eb'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    checks.forEach(cb => {
+                        formData.append('paymentIds', cb.value);
+                    });
+                    
+                    // Thêm token bảo mật
+                    const token = document.querySelector('#markPaidForm input[name="__RequestVerificationToken"]').value;
+                    formData.append('__RequestVerificationToken', token);
+
+                    fetch('/PayrollPayment/MarkMultipleAsPaid', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('✅ Thành công', `Đã xác nhận thanh toàn và gửi thông báo cho ${data.count} nhân viên.`, 'success')
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire('Lỗi', data.message || 'Có lỗi xảy ra', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+                    });
+                }
+            });
+        }
+
+        // === ĐãNH DẤU TỪNG CÁI Đã THANH TOÀN ===
+        function confirmMarkPaid(id, name) {
+            Swal.fire({
+                title: 'Xác nhận đã thanh toàn?',
+                html: `Xác nhận <strong>${name}</strong> đã nhận lương?<br><small class="text-danger">Chỉ xác nhận sau khi giao dịch ngân hàng đã thực sự hoàn tất.</small>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '✅ Xác nhận',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#059669'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('id', id);
+                    
+                    const token = document.querySelector('#markOnePaidForm input[name="__RequestVerificationToken"]').value;
+                    formData.append('__RequestVerificationToken', token);
+
+                    fetch('/PayrollPayment/MarkAsPaid', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('✅ Thành công', `Đã xác nhận thanh toàn và gửi thông báo đến ${name}.`, 'success')
+                                .then(() => location.reload());
+                        } else {
+                            Swal.fire('Lỗi', data.message || 'Có lỗi xảy ra', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+                    });
+                }
+            });
+        }
+
+        // === XÓA ===
+        function deletePayment(id, name) {
+            Swal.fire({
+                title: 'Xóa bản ghi?',
+                html: `Bạn muốn xóa bản ghi thanh toàn của <strong>${name}</strong>?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '🔹️ Xóa',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#dc2626'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteId').value = id;
+                    document.getElementById('deleteForm').action = '/PayrollPayment/Delete';
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        }
+    </script>
+}
+

@@ -1,166 +1,227 @@
-﻿@model giao_dien_demo.Models.Employee
+﻿@model giao_dien_demo.Models.EmployeeCreateViewModel
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@{
+    ViewData["Title"] = "Thêm mới nhân viên";
+}
 
 <style>
-    body {
-        background: #f5f7fa;
-    }
+/* ============================================================
+   MODULE NHÂN VIÊN — CREATE PAGE STYLES
+   ============================================================ */
+.employee-page { padding: 0; }
 
-    .form-container {
-        width: 450px; 
-        margin: 50px auto;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        background: white;
-        animation: fadeIn 0.5s ease;
-    }
+.employee-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.employee-header-left { display: flex; flex-direction: column; gap: 6px; }
+.employee-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.employee-page-title .employee-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #059669);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+.employee-back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px;
+    font-weight: 600; color: #64748b; text-decoration: none; transition: 0.2s;
+}
+.employee-back-link:hover { color: #3b82f6; }
 
-    h2 {
-        text-align: center;
-        margin-bottom: 20px;
-    }
+/* --- FORM CARD --- */
+.employee-form-card {
+    background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    border: 1px solid #f1f5f9; overflow: hidden; max-width: 700px; margin: 0 auto;
+}
+.employee-form-header {
+    padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+.employee-form-title { font-size: 16px; font-weight: 700; color: #0f172a; margin: 0; }
+.employee-form-sub { font-size: 13px; color: #64748b; margin-top: 4px; }
 
-    label {
-        font-weight: bold;
-        color: #333;
-    }
+.employee-form-body { padding: 24px; }
+.employee-form-footer {
+    padding: 16px 24px; border-top: 1px solid #f1f5f9; background: #f8fafc;
+    display: flex; justify-content: flex-end; gap: 12px;
+}
 
-    input, select {
-        width: 100%;
-        padding: 10px;
-        margin: 8px 0 15px 0;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        transition: 0.3s;
-        box-sizing: border-box;
-        font-family: inherit;
-    }
-
-    input:focus, select:focus {
-        border-color: #4A90E2;
-        box-shadow: 0 0 5px #4A90E2;
-        outline: none;
-    }
-
-    .btn-save {
-        width: 100%;
-        padding: 12px;
-        border: none;
-        border-radius: 8px;
-        background: #28a745;
-        color: white;
-        font-weight: bold;
-        font-size: 16px;
-        cursor: pointer;
-        transition: 0.3s;
-        margin-top: 10px;
-    }
-
-    .btn-save:hover {
-        background: #218838;
-        transform: scale(1.02);
-    }
-
-    .back-link {
-        display: block;
-        text-align: center;
-        margin-top: 15px;
-        color: #4A90E2;
-        text-decoration: none;
-        font-weight: 500;
-    }
-
-    .back-link:hover {
-        text-decoration: underline;
-    }
-
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+/* --- FORM ELEMENTS --- */
+.form-group { margin-bottom: 20px; }
+.form-label {
+    display: block; font-size: 13.5px; font-weight: 600; color: #334155; margin-bottom: 8px;
+}
+.form-control, .form-select {
+    width: 100%; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 10px;
+    font-size: 14px; color: #334155; background: #fff; transition: all 0.2s; outline: none;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.form-control::placeholder { color: #94a3b8; }
 </style>
 
-<div class="form-container">
-    <h2>➕ Thêm nhân viên</h2>
+<div class="employee-page">
 
-    <form id="createForm" method="post">
-        <label>Tên nhân viên:</label>
-        <input name="Name" placeholder="Nhập họ và tên..." required />
+    <div class="employee-page-header">
+        <div class="employee-header-left">
+            <a href="/Employee/Index" class="employee-back-link">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+            <h1 class="employee-page-title">
+                <span class="employee-icon"><i class="fas fa-user-plus"></i></span>
+                Thêm nhân viên mới
+            </h1>
+        </div>
+    </div>
 
-        <label>Phòng ban:</label>
-        <input name="Department" placeholder="Ví dụ: Ban Giám đốc hoặc Phòng IT" required />
-
-        <label>Trạng thái hợp đồng:</label>
-        <select name="Position" required>
-            <option value="Chính thức">Chính thức</option>
-            <option value="Thử việc">Thử việc</option>
-            <option value="Thực tập">Thực tập</option>
-            <option value="Thời vụ">Thời vụ</option>
-        </select>
-
-        <label>Vị trí công việc (Chức vụ):</label>
-        <select name="JobTitle" required>
-            <option value="" disabled selected>-- Chọn chức vụ --</option>
-            
-            <optgroup label="1. Ban Giám đốc">
-                <option value="Giám đốc điều hành (CEO)">Giám đốc điều hành (CEO)</option>
-                <option value="Giám đốc Kỹ thuật (CTO)">Giám đốc Kỹ thuật (CTO)</option>
-                <option value="Giám đốc Nhân sự (CHRO)">Giám đốc Nhân sự (CHRO)</option>
-            </optgroup>
-            
-            <optgroup label="2. Cấp Quản lý">
-                @* 🔥 ĐÃ THÊM: Vị trí Quản trị viên hệ thống *@
-                <option value="Quản trị viên hệ thống (System Admin)">Quản trị viên hệ thống (System Admin)</option>
-                <option value="Quản lý Dự án (PM)">Quản lý Dự án (PM)</option>
-                <option value="Trưởng phòng Kỹ thuật">Trưởng phòng Kỹ thuật</option>
-                <option value="Trưởng phòng Nhân sự (HR)">Trưởng phòng Nhân sự (HR)</option>
-                <option value="Trưởng phòng Kinh doanh (Sales)">Trưởng phòng Kinh doanh (Sales)</option>
-            </optgroup>           
-            
-            <optgroup label="3. Cấp Nhân viên">
-                <option value="Lập trình viên (Senior)">Lập trình viên (Senior)</option>
-                <option value="Lập trình viên (Junior/Mid)">Lập trình viên (Junior/Mid)</option>
-                <option value="Phân tích nghiệp vụ (BA)">Phân tích nghiệp vụ (BA)</option>
-                <option value="Kiểm thử phần mềm (Tester/QA)">Kiểm thử phần mềm (Tester/QA)</option>
-            </optgroup>
-            
-            <optgroup label="4. Khối Back-Office">
-                <option value="Chuyên viên Nhân sự">Chuyên viên Nhân sự</option>
-                <option value="Kế toán viên">Kế toán viên</option>
-                <option value="Nhân viên Kinh doanh (Sales)">Nhân viên Kinh doanh (Sales)</option>
-                <option value="Thực tập sinh (Intern)">Thực tập sinh (Intern)</option>
-            </optgroup>
-        </select>
-
-        <label>Lương cơ bản (VNĐ):</label>
-        <input name="Salary" type="number" placeholder="Ví dụ: 15000000" required />
-
-        <button type="submit" class="btn-save">💾 Lưu dữ liệu</button>
-    </form>
-
-    <a href="/Employee" class="back-link">⬅ Quay lại danh sách</a>
+    <div class="employee-form-card">
+        <div class="employee-form-header">
+            <h3 class="employee-form-title">Thông tin hồ sơ</h3>
+            <div class="employee-form-sub">Vui lòng điền đầy đủ thông tin bắt buộc để khởi tạo hồ sơ nhân sự hệ thống.</div>
+        </div>
+        <form id="createForm" asp-controller="Employee" asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+            <div class="employee-form-body">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3" role="alert"></div>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Tên nhân viên <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="Nhập họ và tên..." required autocomplete="off" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Phòng ban <span class="text-danger">*</span></label>
+                            <input asp-for="Department" list="departmentOptions" class="form-control" placeholder="Ví dụ: Ban Giám đốc hoặc Phòng IT" required autocomplete="off" />
+                            <datalist id="departmentOptions">
+                                @foreach (var department in (IEnumerable<string>?)ViewBag.Departments ?? Enumerable.Empty<string>())
+                                {
+                                    <option value="@department"></option>
+                                }
+                            </datalist>
+                            <span asp-validation-for="Department" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Trạng thái hợp đồng <span class="text-danger">*</span></label>
+                            <select asp-for="Position" class="form-select" required>
+                                <option value="">-- Chọn trạng thái --</option>
+                                <option value="Chính thức">Chính thức</option>
+                                <option value="Thử việc">Thử việc</option>
+                                <option value="Thực tập">Thực tập</option>
+                                <option value="Thời vụ">Thời vụ</option>
+                            </select>
+                            <span asp-validation-for="Position" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label class="form-label">Vị trí công việc (Chức vụ) <span class="text-danger">*</span></label>
+                            <select asp-for="JobTitle" class="form-select" required>
+                                <option value="" disabled selected>-- Chọn chức vụ --</option>
+                                <optgroup label="1. Ban Giám đốc">
+                                    <option value="Giám đốc điều hành (CEO)">Giám đốc điều hành (CEO)</option>
+                                    <option value="Giám đốc Kỹ thuật (CTO)">Giám đốc Kỹ thuật (CTO)</option>
+                                    <option value="Giám đốc Nhân sự (CHRO)">Giám đốc Nhân sự (CHRO)</option>
+                                </optgroup>
+                                <optgroup label="2. Cấp Quản lý">
+                                    <option value="Quản trị viên hệ thống (System Admin)">Quản trị viên hệ thống (System Admin)</option>
+                                    <option value="Quản lý Dự án (PM)">Quản lý Dự án (PM)</option>
+                                    <option value="Trưởng phòng Kỹ thuật">Trưởng phòng Kỹ thuật</option>
+                                    <option value="Trưởng phòng Nhân sự (HR)">Trưởng phòng Nhân sự (HR)</option>
+                                    <option value="Trưởng phòng Kinh doanh (Sales)">Trưởng phòng Kinh doanh (Sales)</option>
+                                </optgroup>
+                                <optgroup label="3. Cấp Nhân viên">
+                                    <option value="Lập trình viên (Senior)">Lập trình viên (Senior)</option>
+                                    <option value="Lập trình viên (Junior/Mid)">Lập trình viên (Junior/Mid)</option>
+                                    <option value="Phân tích nghiệp vụ (BA)">Phân tích nghiệp vụ (BA)</option>
+                                    <option value="Kiểm thử phần mềm (Tester/QA)">Kiểm thử phần mềm (Tester/QA)</option>
+                                </optgroup>
+                                <optgroup label="4. Khối Back-Office">
+                                    <option value="Chuyên viên Nhân sự">Chuyên viên Nhân sự</option>
+                                    <option value="Kế toán viên">Kế toán viên</option>
+                                    <option value="Nhân viên Kinh doanh (Sales)">Nhân viên Kinh doanh (Sales)</option>
+                                    <option value="Thực tập sinh (Intern)">Thực tập sinh (Intern)</option>
+                                </optgroup>
+                            </select>
+                            <span asp-validation-for="JobTitle" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Trình độ học vấn</label>
+                            <select asp-for="AcademicLevel" class="form-select">
+                                <option value="">-- Chưa xác định --</option>
+                                <option value="Phổ thông">Phổ thông</option>
+                                <option value="Trung cấp">Trung cấp</option>
+                                <option value="Cao đẳng">Cao đẳng</option>
+                                <option value="Đại học">Đại học</option>
+                                <option value="Sau đại học">Sau đại học (Thạc sĩ / Tiến sĩ)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Lương cơ bản (VNĐ) <span class="text-danger">*</span></label>
+                            <input asp-for="Salary" type="number" class="form-control" placeholder="Ví dụ: 15000000" required />
+                            <span asp-validation-for="Salary" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="small text-muted mt-2"><i class="fas fa-lock me-1"></i>Mã nhân viên được hệ thống tự động cấp sau khi tạo thành công.</div>
+            </div>
+            <div class="employee-form-footer">
+                <a href="/Employee/Index" class="btn btn-outline-secondary" style="border-radius:10px; font-weight: 500;">Hủy bỏ</a>
+                <button type="submit" class="btn btn-primary" style="border-radius:10px; font-weight: 600;">
+                    <i class="fas fa-save me-1"></i> Lưu dữ liệu
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<script>
-    document.getElementById("createForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-
-        Swal.fire({
-            title: 'Xác nhận?',
-            text: "Bạn muốn thêm nhân viên mới vào hệ thống?",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#28a745',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Đồng ý thêm',
-            cancelButtonText: 'Hủy'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Submit form thật sự sau khi người dùng đồng ý trên SweetAlert
-                e.target.submit();
-            }
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.getElementById("createForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Xác nhận?',
+                text: 'Bạn muốn thêm nhân viên mới vào hệ thống?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Đồng ý thêm',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    e.target.submit();
+                }
+            });
         });
-    });
-</script>
+    </script>
+}

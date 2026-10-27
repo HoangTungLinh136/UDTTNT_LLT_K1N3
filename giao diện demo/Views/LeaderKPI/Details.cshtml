@@ -1,0 +1,130 @@
+@model giao_dien_demo.Models.LeaderKPIDetailViewModel
+@{
+    ViewData["Title"] = "Chi tiết Đánh giá KPI (Lãnh đạo) - " + (Model.Evaluation.Employee?.Name ?? "Nhân sự");
+    var eval = Model.Evaluation;
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h1 class="hrms-page-title mb-1">
+                <i class="fa-solid fa-clipboard-check text-primary me-2"></i>Chi tiết Đánh giá KPI: @(eval.Employee?.Name ?? "Nhân sự")
+            </h1>
+            <div class="hrms-breadcrumb text-muted small">
+                <a href="@Url.Action("Index", "LeaderKPI")" class="text-decoration-none text-muted">KPI / Hiệu suất</a>
+                <i class="fa-solid fa-chevron-right mx-1"></i>
+                <span class="text-dark fw-medium">Chi tiết kết quả #@eval.Id</span>
+            </div>
+        </div>
+        <div>
+            <a href="@Url.Action("Index", "LeaderKPI")" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-arrow-left me-1"></i>Quay lại danh sách
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1">@eval.Employee?.Name</h5>
+                        <div class="text-muted small">
+                            <span>Mã NV: <strong>@eval.Employee?.EmployeeCode</strong></span> | 
+                            <span>Đơn vị: <strong>@(eval.EmployeeDepartmentSnapshot ?? eval.Employee?.Department)</strong></span> | 
+                            <span>Chức vụ: <strong>@(eval.EmployeePositionSnapshot ?? eval.Employee?.JobTitle)</strong></span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-success px-3 py-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i>Hoàn thành (COMPLETED)</span>
+                    </div>
+                </div>
+                <hr />
+                <div class="row g-3">
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Kỳ đánh giá</div>
+                        <div class="fw-bold">@eval.Period?.Name</div>
+                        <div class="small text-muted">@eval.Period?.StartDate.ToString("dd/MM/yyyy") - @eval.Period?.EndDate.ToString("dd/MM/yyyy")</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Quản lý trực tiếp</div>
+                        <div class="fw-bold">@(eval.ManagerUsernameSnapshot ?? "Quản lý")</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">Thời gian hoàn thành</div>
+                        <div class="fw-bold">@eval.CompletedAt?.ToString("dd/MM/yyyy HH:mm")</div>
+                        <div class="small text-muted">Bởi: @(eval.CompletedBy ?? "Quản lý")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
+                <div class="text-success small fw-bold text-uppercase mb-1">Kết quả xếp loại cuối cùng</div>
+                <div class="display-5 fw-bold text-success mb-2">@eval.FinalScore?.ToString("0.00")</div>
+                <div>
+                    <span class="badge bg-success fs-5 px-3 py-1">Xếp loại: @eval.FinalRating</span>
+                </div>
+                <div class="small text-muted mt-3">
+                    Dữ liệu đã được đồng bộ vào hồ sơ lương nhân sự
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-transparent border-0 pt-4 px-4">
+        <h5 class="fw-bold mb-0">Bảng chi tiết Mục tiêu, Trọng số & Điểm đánh giá</h5>
+        <div class="text-muted small">Chế độ xem chỉ đọc dành cho Ban lãnh đạo.</div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4" style="width: 50px;">STT</th>
+                        <th>Tên mục tiêu</th>
+                        <th>Mô tả chi tiết</th>
+                        <th style="width: 120px;">Trọng số</th>
+                        <th style="width: 150px;">Tiến độ NV</th>
+                        <th style="width: 150px;">Điểm Quản lý</th>
+                        <th class="pe-4 text-end" style="width: 150px;">Điểm quy đổi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int idx = 1; }
+                    @foreach (var t in Model.Targets)
+                    {
+                        decimal weighted = (t.ManagerScore ?? 0) * t.Weight / 100m;
+                        <tr>
+                            <td class="ps-4 fw-bold text-muted">@(idx++)</td>
+                            <td class="fw-semibold text-dark">@t.Title</td>
+                            <td class="text-muted small">@(string.IsNullOrEmpty(t.Description) ? "Không có mô tả" : t.Description)</td>
+                            <td><span class="badge bg-light text-dark border">@t.Weight.ToString("0.00")%</span></td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-info" style="width: @(t.Progress)%;"></div>
+                                    </div>
+                                    <span class="small fw-semibold">@t.Progress%</span>
+                                </div>
+                            </td>
+                            <td class="fw-bold text-dark">
+                                @(t.ManagerScore.HasValue ? t.ManagerScore.Value.ToString("0.0") : "--")
+                            </td>
+                            <td class="pe-4 text-end fw-bold text-primary">
+                                @(t.ManagerScore.HasValue ? weighted.ToString("0.00") : "--")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

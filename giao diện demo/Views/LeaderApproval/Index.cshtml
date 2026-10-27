@@ -1,0 +1,501 @@
+@model giao_dien_demo.Models.LeaderApprovalCenterViewModel
+@{
+    ViewData["Title"] = "Trung tâm Phê duyệt Ban Lãnh đạo";
+    var activeTab = Model.ActiveTab;
+}
+
+@Html.AntiForgeryToken()
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-stamp"></i></span>
+            Trung tâm Phê duyệt Ban Lãnh đạo
+        </h1>
+        <div class="hrms-page-subtitle">
+            Xem xét và ra quyết định phê duyệt cuối cùng cho các đề xuất nhân sự trong phạm vi quản trị.
+        </div>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="hrms-kpi-grid hrms-kpi-grid-6 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-inbox"></i></div>
+            <div class="hrms-kpi-value text-primary">@Model.TotalPendingCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng chờ duyệt</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <div class="hrms-kpi-value text-primary">@Model.AppointmentPendingCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Bổ nhiệm</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-minus"></i></div>
+            <div class="hrms-kpi-value text-danger">@Model.DismissalPendingCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Miễn nhiệm</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-right-left"></i></div>
+            <div class="hrms-kpi-value text-warning">@Model.TransferPendingCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Điều chuyển</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-award"></i></div>
+            <div class="hrms-kpi-value text-success">@Model.RewardPendingCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Khen thưởng</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="hrms-kpi-value text-secondary">@Model.ProcessedCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đã xử lý</div>
+        </div>
+    </div>
+</div>
+
+<!-- TABS & TABLE -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-header bg-white border-bottom pt-3 pb-0 px-4">
+        <ul class="nav nav-tabs hrms-tabs border-0" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "all" ? "active" : "")" data-bs-toggle="tab" href="#tab-all" role="tab">
+                    <i class="fa-solid fa-layer-group me-1"></i> Tất cả (@Model.TotalPendingCount)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "appointment" ? "active" : "")" data-bs-toggle="tab" href="#tab-appointment" role="tab">
+                    <i class="fa-solid fa-user-plus me-1"></i> Bổ nhiệm (@Model.AppointmentPendingCount)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "dismissal" ? "active" : "")" data-bs-toggle="tab" href="#tab-dismissal" role="tab">
+                    <i class="fa-solid fa-user-minus me-1"></i> Miễn nhiệm (@Model.DismissalPendingCount)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "transfer" ? "active" : "")" data-bs-toggle="tab" href="#tab-transfer" role="tab">
+                    <i class="fa-solid fa-right-left me-1"></i> Điều chuyển (@Model.TransferPendingCount)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "reward" ? "active" : "")" data-bs-toggle="tab" href="#tab-reward" role="tab">
+                    <i class="fa-solid fa-award me-1"></i> Khen thưởng (@Model.RewardPendingCount)
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(activeTab == "processed" ? "active" : "")" data-bs-toggle="tab" href="#tab-processed" role="tab">
+                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Đã xử lý gần đây (@Model.ProcessedCount)
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="hrms-card-body p-0">
+        <div class="tab-content">
+            <!-- TAB: TẤT CẢ -->
+            <div id="tab-all" class="tab-pane fade @(activeTab == "all" ? "show active" : "")" role="tabpanel">
+                @await Html.PartialAsync("_LeaderApprovalTable", Model.PendingItems)
+            </div>
+
+            <!-- TAB: BỔ NHIỆM -->
+            <div id="tab-appointment" class="tab-pane fade @(activeTab == "appointment" ? "show active" : "")" role="tabpanel">
+                @await Html.PartialAsync("_LeaderApprovalTable", Model.PendingItems.Where(x => x.WorkflowType == "APPOINTMENT").ToList())
+            </div>
+
+            <!-- TAB: MIỄN NHIỆM -->
+            <div id="tab-dismissal" class="tab-pane fade @(activeTab == "dismissal" ? "show active" : "")" role="tabpanel">
+                @await Html.PartialAsync("_LeaderApprovalTable", Model.PendingItems.Where(x => x.WorkflowType == "DISMISSAL").ToList())
+            </div>
+
+            <!-- TAB: ĐIỀU CHUYỂN -->
+            <div id="tab-transfer" class="tab-pane fade @(activeTab == "transfer" ? "show active" : "")" role="tabpanel">
+                @await Html.PartialAsync("_LeaderApprovalTable", Model.PendingItems.Where(x => x.WorkflowType == "TRANSFER").ToList())
+            </div>
+
+            <!-- TAB: KHEN THƯỞNG -->
+            <div id="tab-reward" class="tab-pane fade @(activeTab == "reward" ? "show active" : "")" role="tabpanel">
+                @await Html.PartialAsync("_LeaderApprovalTable", Model.PendingItems.Where(x => x.WorkflowType == "REWARD").ToList())
+            </div>
+
+            <!-- TAB: ĐÃ XỬ LÝ -->
+            <div id="tab-processed" class="tab-pane fade @(activeTab == "processed" ? "show active" : "")" role="tabpanel">
+                @await Html.PartialAsync("_LeaderApprovalTable", Model.ProcessedItems)
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TỪ CHỐI (REJECT) -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger" id="rejectModalLabel">
+                    <i class="fa-solid fa-circle-xmark me-1"></i> Từ chối phê duyệt
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="rejectItemId" />
+                <input type="hidden" id="rejectWorkflowType" />
+                <div class="mb-3">
+                    <label for="rejectReasonInput" class="hrms-form-label">Lý do từ chối <span class="text-danger">*</span></label>
+                    <textarea class="hrms-form-control" id="rejectReasonInput" rows="3" placeholder="Nhập lý do từ chối quyết định để phản hồi cho người đề xuất..." required></textarea>
+                    <div id="rejectErrorMsg" class="text-danger small mt-1 d-none">Vui lòng nhập lý do từ chối.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="hrms-btn hrms-btn-ghost" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="hrms-btn hrms-btn-danger" id="btnConfirmReject" onclick="executeReject()">
+                    <i class="fa-solid fa-circle-xmark me-1"></i> Xác nhận từ chối
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OFFCANVAS: XEM CHI TIẾT QUYẾT ĐỊNH (DRAWER) -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="detailDrawer" aria-labelledby="detailDrawerLabel" style="width: 550px;">
+    <div class="offcanvas-header border-bottom bg-light">
+        <div>
+            <h5 class="offcanvas-title fw-bold" id="detailDrawerLabel">Chi tiết đề xuất phê duyệt</h5>
+            <div id="drawerSubtitle" class="text-muted small"></div>
+        </div>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0 d-flex flex-column h-100 bg-white" style="overflow-y: auto;">
+        <!-- Loading -->
+        <div id="drawerLoading" class="p-4 text-center text-muted">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 small">Đang tải chi tiết đề xuất...</div>
+        </div>
+        <!-- Content -->
+        <div id="drawerContent" class="d-none p-4">
+            <!-- Dynamic Injected Content -->
+            <div id="drawerDynamicBody"></div>
+        </div>
+    </div>
+    <div class="offcanvas-footer border-top p-3 bg-white d-none" id="drawerFooter">
+        <div id="drawerSelfNotice" class="alert alert-warning py-2 px-3 mb-2 small text-center d-none">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i> Bạn là người đề xuất khen thưởng này. Không thể tự phê duyệt.
+        </div>
+        <div class="d-flex justify-content-end gap-2" id="drawerActionButtons">
+            <button class="hrms-btn hrms-btn-danger" id="drawerBtnReject" onclick="openRejectModalFromDrawer()">Từ chối</button>
+            <button class="hrms-btn hrms-btn-primary" id="drawerBtnApprove" onclick="executeApproveFromDrawer()">
+                <i class="fa-solid fa-check me-1"></i> Phê duyệt
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let rejectModal = null;
+    let detailDrawer = null;
+    let currentDrawerItem = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+        detailDrawer = new bootstrap.Offcanvas(document.getElementById('detailDrawer'));
+    });
+
+    function getCsrfToken() {
+        return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    }
+
+    // --- APPROVE LOGIC ---
+    function approveItem(workflowType, id, btnElement) {
+        if (!confirm('Xác nhận PHÊ DUYỆT quyết định này?')) return;
+
+        if (btnElement) {
+            btnElement.disabled = true;
+            btnElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        }
+
+        let endpoint = getApproveEndpoint(workflowType, id);
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': getCsrfToken()
+            }
+        })
+        .then(async res => {
+            let data = {};
+            try { data = await res.json(); } catch(e) {}
+            if (res.ok) {
+                alert(data.message || 'Phê duyệt thành công!');
+                window.location.reload();
+            } else {
+                alert('Lỗi phê duyệt: ' + (data.message || data.details || res.statusText));
+                if (btnElement) {
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = '<i class="fa-solid fa-check"></i> Duyệt';
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Có lỗi kết nối máy chủ.');
+            if (btnElement) {
+                btnElement.disabled = false;
+                btnElement.innerHTML = '<i class="fa-solid fa-check"></i> Duyệt';
+            }
+        });
+    }
+
+    // --- REJECT LOGIC ---
+    function openRejectModal(workflowType, id) {
+        document.getElementById('rejectWorkflowType').value = workflowType;
+        document.getElementById('rejectItemId').value = id;
+        document.getElementById('rejectReasonInput').value = '';
+        document.getElementById('rejectErrorMsg').classList.add('d-none');
+        rejectModal.show();
+    }
+
+    function executeReject() {
+        const wf = document.getElementById('rejectWorkflowType').value;
+        const id = document.getElementById('rejectItemId').value;
+        const reason = document.getElementById('rejectReasonInput').value.trim();
+
+        if (!reason) {
+            document.getElementById('rejectErrorMsg').classList.remove('d-none');
+            return;
+        }
+
+        const btn = document.getElementById('btnConfirmReject');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
+
+        let endpoint = getRejectEndpoint(wf, id, reason);
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'RequestVerificationToken': getCsrfToken()
+            }
+        })
+        .then(async res => {
+            let data = {};
+            try { data = await res.json(); } catch(e) {}
+            if (res.ok) {
+                alert(data.message || 'Đã từ chối quyết định.');
+                rejectModal.hide();
+                window.location.reload();
+            } else {
+                alert('Lỗi khi từ chối: ' + (data.message || res.statusText));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Xác nhận từ chối';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Có lỗi xảy ra khi kết nối máy chủ.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-circle-xmark me-1"></i> Xác nhận từ chối';
+        });
+    }
+
+    function getApproveEndpoint(wf, id) {
+        if (wf === 'APPOINTMENT') return `/Appointment/Approve/${id}`;
+        if (wf === 'DISMISSAL') return `/Dismissal/Approve/${id}`;
+        if (wf === 'TRANSFER') return `/Transfer/Approve/${id}`;
+        if (wf === 'REWARD') return `/Reward/Approve/${id}`;
+        return '';
+    }
+
+    function getRejectEndpoint(wf, id, reason) {
+        let encReason = encodeURIComponent(reason);
+        if (wf === 'APPOINTMENT') return `/Appointment/Reject/${id}?reason=${encReason}`;
+        if (wf === 'DISMISSAL') return `/Dismissal/Reject/${id}?reason=${encReason}`;
+        if (wf === 'TRANSFER') return `/Transfer/Reject/${id}?reason=${encReason}`;
+        if (wf === 'REWARD') return `/Reward/Reject/${id}?reason=${encReason}`;
+        return '';
+    }
+
+    // --- DETAIL DRAWER LOGIC ---
+    function openDetailDrawer(wf, id, canApprove, isProcessed) {
+        currentDrawerItem = { wf: wf, id: id, canApprove: canApprove, isProcessed: isProcessed };
+
+        document.getElementById('drawerLoading').classList.remove('d-none');
+        document.getElementById('drawerContent').classList.add('d-none');
+        document.getElementById('drawerFooter').classList.add('d-none');
+        detailDrawer.show();
+
+        let detailUrl = '';
+        if (wf === 'APPOINTMENT') detailUrl = `/Appointment/Detail/${id}`;
+        else if (wf === 'DISMISSAL') detailUrl = `/Dismissal/Detail/${id}`;
+        else if (wf === 'TRANSFER') detailUrl = `/Transfer/Detail/${id}`;
+        else if (wf === 'REWARD') detailUrl = `/Reward/Detail/${id}`;
+
+        fetch(detailUrl)
+        .then(res => res.json())
+        .then(res => {
+            document.getElementById('drawerLoading').classList.add('d-none');
+            document.getElementById('drawerContent').classList.remove('d-none');
+            
+            // Format data
+            let data = res.data || res;
+            renderDrawerBody(wf, data);
+
+            // Footer visibility
+            if (!isProcessed) {
+                document.getElementById('drawerFooter').classList.remove('d-none');
+                if (!canApprove) {
+                    document.getElementById('drawerSelfNotice').classList.remove('d-none');
+                    document.getElementById('drawerActionButtons').classList.add('d-none');
+                } else {
+                    document.getElementById('drawerSelfNotice').classList.add('d-none');
+                    document.getElementById('drawerActionButtons').classList.remove('d-none');
+                }
+            } else {
+                document.getElementById('drawerFooter').classList.add('d-none');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('drawerLoading').innerHTML = '<div class="text-danger small">Không thể tải thông tin chi tiết.</div>';
+        });
+    }
+
+    function renderDrawerBody(wf, data) {
+        let label = wf === 'APPOINTMENT' ? 'Bổ nhiệm' : (wf === 'DISMISSAL' ? 'Miễn nhiệm' : (wf === 'TRANSFER' ? 'Điều chuyển' : 'Khen thưởng'));
+        document.getElementById('detailDrawerLabel').innerText = `Chi tiết ${label}`;
+        document.getElementById('drawerSubtitle').innerText = `Mã hồ sơ #${data.id} - ${data.employeeName || data.employeeNameSnapshot || ''}`;
+
+        let html = `
+            <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold me-3" style="width:48px; height:48px; font-size:1.2rem">
+                    ${(data.employeeName || data.employeeNameSnapshot || '?').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-dark">${data.employeeName || data.employeeNameSnapshot || '---'}</h6>
+                    <div class="small text-muted">${data.employeeCode || data.employeeCodeSnapshot || ''} | ${data.previousDepartment || data.currentDepartment || data.departmentSnapshot || '---'}</div>
+                </div>
+            </div>
+
+            <div class="card bg-light border-0 rounded-3 p-3 mb-3">
+                <h6 class="fw-bold mb-2 small text-uppercase text-secondary">Nội dung quyết định</h6>
+                <table class="table table-sm table-borderless mb-0 small">
+                    <tr><td class="text-muted" width="35%">Số quyết định:</td><td class="fw-bold">${data.decisionNumber || 'Chưa ban hành'}</td></tr>
+                    <tr><td class="text-muted">Ngày hiệu lực:</td><td class="fw-bold text-primary">${data.effectiveDate || '---'}</td></tr>
+                    <tr><td class="text-muted">Người đề xuất:</td><td>${data.submittedBy || data.createdBy || data.proposedBy || '---'}</td></tr>
+                    <tr><td class="text-muted">Lý do / Căn cứ:</td><td>${data.reason || data.achievement || '---'}</td></tr>
+                    ${data.notes ? `<tr><td class="text-muted">Ghi chú:</td><td>${data.notes}</td></tr>` : ''}
+                </table>
+            </div>
+        `;
+
+        if (wf === 'APPOINTMENT') {
+            html += `
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 border rounded-3 bg-white">
+                            <span class="badge bg-secondary mb-1">Hiện tại</span>
+                            <div class="small text-muted">Phòng ban: <b>${data.previousDepartment || '---'}</b></div>
+                            <div class="small text-muted">Chức danh: <b>${data.previousPosition || '---'}</b></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border border-success rounded-3 bg-success-subtle">
+                            <span class="badge bg-success mb-1">Bổ nhiệm mới</span>
+                            <div class="small text-success">Phòng ban: <b>${data.newDepartment || '---'}</b></div>
+                            <div class="small text-success">Chức vụ: <b>${data.newPosition || '---'}</b></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (wf === 'DISMISSAL') {
+            html += `
+                <div class="p-3 border border-danger-subtle rounded-3 bg-danger-subtle mb-3">
+                    <span class="badge bg-danger mb-1">Miễn nhiệm</span>
+                    <div class="small text-danger">Chức vụ miễn nhiệm: <b>${data.currentPosition || '---'}</b></div>
+                    <div class="small text-danger">Phương án sau miễn nhiệm: <b>${data.postReliefOptionLabel || '---'}</b></div>
+                    ${data.targetDepartment ? `<div class="small text-danger">Đơn vị tiếp nhận: <b>${data.targetDepartment}</b></div>` : ''}
+                </div>
+            `;
+        } else if (wf === 'TRANSFER') {
+            html += `
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-3 border rounded-3 bg-white">
+                            <span class="badge bg-secondary mb-1">Đơn vị hiện tại</span>
+                            <div class="small text-muted">${data.currentDepartmentSnapshot || '---'}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 border border-warning rounded-3 bg-warning-subtle">
+                            <span class="badge bg-warning text-dark mb-1">Đơn vị chuyển tới</span>
+                            <div class="small text-dark"><b>${data.targetDepartment || '---'}</b></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (wf === 'REWARD') {
+            html += `
+                <div class="p-3 border border-success rounded-3 bg-success-subtle mb-3">
+                    <span class="badge bg-success mb-1">${data.rewardType || 'Khen thưởng'}</span>
+                    <div class="small text-success">Danh hiệu: <b>${data.title || '---'}</b></div>
+                    ${data.hasMonetaryReward ? `<div class="small text-success fw-bold">Thưởng tiền: ${Number(data.rewardAmount).toLocaleString('vi-VN')} VNĐ (Kỳ lương: ${data.payrollPeriod || '---'})</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Histories
+        if (data.histories && data.histories.length > 0) {
+            html += `
+                <h6 class="fw-bold mt-4 mb-2 small text-uppercase text-secondary">Tiến trình phê duyệt</h6>
+                <div class="timeline border-start ps-3 ms-2">
+            `;
+            data.histories.forEach(h => {
+                html += `
+                    <div class="mb-2">
+                        <div class="small fw-bold text-dark">${h.action || ''} - ${h.actor || ''}</div>
+                        <div class="text-muted small">${h.timestamp || ''}: ${h.details || ''}</div>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+
+        document.getElementById('drawerDynamicBody').innerHTML = html;
+    }
+
+    function openRejectModalFromDrawer() {
+        if (!currentDrawerItem) return;
+        detailDrawer.hide();
+        openRejectModal(currentDrawerItem.wf, currentDrawerItem.id);
+    }
+
+    function executeApproveFromDrawer() {
+        if (!currentDrawerItem) return;
+        detailDrawer.hide();
+        approveItem(currentDrawerItem.wf, currentDrawerItem.id, null);
+    }
+</script>
+}

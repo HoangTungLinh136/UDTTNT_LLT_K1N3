@@ -1,0 +1,318 @@
+@model giao_dien_demo.Models.AttendanceReportViewModel
+
+@{
+    ViewData["Title"] = "Báo cáo chấm công - Ban lãnh đạo";
+    var deptLabels = Html.Raw(Json.Serialize(Model?.DepartmentSummaries.Select(d => d.DepartmentName)));
+    var deptWorkingDays = Html.Raw(Json.Serialize(Model?.DepartmentSummaries.Select(d => d.TotalWorkingDays)));
+    var deptAttRates = Html.Raw(Json.Serialize(Model?.DepartmentSummaries.Select(d => d.AttendanceRate)));
+    var deptOTs = Html.Raw(Json.Serialize(Model?.DepartmentSummaries.Select(d => d.TotalOvertimeHours)));
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+            Báo cáo chấm công
+        </h1>
+        <div class="hrms-page-subtitle">Tổng hợp và phân tích dữ liệu chấm công của nhân viên theo thời gian và bộ lọc.</div>
+    </div>
+    <div class="hrms-page-header-actions">
+        <a href="@Url.Action("ExportExcel", "LeaderAttendance", new { month = Model?.CurrentMonth, department = Model?.SelectedDepartment })" class="hrms-btn hrms-btn-secondary">
+            <i class="fa-solid fa-file-excel text-success me-1"></i> Xuất Excel
+        </a>
+    </div>
+</div>
+
+<!-- BỘ LỌC -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" action="@Url.Action("Index", "LeaderAttendance")" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="hrms-form-label">Tháng</label>
+                <input type="text" name="month" class="hrms-form-control" value="@Model?.CurrentMonth" placeholder="MM/yyyy" />
+            </div>
+            <div class="col-md-4">
+                <label class="hrms-form-label">Phòng ban</label>
+                <select name="department" class="hrms-form-select">
+                    <option value="">Tất cả phòng ban</option>
+                    @if(Model?.Departments != null)
+                    {
+                        foreach (var d in Model.Departments)
+                        {
+                            if(d == Model.SelectedDepartment)
+                            {
+                                <option value="@d" selected>@d</option>
+                            }
+                            else
+                            {
+                                <option value="@d">@d</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-5 d-flex gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary">
+                    <i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu
+                </button>
+                <a href="@Url.Action("Index", "LeaderAttendance")" class="hrms-btn hrms-btn-ghost" title="Đặt lại bộ lọc">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- KÍCH BẢN 4 KPI CARDS -->
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
+            <div class="hrms-kpi-value">@(Model?.TotalWorkingDays ?? 0)</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng ngày công</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-percent"></i></div>
+            <div class="hrms-kpi-value">@(Model?.AverageAttendanceRate ?? 0)%</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tỷ lệ chuyên cần</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-orange">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-clock"></i></div>
+            <div class="hrms-kpi-value">@(Model?.TotalOvertimeHours ?? 0)</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng OT (giờ)</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-umbrella-beach"></i></div>
+            <div class="hrms-kpi-value">@(Model?.TotalLeaveDays ?? 0)</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Nghỉ phép (ngày)</div>
+        </div>
+    </div>
+</div>
+
+<!-- CHARTS -->
+@if(Model?.DepartmentSummaries != null && Model.DepartmentSummaries.Any())
+{
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="hrms-card h-100">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title">Ngày công theo phòng ban</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <canvas id="chartWorkingDays" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="hrms-card h-100">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title">Tỷ lệ chuyên cần theo phòng ban</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <canvas id="chartAttRate" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="hrms-card h-100">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title">OT theo phòng ban (giờ)</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <canvas id="chartOT" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="hrms-empty-state mb-4">
+        <div class="empty-icon"><i class="fa-solid fa-chart-bar text-muted"></i></div>
+        <div class="empty-title">Chưa có đủ dữ liệu để hiển thị biểu đồ.</div>
+        <div class="empty-desc">Vui lòng điều chỉnh bộ lọc để xem dữ liệu.</div>
+    </div>
+}
+
+<!-- KÍCH BẢN EMPLOYEE DETAIL TABLE -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-header d-flex justify-content-between align-items-center">
+        <h3 class="hrms-card-title">Chi tiết chấm công nhân viên</h3>
+        @if (ViewBag.PeriodStatus == "CLOSED")
+        {
+            <div class="hrms-badge hrms-badge-success">Đã chốt</div>
+        }
+        else
+        {
+            <div class="hrms-badge hrms-badge-warning">Chưa chốt</div>
+        }
+    </div>
+    <div class="hrms-card-body p-0 position-relative">
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="position-absolute w-100 h-100 bg-white bg-opacity-75 d-flex justify-content-center align-items-center" style="z-index: 10; display: none !important;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
+        @if(Model?.EmployeeDetails != null && Model.EmployeeDetails.Any())
+        {
+            <div class="table-responsive">
+                <table class="hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Nhân viên</th>
+                            <th>Phòng ban</th>
+                            <th class="text-center">Công chuẩn</th>
+                            <th class="text-center">Công thực tế</th>
+                            <th class="text-center">Nghỉ phép</th>
+                            <th class="text-center">Không phép</th>
+                            <th class="text-center">OT (giờ)</th>
+                            <th class="text-center">Đi muộn (lần)</th>
+                            <th class="text-center">Tỷ lệ CC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var emp in Model.EmployeeDetails)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">@emp.EmployeeName</div>
+                                    <div class="text-muted small">@emp.EmployeeCode</div>
+                                </td>
+                                <td>@emp.Department</td>
+                                <td class="text-center fw-bold">@emp.ExpectedWorkingDays</td>
+                                <td class="text-center fw-bold text-primary">@emp.ActualWorkingDays</td>
+                                <td class="text-center">@emp.LeaveDays</td>
+                                <td class="text-center @(emp.UnauthorizedAbsenceDays > 0 ? "text-danger fw-bold" : "")">@emp.UnauthorizedAbsenceDays</td>
+                                <td class="text-center text-success">@emp.OvertimeHours</td>
+                                <td class="text-center @(emp.LateCount > 0 ? "text-warning fw-bold" : "")">@emp.LateCount</td>
+                                <td class="text-center">
+                                    <span class="hrms-badge @(emp.AttendanceRate >= 90 ? "hrms-badge-success" : (emp.AttendanceRate >= 70 ? "hrms-badge-warning" : "hrms-badge-danger"))">
+                                        @emp.AttendanceRate%
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="hrms-empty-state py-5">
+                <div class="hrms-empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+                <div class="hrms-empty-title">Chưa có dữ liệu chấm công</div>
+                <div class="hrms-empty-desc">Không tìm thấy dữ liệu chấm công phù hợp với bộ lọc đã chọn trong kỳ này.</div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Form Submit Loading
+            const form = document.querySelector('form');
+            if(form) {
+                form.addEventListener('submit', function() {
+                    const overlay = document.getElementById('loadingOverlay');
+                    if(overlay) {
+                        overlay.style.setProperty('display', 'flex', 'important');
+                    }
+                    const btn = form.querySelector('button[type="submit"]');
+                    if(btn) {
+                        const originalHtml = btn.innerHTML;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang tải...';
+                        btn.disabled = true;
+                    }
+                });
+            }
+
+            var deptLabels = @deptLabels;
+            var workingDaysData = @deptWorkingDays;
+            var attRateData = @deptAttRates;
+            var otData = @deptOTs;
+            
+            if (deptLabels && deptLabels.length > 0) {
+                // Chart 1: Working Days
+                new Chart(document.getElementById('chartWorkingDays'), {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [{
+                            label: 'Ngày công',
+                            data: workingDaysData,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+
+                // Chart 2: Attendance Rate
+                new Chart(document.getElementById('chartAttRate'), {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [{
+                            label: 'Tỷ lệ CC (%)',
+                            data: attRateData,
+                            backgroundColor: '#10b981',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, max: 100 } }
+                    }
+                });
+
+                // Chart 3: Overtime
+                new Chart(document.getElementById('chartOT'), {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [{
+                            label: 'Giờ OT',
+                            data: otData,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+        });
+    </script>
+}

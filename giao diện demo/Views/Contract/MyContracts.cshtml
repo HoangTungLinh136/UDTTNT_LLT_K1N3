@@ -1,0 +1,476 @@
+@{
+    ViewData["Title"] = "Hợp đồng của tôi";
+    var contracts = Model as List<giao_dien_demo.Models.Contract>
+            ?? new List<giao_dien_demo.Models.Contract>();
+    
+        int? currentContractId = ViewBag.CurrentContractId == null
+            ? null
+            : Convert.ToInt32(ViewBag.CurrentContractId);
+    
+        var currentContract = currentContractId.HasValue
+            ? contracts.FirstOrDefault(c => c.Id == currentContractId.Value)
+            : null;
+    
+        var currentDate = DateTime.Now.Date;
+    
+        var historyContracts = contracts
+            .Where(c => !currentContractId.HasValue || c.Id != currentContractId.Value)
+            .ToList();
+}
+
+<style>
+    .contract-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        padding: 24px;
+        margin-bottom: 24px;
+        border: 1px solid #e2e8f0;
+    }
+    .contract-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .info-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin-bottom: 4px;
+        font-weight: 500;
+    }
+    .info-value {
+        font-size: 1rem;
+        color: #0f172a;
+        font-weight: 600;
+    }
+    .progress-bar-container {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 8px;
+    }
+    .progress-bar-fill {
+        height: 100%;
+        background: #3b82f6;
+        transition: width 0.3s ease;
+    }
+    .badge-status {
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .badge-active { background: #dcfce7; color: #166534; }
+    .badge-pending { background: #fef08a; color: #854d0e; }
+    .badge-expired { background: #fee2e2; color: #991b1b; }
+    
+    /* Drawer styling */
+    #contractDrawer {
+        position: fixed;
+        top: 0;
+        right: -500px;
+        width: 500px;
+        max-width: 100vw;
+        height: 100vh;
+        background: white;
+        box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+        transition: right 0.3s ease;
+        z-index: 1050;
+        display: flex;
+        flex-direction: column;
+    }
+    #contractDrawer.open {
+        right: 0;
+    }
+    .drawer-header {
+        padding: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+    }
+    .drawer-body {
+        padding: 24px;
+        overflow-y: auto;
+        flex-grow: 1;
+    }
+    .drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.5);
+        z-index: 1049;
+        display: none;
+    }
+    .drawer-overlay.show { display: block; }
+    .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b; }
+    
+    .loading-spinner {
+        text-align: center;
+        padding: 40px;
+        display: none;
+    }
+</style>
+
+<div class="py-2">
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fa-solid fa-file-contract"></i></span>
+                Hợp đồng của tôi
+            </h1>
+            <p class="hrms-page-subtitle">Xem thông tin hợp đồng lao động và lịch sử hợp đồng của bạn.</p>
+        </div>
+    </div>
+    
+    <div class="hrms-alert hrms-alert-info mb-4">
+        <i class="fa-solid fa-circle-info me-2"></i>Tất cả thông tin hiển thị chỉ thuộc về hồ sơ của bạn. Vui lòng liên hệ phòng Nhân sự nếu có thắc mắc.
+    </div>
+
+    <!-- Hợp đồng hiện tại -->
+    <div class="hrms-card mb-4">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title">
+                <i class="fa-solid fa-file-signature text-primary me-2"></i> Hợp đồng hiện tại
+            </h3>
+        </div>
+        <div class="hrms-card-body">
+            @if (currentContract != null)
+            {
+                var totalDays = (currentContract.EndDate - currentContract.StartDate).TotalDays;
+                var elapsedDays = (currentDate - currentContract.StartDate).TotalDays;
+                var progress = totalDays > 0 ? (elapsedDays / totalDays) * 100 : 0;
+                if (progress < 0) progress = 0;
+                if (progress > 100) progress = 100;
+                
+                var remainingDays = (currentContract.EndDate - currentDate).TotalDays;
+
+                <div class="info-grid mb-4">
+                    <div class="info-item">
+                        <span class="info-label">Mã hợp đồng</span>
+                        <span class="info-value">HD-@currentContract.Id.ToString("D4")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Trạng thái</span>
+                        <div>
+                            <span class="hrms-badge hrms-badge-success">@currentContract.Status</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Ngày hiệu lực</span>
+                        <span class="info-value">@currentContract.StartDate.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Ngày hết hạn</span>
+                        <span class="info-value">@currentContract.EndDate.ToString("dd/MM/yyyy")</span>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">Phòng ban theo hợp đồng</span>
+                        <span class="info-value">
+                            @(string.IsNullOrWhiteSpace(currentContract.DepartmentSnapshot)
+                                ? "Chưa có snapshot lịch sử"
+                                : currentContract.DepartmentSnapshot)
+                        </span>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">Chức danh theo hợp đồng</span>
+                        <span class="info-value">
+                            @(string.IsNullOrWhiteSpace(currentContract.JobTitleSnapshot)
+                                ? (string.IsNullOrWhiteSpace(currentContract.PositionSnapshot)
+                                    ? "Chưa có snapshot lịch sử"
+                                    : currentContract.PositionSnapshot)
+                                : currentContract.JobTitleSnapshot)
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between">
+                        <span class="info-label">Tiến độ thời hạn hợp đồng</span>
+                        <span class="info-label fw-bold text-primary">
+                            @(remainingDays > 0 ? $"{Math.Floor(remainingDays)} ngày còn lại" : "Đã hết hạn")
+                        </span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" role="progressbar" aria-label="Tiến độ thời hạn hợp đồng" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Math.Floor(progress)" style="width: @Math.Floor(progress)%;"></div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mt-4">
+                    <button class="btn btn-outline-primary" onclick="openContractDrawer(@currentContract.Id)">
+                        <i class="fa-solid fa-eye"></i> Xem hợp đồng
+                    </button>
+                    <button class="btn btn-primary" onclick="downloadPdf(@currentContract.Id)">
+                        <i class="fa-solid fa-file-pdf"></i> Tải PDF
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="hrms-empty-state py-4">
+                    <div class="hrms-empty-state-icon"><i class="fa-solid fa-folder-open"></i></div>
+                    <div class="hrms-empty-state-title">Không có hợp đồng đang hiệu lực</div>
+                    <div class="hrms-empty-state-desc">Hiện tại bạn chưa có hợp đồng nào đang trong thời gian hiệu lực.</div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Lịch sử hợp đồng -->
+    <div class="hrms-card p-0">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title">
+                <i class="fa-solid fa-clock-rotate-left text-secondary me-2"></i> Lịch sử hợp đồng
+            </h3>
+        </div>
+        <div class="hrms-card-body p-0">
+            @if (historyContracts.Any())
+            {
+                <div class="hrms-table-wrap">
+                    <table class="hrms-table">
+                        <thead>
+                            <tr>
+                                <th>Mã HĐ</th>
+                                <th>Thời hạn</th>
+                                <th>Từ ngày</th>
+                                <th>Đến ngày</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in historyContracts)
+                            {
+                                <tr>
+                                    <td class="fw-bold">HD-@c.Id.ToString("D4")</td>
+                                    <td>@(string.IsNullOrEmpty(c.Duration) ? "Không xác định" : c.Duration)</td>
+                                    <td>@c.StartDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@c.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (c.Status.Contains("Còn hiệu lực"))
+                                        {
+                                            <span class="hrms-badge hrms-badge-success">@c.Status</span>
+                                        }
+                                        else if (c.Status.Contains("hết hạn") || c.Status.Contains("Hủy"))
+                                        {
+                                            <span class="hrms-badge hrms-badge-danger">@c.Status</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="hrms-badge hrms-badge-warning">@c.Status</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="hrms-btn hrms-btn-sm hrms-btn-secondary me-1" onclick="openContractDrawer(@c.Id)" title="Xem">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                        <button class="hrms-btn hrms-btn-sm hrms-btn-primary" onclick="downloadPdf(@c.Id)" title="Tải PDF">
+                                            <i class="fa-solid fa-download"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="hrms-empty-state py-4">
+                    <div class="hrms-empty-state-icon"><i class="fa-solid fa-inbox"></i></div>
+                    <div class="hrms-empty-state-title">Chưa có lịch sử hợp đồng</div>
+                    <div class="hrms-empty-state-desc">Các hợp đồng trước đây của bạn sẽ xuất hiện tại đây.</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Drawer chi tiết hợp đồng -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeContractDrawer()"></div>
+<div id="contractDrawer">
+    <div class="drawer-header">
+        <h5 class="m-0 fw-bold"><i class="fa-solid fa-file-contract"></i> Chi tiết hợp đồng</h5>
+        <button class="close-btn" onclick="closeContractDrawer()">&times;</button>
+    </div>
+    
+    <div class="loading-spinner" id="drawerLoading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2 text-muted">Đang tải chi tiết...</p>
+    </div>
+    
+    <div class="drawer-body" id="drawerContent" style="display: none;">
+        <div class="alert alert-danger" id="drawerError" style="display: none;">
+            Không thể tải thông tin hợp đồng.
+        </div>
+        
+        <div id="contractData">
+            <h4 class="text-center fw-bold mb-4">HỢP ĐỒNG LAO ĐỘNG</h4>
+            <div class="info-grid mb-4 border-bottom pb-4">
+                <div class="info-item">
+                    <span class="info-label">Mã HĐ</span>
+                    <span class="info-value" id="detailId"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Ngày ký</span>
+                    <span class="info-value" id="detailCreated"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Hiệu lực</span>
+                    <span class="info-value" id="detailDates"></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Trạng thái</span>
+                    <span class="badge-status badge-active" id="detailStatus"></span>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <span class="info-label d-block mb-2">Nội dung tóm tắt</span>
+                                <div class="mb-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <small class="text-muted">Ngày ký</small>
+                            <div class="fw-semibold" id="detailSignedDate">—</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted">Phòng ban theo hợp đồng</small>
+                            <div class="fw-semibold" id="detailDepartment">—</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted">Chức danh theo hợp đồng</small>
+                            <div class="fw-semibold" id="detailJobTitle">—</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <small class="text-muted">Mức lương theo hợp đồng</small>
+                            <div class="fw-semibold" id="detailContractSalary">—</div>
+                        </div>
+                    </div>
+
+                    <div id="snapshotNotice"
+                         class="small text-muted mt-2"
+                         style="display:none;">
+                        Hợp đồng cũ chưa có snapshot lịch sử.
+                        Hệ thống không lấy hồ sơ nhân viên hiện tại để thay thế.
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded" id="detailContent" style="max-height: 200px; overflow-y: auto;">
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-5">
+                <div class="text-center w-50">
+                    <span class="info-label">Người lao động</span><br>
+                    <b id="detailEmployeeSig" class="text-success mt-2 d-inline-block"></b>
+                </div>
+                <div class="text-center w-50">
+                    <span class="info-label">Đại diện Công ty</span><br>
+                    <b id="detailHrSig" class="text-success mt-2 d-inline-block"></b>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="p-3 border-top bg-light text-end">
+        <button class="btn btn-secondary" onclick="closeContractDrawer()">Đóng</button>
+        <button class="btn btn-primary ms-2" id="btnDownloadDrawer" onclick="">Tải PDF</button>
+    </div>
+</div>
+
+<script>
+    function openContractDrawer(id) {
+        document.getElementById('drawerOverlay').classList.add('show');
+        document.getElementById('contractDrawer').classList.add('open');
+        
+        // Reset states
+        document.getElementById('drawerLoading').style.display = 'block';
+        document.getElementById('drawerContent').style.display = 'none';
+        document.getElementById('drawerError').style.display = 'none';
+        document.getElementById('contractData').style.display = 'none';
+        
+        // Set download action
+        document.getElementById('btnDownloadDrawer').setAttribute('onclick', `downloadPdf(${id})`);
+        
+        // Fetch data
+        fetch(`/Contract/GetContractDetail?id=${id}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('drawerLoading').style.display = 'none';
+                document.getElementById('drawerContent').style.display = 'block';
+                document.getElementById('contractData').style.display = 'block';
+                
+                document.getElementById('detailId').innerText = 'HD-' + data.id.toString().padStart(4, '0');
+                document.getElementById('detailCreated').innerText = new Date(data.createdAt).toLocaleDateString('vi-VN');
+                document.getElementById('detailDates').innerText = `${new Date(data.startDate).toLocaleDateString('vi-VN')} - ${new Date(data.endDate).toLocaleDateString('vi-VN')}`;
+                document.getElementById('detailStatus').innerText = data.status;
+
+                document.getElementById('detailSignedDate').innerText =
+                    data.signedDate
+                        ? new Date(data.signedDate).toLocaleDateString('vi-VN')
+                        : 'Chưa ghi nhận';
+
+                document.getElementById('detailDepartment').innerText =
+                    data.department || 'Chưa có snapshot lịch sử';
+
+                document.getElementById('detailJobTitle').innerText =
+                    data.jobTitle || data.position || 'Chưa có snapshot lịch sử';
+
+                document.getElementById('detailContractSalary').innerText =
+                    data.contractSalary != null
+                        ? new Intl.NumberFormat('vi-VN').format(data.contractSalary) +
+                          ' ' + (data.currency || 'VND')
+                        : 'Chưa có snapshot lịch sử';
+
+                document.getElementById('snapshotNotice').style.display =
+                    data.historicalSnapshotAvailable ? 'none' : 'block';
+                
+                document.getElementById('detailContent').textContent = data.content || 'Chưa có nội dung';
+                document.getElementById('detailEmployeeSig').innerText = data.signature ? 'Đã ký: ' + data.signature : 'Chưa ký';
+                document.getElementById('detailHrSig').innerText = data.hrSignature ? 'Đã duyệt: ' + data.hrSignature : 'Chưa duyệt';
+            })
+            .catch(error => {
+                document.getElementById('drawerLoading').style.display = 'none';
+                document.getElementById('drawerContent').style.display = 'block';
+                document.getElementById('drawerError').style.display = 'block';
+                console.error('Error fetching contract detail:', error);
+            });
+    }
+    
+    function closeContractDrawer() {
+        document.getElementById('drawerOverlay').classList.remove('show');
+        document.getElementById('contractDrawer').classList.remove('open');
+    }
+    
+    function downloadPdf(id) {
+        // Tải PDF qua Endpoint bảo mật
+        window.location.href = `/Contract/DownloadPdf?id=${id}`;
+    }
+</script>

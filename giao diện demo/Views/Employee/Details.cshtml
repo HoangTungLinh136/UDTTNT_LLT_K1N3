@@ -1,47 +1,250 @@
-﻿@model giao_dien_demo.Models.Employee
+@model giao_dien_demo.Models.Employee
 
 @{
     ViewData["Title"] = "Hồ sơ chi tiết nhân viên";
 }
 
 <style>
-    /* Style cho Profile Card chuyên nghiệp */
-    .profile-card { border-radius: 15px; overflow: hidden; border: none; transition: 0.3s; }
-    .profile-header { 
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); 
-        color: white; 
-        padding: 40px 20px; 
-        text-align: center; 
+    /* ============================================================
+   MODULE NHÂN VIÊN — DETAILS PAGE STYLES
+   ============================================================ */
+    .employee-page {
+        padding: 0;
     }
-    .avatar-wrapper {
-        width: 120px;
-        height: 120px;
-        background: white;
-        border-radius: 50%;
-        margin: 0 auto 15px;
+
+    .employee-page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .employee-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .employee-page-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .employee-page-title .employee-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #8b5cf6, #6366f1);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 50px;
-        border: 4px solid rgba(255,255,255,0.2);
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        color: white;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+
+    .employee-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #64748b;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .employee-back-link:hover {
+        color: #3b82f6;
+    }
+
+    /* --- PROFILE CARD --- */
+    .profile-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
+        border: 1px solid #f1f5f9;
+        overflow: hidden;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        color: white;
+        padding: 40px 20px 30px;
+        text-align: center;
+        position: relative;
+    }
+
+    .avatar-wrapper {
+        width: 100px;
+        height: 100px;
+        background: white;
+        border-radius: 50%;
+        margin: 0 auto 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        color: #64748b;
+        font-weight: 700;
+        border: 4px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         overflow: hidden;
     }
-    .avatar-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .info-label { color: #64748b; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-    .info-value { color: #1e293b; font-weight: 600; margin-bottom: 1.5rem; font-size: 1rem; }
-    .section-title { 
-        border-left: 4px solid #3b82f6; 
-        padding-left: 10px; 
-        margin-bottom: 20px; 
-        font-weight: 700; 
-        color: #1e3a8a;
+
+    .avatar-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .profile-name {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .profile-badges {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .badge-role-main {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        backdrop-filter: blur(4px);
+    }
+
+    .badge-code {
+        background: #3b82f6;
+        color: #fff;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .profile-body {
+        padding: 32px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0f172a;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .section-title i {
+        color: #6366f1;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-label {
+        color: #64748b;
+        font-size: 12.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 15px;
+    }
+
+    .badge-status {
+        background: #dcfce7;
+        color: #166534;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .profile-footer {
+        padding: 16px 32px;
+        border-top: 1px solid #f1f5f9;
+        background: #f8fafc;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    @@media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
-<div class="container mt-4 mb-5">
-    <div class="card profile-card shadow-lg mx-auto" style="max-width: 900px;">
+<div class="employee-page">
+
+    <div class="employee-page-header">
+        <div class="employee-header-left">
+            <a href="/Employee/Index" class="employee-back-link">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+            <h1 class="employee-page-title">
+                <span class="employee-icon"><i class="fas fa-id-card"></i></span>
+                Hồ sơ chi tiết
+            </h1>
+        </div>
+        <div class="employee-header-actions">
+            <a href="/Employee/Edit/@Model.Id" class="btn btn-outline-primary"
+               style="border-radius:10px; font-weight: 600;">
+                <i class="fas fa-edit me-1"></i> Chỉnh sửa
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mb-3"><i class="fas fa-check-circle me-2"></i>@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mb-3"><i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]</div>
+    }
+
+    <div class="profile-card">
         <div class="profile-header">
             <div class="avatar-wrapper">
                 @if (!string.IsNullOrEmpty(Model.AvatarPath))
@@ -50,73 +253,310 @@
                 }
                 else
                 {
-                    <span>👤</span>
+                    <text>@(string.IsNullOrEmpty(Model.Name) ? "?" : Model.Name.Substring(0, 1).ToUpper())</text>
                 }
             </div>
-            <h2 class="fw-bold mb-1">@Model.Name</h2>
-            <div class="badge bg-light text-primary px-3 py-2 fs-6">@Model.JobTitle</div>
-            <p class="mt-2 opacity-75">Mã nhân viên: <span class="fw-bold">@Model.EmployeeCode</span></p>
+            <div class="profile-name">@Model.Name</div>
+            <div class="profile-badges">
+                <span class="badge-code">Mã NV: @(string.IsNullOrWhiteSpace(Model.EmployeeCode) ? "Chưa được cấp mã" : Model.EmployeeCode)</span>
+                <span class="badge-role-main">@Model.JobTitle</span>
+            </div>
         </div>
 
-        <div class="card-body p-4 p-md-5">
+        <div class="profile-body">
             <div class="row">
-                <div class="col-md-6 border-end">
-                    <h5 class="section-title">📌 Thông tin cá nhân</h5>
-                    
-                    <div class="info-label">Số điện thoại</div>
-                    <div class="info-value">@(Model.PhoneNumber ?? "Chưa cập nhật")</div>
-
-                    <div class="info-label">Email liên hệ</div>
-                    <div class="info-value">@(Model.Email ?? "Chưa có email")</div>
-
-                    <div class="info-label">Giới tính / Ngày sinh</div>
-                    <div class="info-value">
-                        @(Model.Gender ?? "N/A") | @(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "N/A")
+                <div class="col-md-6 border-end" style="padding-right: 24px;">
+                    <h5 class="section-title"><i class="fas fa-user-circle"></i> Thông tin cá nhân</h5>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Số điện thoại</div>
+                            <div class="info-value">@(Model.PhoneNumber ?? "---")</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Email liên hệ</div>
+                            <div class="info-value">@(Model.Email ?? "---")</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Giới tính</div>
+                            <div class="info-value">@(Model.Gender ?? "---")</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Ngày sinh</div>
+                            <div class="info-value">@(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "---")</div>
+                        </div>
                     </div>
-
-                    <div class="info-label">Số CCCD</div>
-                    <div class="info-value">@(Model.CitizenId ?? "Chưa cập nhật")</div>
-
-                    <div class="info-label">Địa chỉ thường trú</div>
-                    <div class="info-value">@(Model.Address ?? "Chưa cập nhật")</div>
                 </div>
 
-                <div class="col-md-6 ps-md-4">
-                    <h5 class="section-title">💼 Công việc & Tài chính</h5>
-
-                    <div class="info-label">Phòng ban</div>
-                    <div class="info-value">@Model.Department</div>
-
-                    <div class="info-label">Loại hợp đồng</div>
-                    <div class="info-value">@Model.Position</div>
-
-                    <div class="info-label">Mức lương cơ bản</div>
-                    <div class="info-value text-success">@Model.Salary.ToString("N0") VNĐ</div>
-
-                    <div class="info-label">Tài khoản ngân hàng</div>
-                    <div class="info-value">
-                        @if (!string.IsNullOrEmpty(Model.BankName))
-                        {
-                            <span>@Model.BankName - @Model.BankAccountNumber</span>
-                        }
-                        else
-                        {
-                            <span class="text-muted italic">Chưa cập nhật</span>
-                        }
+                <div class="col-md-6" style="padding-left: 24px;">
+                    <h5 class="section-title"><i class="fas fa-briefcase"></i> Thông tin công việc</h5>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Phòng ban</div>
+                            <div class="info-value">@(Model.Department ?? "---")</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Loại hợp đồng</div>
+                            <div class="info-value"><span class="badge-status">@Model.Position</span></div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Trình độ học vấn</div>
+                            <div class="info-value">@(Model.AcademicLevel ?? "---")</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Lương cơ bản</div>
+                            <div class="info-value" style="color: #2ecc71;">@Model.Salary.ToString("N0") ₫</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="mt-4 pt-4 border-top d-flex justify-content-between">
-                <a asp-action="Index" class="btn btn-outline-secondary px-4">
-                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                </a>
-                <div>
-                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning px-4 me-2">
-                        <i class="bi bi-pencil-square"></i> Sửa hồ sơ
-                    </a>
+            <!-- TABS CHO CÁC THÔNG TIN LIÊN QUAN -->
+            <div class="mt-4 pt-3 border-top">
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="pills-contracts-tab" data-bs-toggle="pill" data-bs-target="#pills-contracts" type="button" role="tab" aria-controls="pills-contracts" aria-selected="true"><i class="fas fa-file-contract"></i> Hợp đồng (@(ViewBag.Contracts?.Count ?? 0))</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab" aria-controls="pills-history" aria-selected="false"><i class="fas fa-history"></i> Quá trình công tác</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-rewards-tab" data-bs-toggle="pill" data-bs-target="#pills-rewards" type="button" role="tab" aria-controls="pills-rewards" aria-selected="false"><i class="fas fa-award"></i> Khen thưởng (@(ViewBag.Rewards?.Count ?? 0))</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-leaves-tab" data-bs-toggle="pill" data-bs-target="#pills-leaves" type="button" role="tab" aria-controls="pills-leaves" aria-selected="false"><i class="fas fa-umbrella-beach"></i> Nghỉ phép (@(ViewBag.Leaves?.Count ?? 0))</button>
+                  </li>
+                </ul>
+                <div class="tab-content" id="pills-tabContent">
+                  
+                  <!-- TAB HỢP ĐỒNG -->
+                  <div class="tab-pane fade show active" id="pills-contracts" role="tabpanel" aria-labelledby="pills-contracts-tab">
+                      @if(ViewBag.Contracts != null && ViewBag.Contracts.Count > 0) {
+                          <table class="table table-sm table-hover align-middle">
+                              <thead class="table-light">
+                                  <tr>
+                                      <th>Số HĐ</th>
+                                      <th>Loại HĐ</th>
+                                      <th>Từ ngày</th>
+                                      <th>Đến ngày</th>
+                                      <th>Trạng thái</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  @foreach(var c in ViewBag.Contracts) {
+                                      <tr>
+                                          <td><a href="/Contract/Details/@c.Id" class="text-decoration-none fw-bold">@c.ContractNumber</a></td>
+                                          <td>@c.ContractType</td>
+                                          <td>@c.StartDate.ToString("dd/MM/yyyy")</td>
+                                          <td>@(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
+                                          <td>
+                                              @if(c.Status == "Active") { <span class="badge bg-success">Có hiệu lực</span> }
+                                              else if(c.Status == "Expired") { <span class="badge bg-secondary">Hết hạn</span> }
+                                              else { <span class="badge bg-warning text-dark">@c.Status</span> }
+                                          </td>
+                                      </tr>
+                                  }
+                              </tbody>
+                          </table>
+                      } else {
+                          <p class="text-muted fst-italic">Chưa có hợp đồng nào.</p>
+                      }
+                  </div>
+                  
+                  <!-- TAB QUÁ TRÌNH CÔNG TÁC (Bổ nhiệm, Miễn nhiệm, Thuyên chuyển) -->
+                  <div class="tab-pane fade" id="pills-history" role="tabpanel" aria-labelledby="pills-history-tab">
+                      <ul class="list-group list-group-flush">
+                          @if(ViewBag.Appointments != null && ViewBag.Appointments.Count > 0) {
+                              @foreach(var a in ViewBag.Appointments) {
+                                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                                      <div>
+                                          <span class="badge bg-primary me-2">Bổ nhiệm</span>
+                                          <strong>@a.NewTitleSnapshot</strong> <span class="text-muted">(@a.NewDepartmentSnapshot)</span>
+                                      </div>
+                                      <span class="text-muted small">@a.EffectiveDate.ToString("dd/MM/yyyy")</span>
+                                  </li>
+                              }
+                          }
+                          @if(ViewBag.Transfers != null && ViewBag.Transfers.Count > 0) {
+                              @foreach(var t in ViewBag.Transfers) {
+                                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                                      <div>
+                                          <span class="badge bg-info me-2">Thuyên chuyển</span>
+                                          <span class="text-muted">Từ</span> @t.OldDepartmentSnapshot <i class="fas fa-arrow-right mx-1 text-muted"></i> <strong>@t.NewDepartmentSnapshot</strong>
+                                      </div>
+                                      <span class="text-muted small">@t.EffectiveDate.ToString("dd/MM/yyyy")</span>
+                                  </li>
+                              }
+                          }
+                          @if(ViewBag.Dismissals != null && ViewBag.Dismissals.Count > 0) {
+                              @foreach(var d in ViewBag.Dismissals) {
+                                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                                      <div>
+                                          <span class="badge bg-danger me-2">Miễn nhiệm</span>
+                                          Thôi giữ chức <strong>@d.OldTitleSnapshot</strong>
+                                      </div>
+                                      <span class="text-muted small">@d.EffectiveDate.ToString("dd/MM/yyyy")</span>
+                                  </li>
+                              }
+                          }
+                          @if((ViewBag.Appointments == null || ViewBag.Appointments.Count == 0) && (ViewBag.Transfers == null || ViewBag.Transfers.Count == 0) && (ViewBag.Dismissals == null || ViewBag.Dismissals.Count == 0)) {
+                              <li class="list-group-item text-muted fst-italic">Không có lịch sử công tác.</li>
+                          }
+                      </ul>
+                  </div>
+
+                  <!-- TAB KHEN THƯỞNG -->
+                  <div class="tab-pane fade" id="pills-rewards" role="tabpanel" aria-labelledby="pills-rewards-tab">
+                      @if(ViewBag.Rewards != null && ViewBag.Rewards.Count > 0) {
+                          <table class="table table-sm table-hover">
+                              <thead class="table-light">
+                                  <tr>
+                                      <th>Số QĐ</th>
+                                      <th>Hình thức</th>
+                                      <th>Lý do</th>
+                                      <th>Ngày hiệu lực</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  @foreach(var r in ViewBag.Rewards) {
+                                      <tr>
+                                          <td>@r.DecisionNumber</td>
+                                          <td>@r.RewardType</td>
+                                          <td>@r.Reason</td>
+                                          <td>@r.EffectiveDate.ToString("dd/MM/yyyy")</td>
+                                      </tr>
+                                  }
+                              </tbody>
+                          </table>
+                      } else {
+                          <p class="text-muted fst-italic">Chưa có thông tin khen thưởng.</p>
+                      }
+                  </div>
+
+                  <!-- TAB NGHỈ PHÉP -->
+                  <div class="tab-pane fade" id="pills-leaves" role="tabpanel" aria-labelledby="pills-leaves-tab">
+                      @if(ViewBag.Leaves != null && ViewBag.Leaves.Count > 0) {
+                          <table class="table table-sm table-hover">
+                              <thead class="table-light">
+                                  <tr>
+                                      <th>Từ ngày</th>
+                                      <th>Đến ngày</th>
+                                      <th>Lý do</th>
+                                      <th>Trạng thái</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  @foreach(var l in ViewBag.Leaves) {
+                                      <tr>
+                                          <td>@l.FromDate.ToString("dd/MM/yyyy")</td>
+                                          <td>@l.ToDate.ToString("dd/MM/yyyy")</td>
+                                          <td>@l.Reason</td>
+                                          <td>@l.Status</td>
+                                      </tr>
+                                  }
+                              </tbody>
+                          </table>
+                      } else {
+                          <p class="text-muted fst-italic">Chưa có thông tin nghỉ phép.</p>
+                      }
+                  </div>
                 </div>
             </div>
+        </div>
+
+        @{ var managerScope = ViewBag.ManagerScope as giao_dien_demo.Models.ManagerAssignmentDetailsViewModel; }
+        @if (managerScope?.IsManager == true)
+        {
+            <div class="p-4 border-top" id="manager-scope-card">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="section-title mb-1"><i class="fas fa-sitemap"></i> Phạm vi quản lý</h5>
+                        <div class="text-muted small">Phạm vi dữ liệu được cấp cho tài khoản Manager của nhân viên này.</div>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="openManagerScopeForm('create')" style="border-radius:10px; font-weight:600;">
+                        <i class="fas fa-plus me-1"></i> Phân công đơn vị
+                    </button>
+                </div>
+
+                @if (managerScope.Assignments.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light"><tr><th>Đơn vị</th><th>Hiệu lực từ</th><th>Hiệu lực đến</th><th>Trạng thái</th><th>Người phân công</th><th class="text-end">Thao tác</th></tr></thead>
+                            <tbody>
+                            @foreach (var assignment in managerScope.Assignments)
+                            {
+                                var badgeClass = assignment.Status == "Đang hiệu lực" ? "bg-success" : assignment.Status == "Sắp hiệu lực" ? "bg-warning text-dark" : "bg-secondary";
+                                <tr>
+                                    <td class="fw-semibold">@assignment.OrganizationalUnit</td>
+                                    <td>@assignment.EffectiveFrom.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@(assignment.EffectiveTo?.ToString("dd/MM/yyyy HH:mm") ?? "Không thời hạn")</td>
+                                    <td><span class="badge @badgeClass">@assignment.Status</span></td>
+                                    <td>@(string.IsNullOrWhiteSpace(assignment.AssignedBy) ? "---" : assignment.AssignedBy)</td>
+                                    <td class="text-end">
+                                        @if (assignment.CanEdit)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="openManagerScopeForm('edit', @assignment.Id, '@assignment.OrganizationalUnit.Replace("'", "\\'")', '@assignment.EffectiveFrom.ToString("yyyy-MM-ddTHH:mm")', '@(assignment.EffectiveTo?.ToString("yyyy-MM-ddTHH:mm") ?? "")')"><i class="fas fa-edit"></i></button>
+                                        }
+                                        @if (assignment.CanEnd)
+                                        {
+                                            <form method="post" action="/Employee/EndManagerAssignment" class="d-inline" onsubmit="return confirm('Kết thúc phạm vi quản lý này? Lịch sử sẽ được giữ nguyên.');">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="employeeId" value="@Model.Id" />
+                                                <input type="hidden" name="assignmentId" value="@assignment.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fas fa-stop-circle"></i></button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <span><i class="fas fa-info-circle me-2"></i>Manager chưa được phân công phạm vi quản lý.</span>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="openManagerScopeForm('create')">Phân công đơn vị</button>
+                    </div>
+                }
+            </div>
+
+            <div class="modal fade" id="managerScopeModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+                    <form id="managerScopeForm" method="post" action="/Employee/CreateManagerAssignment" onsubmit="this.querySelector('button[type=submit]').disabled=true;">
+                        @Html.AntiForgeryToken()
+                        <div class="modal-header"><h5 class="modal-title" id="managerScopeModalTitle">Phân công phạm vi quản lý</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button></div>
+                        <div class="modal-body">
+                            <input type="hidden" name="EmployeeId" value="@Model.Id" />
+                            <input type="hidden" name="AssignmentId" id="managerAssignmentId" />
+                            <div class="mb-3"><label class="form-label">Đơn vị quản lý <span class="text-danger">*</span></label><select class="form-select" name="OrganizationalUnit" id="managerAssignmentUnit" required><option value="">Chọn đơn vị</option>@foreach (var unit in managerScope.AvailableUnits) { <option value="@unit">@unit</option> }</select></div>
+                            <div class="row g-3"><div class="col-md-6"><label class="form-label">Hiệu lực từ <span class="text-danger">*</span></label><input class="form-control" type="datetime-local" name="EffectiveFrom" id="managerAssignmentFrom" required /></div><div class="col-md-6"><label class="form-label">Hiệu lực đến</label><input class="form-control" type="datetime-local" name="EffectiveTo" id="managerAssignmentTo" /></div></div>
+                        </div>
+                        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Lưu phân công</button></div>
+                    </form>
+                </div></div>
+            </div>
+            <script>
+                function openManagerScopeForm(mode, id, unit, from, to) {
+                    const form = document.getElementById('managerScopeForm');
+                    const isEdit = mode === 'edit';
+                    form.action = isEdit ? '/Employee/UpdateManagerAssignment' : '/Employee/CreateManagerAssignment';
+                    document.getElementById('managerScopeModalTitle').textContent = isEdit ? 'Cập nhật phạm vi quản lý' : 'Phân công phạm vi quản lý';
+                    document.getElementById('managerAssignmentId').value = isEdit ? id : '';
+                    document.getElementById('managerAssignmentUnit').value = isEdit ? unit : '';
+                    document.getElementById('managerAssignmentFrom').value = isEdit ? from : '@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")';
+                    document.getElementById('managerAssignmentTo').value = isEdit ? to : '';
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('managerScopeModal')).show();
+                }
+            </script>
+        }
+
+        <div class="profile-footer">
+            <button onclick="window.print()" class="btn btn-outline-secondary"
+                    style="border-radius:10px; font-weight: 500;">
+                <i class="fas fa-print me-1"></i> In hồ sơ
+            </button>
         </div>
     </div>
 </div>

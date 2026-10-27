@@ -1,0 +1,313 @@
+@{
+    ViewData["Title"] = "Chính sách bảo mật";
+}
+@Html.AntiForgeryToken()
+
+<style>
+.policy-card { background: white; border-radius: var(--hrms-radius-lg, 12px); border: 1px solid var(--hrms-border, #e2e8f0); padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.policy-card-title { font-size: 16px; font-weight: 700; color: var(--hrms-text-main, #1e293b); margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--hrms-border, #f1f5f9); }
+.policy-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--hrms-border, #f8fafc); }
+.policy-row:last-child { border-bottom: none; padding-bottom: 0; }
+.policy-info h4 { margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: var(--hrms-text-main, #334155); }
+.policy-info p { margin: 0; font-size: 13px; color: var(--hrms-text-muted, #64748b); }
+
+/* Toggle Switch */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+input:checked + .slider { background-color: var(--hrms-primary, #2563eb); }
+input:checked + .slider:before { transform: translateX(20px); }
+input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
+
+.ip-list { margin-top: 12px; }
+.ip-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--hrms-background, #f8fafc); border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--hrms-border, #e2e8f0); }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>Chính sách bảo mật</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-shield-halved"></i></span>
+            Chính sách bảo mật
+        </h1>
+        <p class="hrms-page-subtitle">Cấu hình mật khẩu, phiên đăng nhập và bảo vệ tài khoản hệ thống</p>
+    </div>
+    <div class="hrms-page-header-actions">
+        <button class="hrms-btn hrms-btn-primary" id="btnSaveConfig" onclick="saveConfiguration()"><i class="fa-solid fa-floppy-disk"></i> Lưu chính sách</button>
+    </div>
+</div>
+
+<!-- LƯU Ý P4-SEC-02 DEFERRED -->
+<div class="hrms-alert hrms-alert-warning mb-4" style="background:#fffbeb; border-left:4px solid #f59e0b; border-radius:8px; padding:12px 16px; color:#92400e; font-size:13px; line-height:1.6;">
+    <i class="fa-solid fa-shield-virus me-2"></i>
+    <strong>Lưu ý kiến trúc bảo mật:</strong> Các chính sách mật khẩu và Session Timeout dưới đây được quản trị qua file cấu hình máy chủ. Tính năng thu hồi phiên tức thời qua Security Stamp / Session Versioning (P4-SEC-02) đang ở trạng thái quy hoạch (Deferred).
+</div>
+
+<div class="hrms-tabs mb-4">
+    <button class="hrms-tab active admin-module-tab" onclick="showAdminTab('password',this)"><i class="fa-solid fa-key me-1"></i> Mật khẩu</button>
+    <button class="hrms-tab admin-module-tab" onclick="showAdminTab('login',this)"><i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập & IP</button>
+    <button class="hrms-tab admin-module-tab" onclick="showAdminTab('session',this)"><i class="fa-solid fa-clock me-1"></i> Phiên làm việc</button>
+</div>
+
+<!-- TAB: MẬT KHẨU -->
+<div id="admin-tab-password">
+    <div class="policy-card">
+        <div class="policy-card-title">Độ phức tạp mật khẩu</div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Độ dài tối thiểu</h4>
+                <p>Số ký tự tối thiểu yêu cầu cho mật khẩu người dùng mới.</p>
+            </div>
+            <div class="policy-control">
+                <input type="number" id="MinPasswordLength" class="hrms-form-control" min="4" max="64" value="6" style="width: 160px;">
+            </div>
+        </div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Yêu cầu chữ hoa</h4>
+                <p>Bắt buộc có ít nhất 1 ký tự viết hoa (A-Z).</p>
+            </div>
+            <div class="policy-control">
+                <label class="switch"><input type="checkbox" id="RequireUppercase"><span class="slider"></span></label>
+            </div>
+        </div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Yêu cầu chữ thường</h4>
+                <p>Bắt buộc có ít nhất 1 ký tự viết thường (a-z).</p>
+            </div>
+            <div class="policy-control">
+                <label class="switch"><input type="checkbox" id="RequireLowercase"><span class="slider"></span></label>
+            </div>
+        </div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Yêu cầu chữ số</h4>
+                <p>Bắt buộc có ít nhất 1 chữ số (0-9).</p>
+            </div>
+            <div class="policy-control">
+                <label class="switch"><input type="checkbox" id="RequireDigit"><span class="slider"></span></label>
+            </div>
+        </div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Yêu cầu ký tự đặc biệt</h4>
+                <p>Bắt buộc có ít nhất 1 ký tự đặc biệt (!@@#$%^&*).</p>
+            </div>
+            <div class="policy-control">
+                <label class="switch"><input type="checkbox" id="RequireSpecialChar"><span class="slider"></span></label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: ĐĂNG NHẬP -->
+<div id="admin-tab-login" style="display:none;">
+    <div class="policy-card">
+        <div class="policy-card-title">Kiểm soát truy cập (IP Whitelist)</div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Bật danh sách IP tin cậy</h4>
+                <p>Khi bật, chỉ các IP trong danh sách dưới đây mới được phép đăng nhập.</p>
+            </div>
+            <div class="policy-control">
+                <label class="switch"><input type="checkbox" id="EnableIPWhitelist"><span class="slider"></span></label>
+            </div>
+        </div>
+        <div class="policy-row" style="display:block; padding-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div class="policy-info">
+                    <h4>Danh sách IP</h4>
+                </div>
+                <button class="hrms-btn hrms-btn-sm hrms-btn-secondary" onclick="addIP()"><i class="fa-solid fa-plus"></i> Thêm IP</button>
+            </div>
+            <div id="ipListContainer" class="ip-list">
+                <!-- IP Items rendered by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: PHIÊN LÀM VIỆC -->
+<div id="admin-tab-session" style="display:none;">
+    <div class="policy-card">
+        <div class="policy-card-title">Cấu hình phiên làm việc</div>
+        <div class="policy-row">
+            <div class="policy-info">
+                <h4>Thời gian hết hạn phiên (Session Timeout)</h4>
+                <p>Thời gian (phút) người dùng không thao tác trước khi bị tự động đăng xuất.</p>
+            </div>
+            <div class="policy-control">
+                <input type="number" id="SessionIdleTimeoutMinutes" class="hrms-form-control" min="1" max="1440" value="30" style="width: 160px;">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+const adminSecurityToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+let currentSettings = { TrustedIPs: [] };
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadConfiguration();
+});
+
+function showAdminTab(id, btn) {
+    document.querySelectorAll('[id^="admin-tab-"]').forEach(t => t.style.display='none');
+    document.getElementById('admin-tab-'+id).style.display='';
+    document.querySelectorAll('.admin-module-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+}
+
+function loadConfiguration() {
+    fetch('/AdminSecurity/GetSettings')
+        .then(response => response.json())
+        .then(res => {
+            if (res.success) {
+                currentSettings = res.data;
+                bindDataToUI();
+            } else {
+                Swal.fire('Lỗi', 'Không thể tải cấu hình', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Lỗi', 'Lỗi mạng khi tải cấu hình', 'error');
+        });
+}
+
+function bindDataToUI() {
+    document.getElementById('MinPasswordLength').value = currentSettings.minPasswordLength;
+    document.getElementById('RequireUppercase').checked = currentSettings.requireUppercase;
+    document.getElementById('RequireLowercase').checked = currentSettings.requireLowercase;
+    document.getElementById('RequireDigit').checked = currentSettings.requireDigit;
+    document.getElementById('RequireSpecialChar').checked = currentSettings.requireSpecialChar;
+    
+    document.getElementById('EnableIPWhitelist').checked = currentSettings.enableIPWhitelist;
+    document.getElementById('SessionIdleTimeoutMinutes').value = currentSettings.sessionIdleTimeoutMinutes;
+
+    renderIPList();
+}
+
+function renderIPList() {
+    const container = document.getElementById('ipListContainer');
+    container.innerHTML = '';
+    
+    if (currentSettings.trustedIPs.length === 0) {
+        container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--hrms-text-muted, #94a3b8); font-size:13px; background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px dashed var(--hrms-border, #cbd5e1);">Chưa có địa chỉ IP nào được cấu hình.</div>';
+        return;
+    }
+
+    currentSettings.trustedIPs.forEach((ip, index) => {
+        container.innerHTML += `
+            <div class="ip-item">
+                <div style="font-weight:500; font-family:monospace; font-size:14px; color:var(--hrms-text-main, #1e293b);">${ip}</div>
+                <button style="background:transparent; border:none; color:var(--hrms-danger, #ef4444); cursor:pointer; padding:6px;" onclick="removeIP(${index})">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        `;
+    });
+}
+
+async function addIP() {
+    const { value: ip } = await Swal.fire({
+        title: 'Thêm địa chỉ IP',
+        input: 'text',
+        inputLabel: 'Nhập địa chỉ IPv4/IPv6',
+        inputPlaceholder: 'Ví dụ: 192.168.1.100',
+        showCancelButton: true,
+        confirmButtonText: 'Thêm',
+        cancelButtonText: 'Hủy',
+        inputValidator: (value) => {
+            if (!value) { return 'Bạn cần nhập địa chỉ IP!' }
+        }
+    });
+
+    if (ip) {
+        if (!currentSettings.trustedIPs) currentSettings.trustedIPs = [];
+        if (currentSettings.trustedIPs.includes(ip.trim())) {
+            Swal.fire('Lỗi', 'IP này đã tồn tại trong danh sách.', 'error');
+            return;
+        }
+        currentSettings.trustedIPs.push(ip.trim());
+        renderIPList();
+    }
+}
+
+function removeIP(index) {
+    currentSettings.trustedIPs.splice(index, 1);
+    renderIPList();
+}
+
+function saveConfiguration() {
+    const payload = {
+        minPasswordLength: parseInt(document.getElementById('MinPasswordLength').value) || 6,
+        requireUppercase: document.getElementById('RequireUppercase').checked,
+        requireLowercase: document.getElementById('RequireLowercase').checked,
+        requireDigit: document.getElementById('RequireDigit').checked,
+        requireSpecialChar: document.getElementById('RequireSpecialChar').checked,
+        
+        enableIPWhitelist: document.getElementById('EnableIPWhitelist').checked,
+        trustedIPs: currentSettings.trustedIPs || [],
+        
+        sessionIdleTimeoutMinutes: parseInt(document.getElementById('SessionIdleTimeoutMinutes').value) || 30
+    };
+
+    if (payload.enableIPWhitelist && payload.trustedIPs.length > 0) {
+        Swal.fire({
+            title: 'Cảnh báo IP Whitelist',
+            text: 'Nếu bật tính năng này, chỉ các IP trong danh sách mới có thể đăng nhập. Nếu IP của bạn không có trong danh sách, bạn sẽ bị chặn trong các lần đăng nhập tới. Bạn có chắc chắn tiếp tục?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Vẫn lưu',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executeSave(payload);
+            }
+        });
+    } else {
+        executeSave(payload);
+    }
+}
+
+function executeSave(payload) {
+    const btn = document.getElementById('btnSaveConfig');
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+    fetch('/AdminSecurity/SaveSettings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': adminSecurityToken
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(res => {
+        if (res.success) {
+            Swal.fire('Thành công!', res.message, 'success');
+        } else {
+            Swal.fire('Lỗi', res.message || 'Có lỗi xảy ra', 'error');
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        Swal.fire('Lỗi', 'Không thể kết nối đến máy chủ.', 'error');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+    });
+}
+</script>
+}

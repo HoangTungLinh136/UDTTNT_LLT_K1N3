@@ -1,0 +1,522 @@
+@model giao_dien_demo.Models.AdminNotificationConfigViewModel
+
+@{
+    ViewData["Title"] = "Cấu hình thông báo";
+}
+
+<style>
+/* Switch styling */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--hrms-green, #10b981); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Modal overlay scoped */
+.admin-cfg-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.6); z-index:9999; align-items:center; justify-content:center; }
+.admin-cfg-modal-content { background:white; width:100%; border-radius:16px; overflow:hidden; box-shadow:0 20px 25px -5px rgba(0,0,0,0.15); display:flex; flex-direction:column; max-height:90vh; }
+.admin-cfg-modal-header { padding:16px 20px; border-bottom:1px solid var(--hrms-border, #f1f5f9); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+.admin-cfg-modal-title { margin:0; font-size:16px; font-weight:700; color:var(--hrms-text-main, #1e293b); }
+.admin-cfg-modal-close { background:none; border:none; font-size:18px; color:var(--hrms-text-muted, #94a3b8); cursor:pointer; }
+.admin-cfg-modal-close:hover { color:var(--hrms-text-main, #334155); }
+.admin-cfg-modal-footer { padding:16px 20px; background:var(--hrms-background, #f8fafc); border-top:1px solid var(--hrms-border, #f1f5f9); text-align:right; flex-shrink:0; display:flex; justify-content:flex-end; gap:8px; }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>Cấu hình thông báo</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-bell"></i></span>
+            Cấu hình thông báo
+        </h1>
+        <p class="hrms-page-subtitle">Quản trị quy tắc kích hoạt, đối tượng nhận và mẫu email tự động</p>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="hrms-alert hrms-alert-success mb-4">
+        <i class="fa-solid fa-circle-check me-2"></i> @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="hrms-alert hrms-alert-danger mb-4">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> @TempData["Error"]
+    </div>
+}
+
+<div class="hrms-tabs mb-4">
+    <a href="?tab=rules" class="hrms-tab @(Model.ActiveTab == "rules" ? "active" : "")"><i class="fa-solid fa-list-check me-1"></i> Quy tắc thông báo</a>
+    <a href="?tab=recipients" class="hrms-tab @(Model.ActiveTab == "recipients" ? "active" : "")"><i class="fa-solid fa-users me-1"></i> Nhóm người nhận</a>
+    <a href="?tab=templates" class="hrms-tab @(Model.ActiveTab == "templates" ? "active" : "")"><i class="fa-solid fa-file-code me-1"></i> Email Template</a>
+</div>
+
+@if (Model.ActiveTab == "rules")
+{
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <h3 class="hrms-card-title mb-0"><i class="fa-solid fa-code-branch card-title-icon"></i> Danh sách Quy tắc tự động</h3>
+                @if(Model.IsEmailConfigured)
+                {
+                    <span class="hrms-badge hrms-badge-success" title="Kênh Email đã được cấu hình trong Tích hợp hệ thống"><i class="fa-solid fa-envelope me-1"></i> Email: Đã cấu hình</span>
+                }
+                else
+                {
+                    <span class="hrms-badge hrms-badge-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i> Email: Chưa cấu hình</span>
+                    <a href="@Url.Action("Index", "AdminIntegration")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Cấu hình ngay</a>
+                }
+            </div>
+            <button type="button" class="hrms-btn hrms-btn-primary" onclick="openRuleModal(0, '', '', '', 0, 0, 'Email', true)"><i class="fa-solid fa-plus"></i> Tạo quy tắc</button>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Tên quy tắc</th>
+                        <th>Sự kiện Trigger</th>
+                        <th>Nhóm người nhận</th>
+                        <th>Template Email</th>
+                        <th>Trạng thái</th>
+                        <th class="col-actions" style="text-align:right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rules.Any())
+                    {
+                        foreach (var rule in Model.Rules)
+                        {
+                            <tr>
+                                <td style="font-weight:600; color: var(--hrms-text-main, #1e293b);">@rule.RuleName</td>
+                                <td><code style="background:var(--hrms-background, #f1f5f9); padding:2px 6px; border-radius:4px; font-size:12px;">@rule.EventCode</code></td>
+                                <td>@(rule.RecipientGroup?.GroupName ?? "-")</td>
+                                <td>@(rule.EmailTemplate?.TemplateName ?? "-")</td>
+                                <td>
+                                    @if(rule.IsActive) {
+                                        <span class="hrms-badge hrms-badge-success"><span class="hrms-badge-dot"></span> Hoạt động</span>
+                                    } else {
+                                        <span class="hrms-badge hrms-badge-neutral"><span class="hrms-badge-dot"></span> Tạm dừng</span>
+                                    }
+                                </td>
+                                <td style="text-align:right;">
+                                    <button type="button" class="hrms-btn hrms-btn-sm hrms-btn-secondary" title="Sửa quy tắc" aria-label="Sửa quy tắc" data-edit-kind="rule" data-edit-payload="@Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new { id = rule.Id, name = rule.RuleName, eventCode = rule.EventCode, module = rule.Module, recipientGroupId = rule.RecipientGroupId, templateId = rule.EmailTemplateId, channel = rule.Channel, isActive = rule.IsActive })))"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                                    <form asp-action="DeleteRule" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa quy tắc này?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@rule.Id" />
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-icon"><i class="fa-solid fa-list-check"></i></div>
+                                    <div class="hrms-empty-text">Chưa có quy tắc thông báo nào.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.ActiveTab == "recipients")
+{
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h3 class="hrms-card-title mb-0"><i class="fa-solid fa-users card-title-icon"></i> Danh sách Nhóm người nhận</h3>
+            <button type="button" class="hrms-btn hrms-btn-primary" onclick="openRecipientModal(0, '', '', 'SpecificRole', '', true)"><i class="fa-solid fa-plus"></i> Tạo nhóm</button>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Tên nhóm</th>
+                        <th>Loại nhóm</th>
+                        <th>Cấu hình nhận</th>
+                        <th>Trạng thái</th>
+                        <th class="col-actions" style="text-align:right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.RecipientGroups.Any())
+                    {
+                        foreach (var group in Model.RecipientGroups)
+                        {
+                            <tr>
+                                <td style="font-weight:600; color: var(--hrms-text-main, #1e293b);">@group.GroupName<br/><small style="color:var(--hrms-text-muted, #64748b);font-weight:400;">@group.Description</small></td>
+                                <td><span class="hrms-badge hrms-badge-info">@group.Type</span></td>
+                                <td><code style="background:var(--hrms-background, #f1f5f9); padding:2px 6px; border-radius:4px; font-size:12px;">@group.TargetValues</code></td>
+                                <td>
+                                    @if(group.IsActive) {
+                                        <span class="hrms-badge hrms-badge-success"><span class="hrms-badge-dot"></span> Hoạt động</span>
+                                    } else {
+                                        <span class="hrms-badge hrms-badge-neutral"><span class="hrms-badge-dot"></span> Tạm dừng</span>
+                                    }
+                                </td>
+                                <td style="text-align:right;">
+                                    <button type="button" class="hrms-btn hrms-btn-sm hrms-btn-secondary" title="Sửa nhóm nhận" aria-label="Sửa nhóm nhận" data-edit-kind="recipient" data-edit-payload="@Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new { id = group.Id, name = group.GroupName, description = group.Description, type = group.Type, targets = group.TargetValues, isActive = group.IsActive })))"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                                    <form asp-action="DeleteRecipientGroup" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa nhóm này?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@group.Id" />
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-icon"><i class="fa-solid fa-users"></i></div>
+                                    <div class="hrms-empty-text">Chưa có nhóm người nhận nào.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.ActiveTab == "templates")
+{
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h3 class="hrms-card-title mb-0"><i class="fa-solid fa-file-code card-title-icon"></i> Email Templates</h3>
+            <button type="button" class="hrms-btn hrms-btn-primary" onclick="openTemplateModal(0, '', '', '', '', true)"><i class="fa-solid fa-plus"></i> Tạo template</button>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Tên Template</th>
+                        <th>Event Code</th>
+                        <th>Tiêu đề Email</th>
+                        <th>Trạng thái</th>
+                        <th class="col-actions" style="text-align:right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.EmailTemplates.Any())
+                    {
+                        foreach (var tmpl in Model.EmailTemplates)
+                        {
+                            <tr>
+                                <td style="font-weight:600; color: var(--hrms-text-main, #1e293b);">@tmpl.TemplateName</td>
+                                <td><code style="background:var(--hrms-background, #f1f5f9); padding:2px 6px; border-radius:4px; font-size:12px;">@tmpl.EventCode</code></td>
+                                <td>@tmpl.Subject</td>
+                                <td>
+                                    @if(tmpl.IsActive) {
+                                        <span class="hrms-badge hrms-badge-success"><span class="hrms-badge-dot"></span> Hoạt động</span>
+                                    } else {
+                                        <span class="hrms-badge hrms-badge-neutral"><span class="hrms-badge-dot"></span> Tạm dừng</span>
+                                    }
+                                </td>
+                                <td style="text-align:right;">
+                                    <button type="button" class="hrms-btn hrms-btn-sm hrms-btn-secondary" title="Sửa mẫu email" aria-label="Sửa mẫu email" data-edit-kind="template" data-edit-payload="@Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new { id = tmpl.Id, name = tmpl.TemplateName, eventCode = tmpl.EventCode, subject = tmpl.Subject, body = tmpl.Body, isActive = tmpl.IsActive })))"><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
+                                    <form asp-action="DeleteEmailTemplate" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa template này?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@tmpl.Id" />
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-danger"><i class="fa-solid fa-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-icon"><i class="fa-solid fa-file-code"></i></div>
+                                    <div class="hrms-empty-text">Chưa có template nào.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Modal Quy tắc -->
+<div id="ruleModal" class="admin-cfg-modal">
+    <div class="admin-cfg-modal-content" style="max-width:600px;">
+        <div class="admin-cfg-modal-header">
+            <h3 class="admin-cfg-modal-title">Cấu hình Quy tắc thông báo</h3>
+            <button type="button" class="admin-cfg-modal-close" onclick="closeRuleModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form asp-action="SaveRule" method="post" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            @Html.AntiForgeryToken()
+            <div style="padding:24px; overflow-y:auto; flex:1;">
+                <input type="hidden" name="Id" id="rule_id" value="0" />
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tên quy tắc <span style="color:red;">*</span></label>
+                    <input type="text" name="RuleName" id="rule_name" class="hrms-form-control" required placeholder="VD: Gửi thư duyệt nghỉ phép" />
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Sự kiện Trigger <span style="color:red;">*</span></label>
+                        <input type="text" name="EventCode" id="rule_event" class="hrms-form-control" required placeholder="VD: LeaveRequested" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Module liên quan</label>
+                        <input type="text" name="Module" id="rule_module" class="hrms-form-control" placeholder="VD: Leave" />
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Nhóm người nhận <span style="color:red;">*</span></label>
+                        <select name="RecipientGroupId" id="rule_recipient_group" class="hrms-form-select" required>
+                            <option value="">-- Chọn nhóm --</option>
+                            @foreach (var g in Model.RecipientGroups)
+                            {
+                                <option value="@g.Id">@g.GroupName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Template <span style="color:red;">*</span></label>
+                        <select name="EmailTemplateId" id="rule_template" class="hrms-form-select" required>
+                            <option value="">-- Chọn template --</option>
+                            @foreach (var t in Model.EmailTemplates)
+                            {
+                                <option value="@t.Id">@t.TemplateName</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="hrms-form-label">Kênh gửi <span style="color:red;">*</span></label>
+                    <select name="Channel" id="rule_channel" class="hrms-form-select" required>
+                        <option value="Email">Gửi qua Email (SMTP)</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 mt-3" style="background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px solid var(--hrms-border, #e2e8f0);">
+                    <div>
+                        <div style="font-weight:600; color:var(--hrms-text-main, #1e293b); font-size:14px;">Trạng thái hoạt động</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="IsActive" id="rule_active" value="true" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="admin-cfg-modal-footer">
+                <button type="button" class="hrms-btn hrms-btn-ghost" onclick="closeRuleModal()">Hủy bỏ</button>
+                <button type="submit" class="hrms-btn hrms-btn-primary">Lưu quy tắc</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Nhóm người nhận -->
+<div id="recipientModal" class="admin-cfg-modal">
+    <div class="admin-cfg-modal-content" style="max-width:560px;">
+        <div class="admin-cfg-modal-header">
+            <h3 class="admin-cfg-modal-title">Nhóm người nhận</h3>
+            <button type="button" class="admin-cfg-modal-close" onclick="closeRecipientModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form asp-action="SaveRecipientGroup" method="post">
+            @Html.AntiForgeryToken()
+            <div style="padding:24px;">
+                <input type="hidden" name="Id" id="rec_id" value="0" />
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tên nhóm <span style="color:red;">*</span></label>
+                    <input type="text" name="GroupName" id="rec_name" class="hrms-form-control" required placeholder="VD: Tất cả Quản lý" />
+                </div>
+                <div class="mb-3">
+                    <label class="hrms-form-label">Mô tả</label>
+                    <input type="text" name="Description" id="rec_desc" class="hrms-form-control" placeholder="Mô tả nhóm..." />
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Loại người nhận <span style="color:red;">*</span></label>
+                        <select name="Type" id="rec_type" class="hrms-form-select" required>
+                            <option value="AllEmployees">Tất cả nhân viên</option>
+                            <option value="SpecificRole">Theo Role (Vai trò)</option>
+                            <option value="SpecificDepartment">Theo Phòng ban</option>
+                            <option value="DynamicManager">Quản lý trực tiếp (Dynamic)</option>
+                            <option value="DynamicEmployee">Nhân viên liên quan (Dynamic)</option>
+                            <option value="DynamicHRAdmin">HR Admin (Dynamic)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Giá trị mục tiêu</label>
+                        <input type="text" name="TargetValues" id="rec_targets" class="hrms-form-control" placeholder="Nhập ID/Tên (ngăn cách phẩy)" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 mt-3" style="background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px solid var(--hrms-border, #e2e8f0);">
+                    <div>
+                        <div style="font-weight:600; color:var(--hrms-text-main, #1e293b); font-size:14px;">Trạng thái hoạt động</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="IsActive" id="rec_active" value="true" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="admin-cfg-modal-footer">
+                <button type="button" class="hrms-btn hrms-btn-ghost" onclick="closeRecipientModal()">Hủy bỏ</button>
+                <button type="submit" class="hrms-btn hrms-btn-primary">Lưu nhóm</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Template -->
+<div id="templateModal" class="admin-cfg-modal">
+    <div class="admin-cfg-modal-content" style="max-width:760px;">
+        <div class="admin-cfg-modal-header">
+            <h3 class="admin-cfg-modal-title">Email Template</h3>
+            <button type="button" class="admin-cfg-modal-close" onclick="closeTemplateModal()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form asp-action="SaveEmailTemplate" method="post" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            @Html.AntiForgeryToken()
+            <div style="padding:24px; overflow-y:auto; flex:1;">
+                <input type="hidden" name="Id" id="tpl_id" value="0" />
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Tên Template <span style="color:red;">*</span></label>
+                        <input type="text" name="TemplateName" id="tpl_name" class="hrms-form-control" required placeholder="VD: Thông báo nghỉ phép" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="hrms-form-label">Event Code</label>
+                        <input type="text" name="EventCode" id="tpl_event" class="hrms-form-control" placeholder="VD: LeaveRequested" />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="hrms-form-label">Tiêu đề Email (Subject) <span style="color:red;">*</span></label>
+                    <input type="text" name="Subject" id="tpl_subject" class="hrms-form-control" required placeholder="VD: HRMS - Thông báo đơn xin nghỉ phép từ {{EmployeeName}}" />
+                </div>
+                
+                <div class="mb-3">
+                    <label class="hrms-form-label">Nội dung (Hỗ trợ HTML & Biến {{Var}}) <span style="color:red;">*</span></label>
+                    <textarea name="Body" id="tpl_body" class="hrms-form-control" required rows="9" style="resize:vertical; font-family:monospace;"></textarea>
+                    <small style="color:var(--hrms-text-muted, #64748b); margin-top:4px; display:block;">Các biến hỗ trợ: {{EmployeeName}}, {{LeaveType}}, {{StartDate}}, {{CheckIn}}, {{CheckOut}}, {{Reason}}, {{ActionUrl}}</small>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 mt-3" style="background:var(--hrms-background, #f8fafc); border-radius:8px; border:1px solid var(--hrms-border, #e2e8f0);">
+                    <div>
+                        <div style="font-weight:600; color:var(--hrms-text-main, #1e293b); font-size:14px;">Trạng thái hoạt động</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" name="IsActive" id="tpl_active" value="true" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="admin-cfg-modal-footer">
+                <button type="button" class="hrms-btn hrms-btn-ghost" onclick="closeTemplateModal()">Hủy bỏ</button>
+                <button type="submit" class="hrms-btn hrms-btn-primary">Lưu Template</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function openRuleModal(id, name, ev, module, recId, tplId, channel, isActive) {
+    document.getElementById('rule_id').value = id;
+    document.getElementById('rule_name').value = name;
+    document.getElementById('rule_event').value = ev;
+    document.getElementById('rule_module').value = module;
+    document.getElementById('rule_recipient_group').value = recId || '';
+    document.getElementById('rule_template').value = tplId || '';
+    document.getElementById('rule_channel').value = channel || 'Email';
+    document.getElementById('rule_active').checked = isActive;
+    
+    document.getElementById('ruleModal').style.display = 'flex';
+}
+
+function closeRuleModal() {
+    document.getElementById('ruleModal').style.display = 'none';
+}
+
+function openRecipientModal(id, name, desc, type, targets, isActive) {
+    document.getElementById('rec_id').value = id;
+    document.getElementById('rec_name').value = name;
+    document.getElementById('rec_desc').value = desc;
+    document.getElementById('rec_type').value = type || 'SpecificRole';
+    document.getElementById('rec_targets').value = targets;
+    document.getElementById('rec_active').checked = isActive;
+    
+    document.getElementById('recipientModal').style.display = 'flex';
+}
+
+function closeRecipientModal() {
+    document.getElementById('recipientModal').style.display = 'none';
+}
+
+function openTemplateModal(id, name, ev, subject, body, isActive) {
+    document.getElementById('tpl_id').value = id;
+    document.getElementById('tpl_name').value = name;
+    document.getElementById('tpl_event').value = ev;
+    document.getElementById('tpl_subject').value = subject;
+    document.getElementById('tpl_body').value = body;
+    document.getElementById('tpl_active').checked = isActive;
+    
+    document.getElementById('templateModal').style.display = 'flex';
+}
+
+function closeTemplateModal() {
+    document.getElementById('templateModal').style.display = 'none';
+}
+
+function decodeEditPayload(encoded) {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+document.addEventListener('click', event => {
+    const button = event.target.closest('[data-edit-kind][data-edit-payload]');
+    if (!button) return;
+
+    let payload;
+    try {
+        payload = decodeEditPayload(button.dataset.editPayload);
+    } catch {
+        return;
+    }
+
+    switch (button.dataset.editKind) {
+        case 'rule':
+            openRuleModal(payload.id, payload.name, payload.eventCode, payload.module, payload.recipientGroupId, payload.templateId, payload.channel, payload.isActive);
+            break;
+        case 'recipient':
+            openRecipientModal(payload.id, payload.name, payload.description, payload.type, payload.targets, payload.isActive);
+            break;
+        case 'template':
+            openTemplateModal(payload.id, payload.name, payload.eventCode, payload.subject, payload.body, payload.isActive);
+            break;
+    }
+});
+</script>
+}

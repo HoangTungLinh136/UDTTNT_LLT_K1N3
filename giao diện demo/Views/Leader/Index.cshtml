@@ -1,215 +1,181 @@
-﻿@{
-    ViewData["Title"] = "📊 Ban lãnh đạo";
+@{
+    ViewData["Title"] = "Bảng điều khiển Lãnh đạo";
     
-    // Lấy dữ liệu đã được Controller tính toán gộp cả hệ thống + file upload
-    int empCount = ViewBag.EmpCount ?? 0;
-    int attCount = ViewBag.AttCount ?? 0;
-    int salCount = ViewBag.SalCount ?? 0;
-    
-    int doneCount = ViewBag.DoneCount ?? 0;
-    int pendingCount = ViewBag.PendingCount ?? 0;
-
-    // Lấy danh sách File đính kèm để in ra bảng dưới biểu đồ
-    var reportFiles = ViewBag.ReportFiles as List<giao_dien_demo.Models.ReportFile> ?? new List<giao_dien_demo.Models.ReportFile>();
+    int totalHeadcount = ViewBag.TotalHeadcount ?? 0;
+    int newHires = ViewBag.NewHires ?? 0;
+    decimal totalCost = ViewBag.TotalCost ?? 0m;
+    int activeLeaves = ViewBag.ActiveLeaves ?? 0;
+    int expiringContracts = ViewBag.ExpiringContracts ?? 0;
+    string latestSalaryMonth = ViewBag.LatestSalaryMonth ?? "N/A";
+    var deptStats = ViewBag.DeptStats as IEnumerable<dynamic>;
 }
 
-<h2>📊 Báo cáo & Thống kê</h2>
-
-<div class="dashboard-cards" style="margin-top:30px;">
-    <div class="card blue" style="cursor: default; pointer-events: none;">
-        👥 Báo cáo nhân sự
-        <div class="number" id="leaderEmpCount">@empCount</div>
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-chart-pie"></i></span>
+            Executive Dashboard
+        </h1>
+        <div class="hrms-page-subtitle">Tổng quan điều hành, nhân sự và các chỉ số hoạt động then chốt.</div>
     </div>
-
-    <div class="card green" style="cursor: default; pointer-events: none;">
-        ⏱ Lượt chấm công
-        <div class="number" id="leaderAttCount">@attCount</div>
-    </div>
-
-    <div class="card red" style="cursor: default; pointer-events: none;">
-        💰 Báo cáo lương
-        <div class="number" id="leaderSalCount">@salCount</div>
-    </div>
-
-    <div class="card purple" style="cursor: default; pointer-events: none;">
-        🔄 Cập nhật dữ liệu
-        <div class="number" style="font-size: 26px; padding-top: 8px;">Real-time</div>
+    <div class="hrms-page-header-actions">
+        <button class="hrms-btn hrms-btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> In Báo cáo</button>
+        <button class="hrms-btn hrms-btn-secondary"><i class="fa-regular fa-calendar"></i> Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")</button>
     </div>
 </div>
 
-<div style="margin-top:40px; display:flex; gap:30px; flex-wrap:wrap;">
-    <div style="flex:1; min-width:400px;">
-        <h4>📊 Số lượng báo cáo</h4>
-        <canvas id="barChart"></canvas>
-    </div>
-
-    <div style="flex:1; min-width:400px;">
-        <h4>🥧 Trạng thái báo cáo</h4>
-        <canvas id="pieChart"></canvas>
-    </div>
-</div>
-
-<div style="margin-top:40px;">
-    <h3>📋 Tổng quan báo cáo</h3>
-
-    <table class="table table-bordered table-hover">
-        <thead class="table-primary">
-            <tr>
-                <th>Loại báo cáo</th>
-                <th>Trạng thái</th>
-                <th>Số lượng</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Báo cáo nhân sự</td>
-                <td>Hoàn tất</td>
-                <td id="tableEmpCount">@empCount</td>
-            </tr>
-            <tr>
-                <td>Báo cáo lương</td>
-                <td>Đang xử lý</td>
-                <td id="tableSalCount">@salCount</td>
-            </tr>
-            <tr>
-                <td>Báo cáo chấm công</td>
-                <td>Hoàn tất</td>
-                <td id="tableAttCount">@attCount</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
-<div class="card shadow-sm border-0 mt-5" style="border-radius: 12px; background-color: #f8f9fa;">
-    <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
-        <h5 class="fw-bold text-dark"><i class="fas fa-file-pdf text-danger me-2"></i> Báo cáo đính kèm từ HR</h5>
-    </div>
-    <div class="card-body">
-        @if (reportFiles.Any())
-        {
-            <table class="table table-hover bg-white rounded shadow-sm">
-                <thead class="table-light">
-                    <tr>
-                        <th>Tiêu đề</th>
-                        <th>Phân loại</th>
-                        <th>Tên File</th>
-                        <th>Người tải lên</th>
-                        <th>Thời gian</th>
-                        <th class="text-center">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var file in reportFiles)
-                    {
-                        <tr>
-                            <td class="fw-bold">@file.Title</td>
-                            <td><span class="badge bg-secondary">@file.Category</span></td>
-                            <td><i class="fas fa-file-word text-primary me-1"></i> @file.FileName</td>
-                            <td>@file.UploadedBy</td>
-                            <td>@file.UploadedDate.ToString("HH:mm - dd/MM/yyyy")</td>
-                            <td class="text-center">
-                                <a href="/Report/Download?id=@file.Id" class="btn btn-sm btn-info text-white">
-                                    <i class="fas fa-download"></i> Tải nội dung
-                                </a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
-        else
-        {
-            <p class="text-muted mb-0"><i>Chưa có file báo cáo nào được gửi từ HR.</i></p>
-        }
-    </div>
-</div>
-
-<div style="margin-top:30px; margin-bottom: 50px;">
-    <button class="btn btn-success" onclick="window.print()">
-        <i class="fas fa-file-pdf"></i> 📥 Xuất báo cáo màn hình (PDF)
-    </button>
-    <a href="/Report/Index" class="btn btn-outline-primary ms-2">
-        <i class="fas fa-list"></i> Xem bảng KPI nhân viên chi tiết
+<div class="hrms-nav-grid mb-4">
+    <a href="@Url.Action("Index", "Leader")" class="hrms-nav-card active">
+        <i class="fa-solid fa-chart-pie nav-icon"></i>
+        <span class="nav-title">Tổng quan</span>
     </a>
+    <a href="@Url.Action("Index", "LeaderPersonnel")" class="hrms-nav-card">
+        <i class="fa-solid fa-users nav-icon"></i>
+        <span class="nav-title">Nhân sự</span>
+    </a>
+    <a href="@Url.Action("Index", "LeaderCost")" class="hrms-nav-card">
+        <i class="fa-solid fa-money-bill-wave nav-icon"></i>
+        <span class="nav-title">Chi phí</span>
+    </a>
+</div>
+
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="hrms-kpi-value">@totalHeadcount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng nhân sự (Active)</div>
+            <div class="hrms-kpi-sub"><span class="sub-good"><i class="fa-solid fa-arrow-trend-up"></i> @newHires nhân sự mới</span></div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-money-check-dollar"></i></div>
+            <div class="hrms-kpi-value">@(totalCost > 0 ? (totalCost / 1000000).ToString("N0") + "M" : "0")</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Chi phí lương (@latestSalaryMonth)</div>
+            <div class="hrms-kpi-sub">
+                @if(totalCost > 0) {
+                    <span class="sub-good"><i class="fa-solid fa-circle-check"></i> Đã tính</span>
+                } else {
+                    <span class="sub-warn"><i class="fa-solid fa-clock"></i> Chưa có dữ liệu</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-orange">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-plane-departure"></i></div>
+            <div class="hrms-kpi-value">@activeLeaves</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Nhân sự đang nghỉ phép</div>
+            <div class="hrms-kpi-sub"><span class="sub-neutral">Hôm nay</span></div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-red">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-file-signature"></i></div>
+            <div class="hrms-kpi-value">@expiringContracts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Hợp đồng sắp hết hạn</div>
+            <div class="hrms-kpi-sub">
+                @if(expiringContracts > 0) {
+                    <span class="sub-warn"><i class="fa-solid fa-triangle-exclamation"></i> Cần chú ý</span>
+                } else {
+                    <span class="sub-good"><i class="fa-solid fa-check"></i> Đang ổn định</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="hrms-card h-100">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-sitemap card-title-icon"></i> Phân bổ nhân sự theo phòng ban</h3>
+            </div>
+            <div class="hrms-card-body">
+                <canvas id="deptChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="hrms-card h-100">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-star card-title-icon"></i> Các hoạt động nổi bật</h3>
+            </div>
+            <div class="hrms-card-body p-0">
+                <div class="hrms-table-wrap">
+                    <table class="hrms-table">
+                        <thead>
+                            <tr>
+                                <th>Chỉ số</th>
+                                <th>Chi tiết</th>
+                                <th class="col-actions">Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="hrms-badge hrms-badge-info">Nhân sự</span></td>
+                                <td>Có <strong>@newHires</strong> nhân sự mới trong thời gian này</td>
+                                <td class="col-actions"><a href="@Url.Action("Index", "LeaderPersonnel")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Xem chi tiết</a></td>
+                            </tr>
+                            <tr>
+                                <td><span class="hrms-badge hrms-badge-danger">Hợp đồng</span></td>
+                                <td><strong>@expiringContracts</strong> hợp đồng cần gia hạn (30 ngày)</td>
+                                <td class="col-actions"><a href="@Url.Action("Index", "LeaderContract")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Kiểm tra</a></td>
+                            </tr>
+                            <tr>
+                                <td><span class="hrms-badge hrms-badge-warning">Nghỉ phép</span></td>
+                                <td><strong>@activeLeaves</strong> nhân viên đang vắng mặt hôm nay</td>
+                                <td class="col-actions"><a href="@Url.Action("Index", "LeaderLeave")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Chi tiết</a></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        // DỮ LIỆU TỪ BACKEND
-        let currentEmp = @empCount;
-        let currentAtt = @attCount;
-        let currentSal = @salCount;
-        let currentDone = @doneCount;
-        let currentPending = @pendingCount;
+        document.addEventListener("DOMContentLoaded", function() {
+            var ctx = document.getElementById('deptChart').getContext('2d');
+            
+            var rawStats = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(deptStats));
+            
+            var labels = rawStats.map(item => item.Department);
+            var data = rawStats.map(item => item.Headcount);
 
-        // VẼ BIỂU ĐỒ CỘT
-        const myBarChart = new Chart(document.getElementById('barChart'), {
-        type: 'bar',
-        data: {
-        labels: ['Nhân sự', 'Chấm công', 'Lương'],
-        datasets: [{
-        label: 'Số lượng',
-        data: [currentEmp, currentAtt, currentSal],
-        backgroundColor: ['#36A2EB', '#4BC0C0', '#FF6384']
-        }]
-        },
-        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            var chart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
         });
-
-        // VẼ BIỂU ĐỒ TRÒN
-        const myPieChart = new Chart(document.getElementById('pieChart'), {
-        type: 'pie',
-        data: {
-        labels: ['Hoàn tất', 'Đang xử lý'],
-        datasets: [{
-        data: [currentDone, currentPending],
-        backgroundColor: ['#4BC0C0', '#FF6384']
-        }]
-        }
-        });
-
-        // KẾT NỐI SIGNALR
-        const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/dashboardHub")
-        .withAutomaticReconnect()
-        .build();
-
-        // Lắng nghe Duyệt hợp đồng
-        connection.on("UpdateEmployeeCount", function (newEmpCount) {
-        window.location.reload();
-        });
-
-        // Lắng nghe Chấm công
-        connection.on("UpdateAttendanceCount", function (totalCount, userName) {
-        window.location.reload();
-        });
-
-        // 🔥 LẮNG NGHE UPLOAD FILE: Tự động tải lại để nhận diện Category mới
-        connection.on("NewReportUploaded", function (totalReports, reportTitle) {
-        Swal.fire({
-        title: 'Có File báo cáo mới!',
-        text: 'HR vừa tải lên: ' + reportTitle,
-        icon: 'info',
-        confirmButtonColor: '#3085d6',
-        confirmButtonText: 'Cập nhật số liệu ngay'
-        }).then(() => {
-        window.location.reload(); // Load lại để Controller tính toán lại Category
-        });
-        });
-
-        async function startConnection() {
-        try {
-        await connection.start();
-        console.log("Dashboard Leader đã kết nối Real-time!");
-        } catch (err) {
-        setTimeout(startConnection, 5000);
-        }
-        }
-        
-        startConnection();
     </script>
 }

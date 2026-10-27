@@ -1,0 +1,11 @@
+@model dynamic
+@if (Model.TotalPages > 1)
+{
+    <nav class="p-3 d-flex justify-content-between align-items-center">
+        <span class="text-muted">Trang @Model.Page / @Model.TotalPages</span>
+        <div class="btn-group">
+            <a class="hrms-btn hrms-btn-sm hrms-btn-secondary @(Model.Page <= 1 ? "disabled" : "")" href="?search=@Uri.EscapeDataString(Model.Search)&department=@Uri.EscapeDataString(Model.Filter)&page=@(Model.Page - 1)">Trước</a>
+            <a class="hrms-btn hrms-btn-sm hrms-btn-secondary @(Model.Page >= Model.TotalPages ? "disabled" : "")" href="?search=@Uri.EscapeDataString(Model.Search)&department=@Uri.EscapeDataString(Model.Filter)&page=@(Model.Page + 1)">Sau</a>
+        </div>
+    </nav>
+}

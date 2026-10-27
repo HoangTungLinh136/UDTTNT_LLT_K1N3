@@ -1,4 +1,4 @@
-﻿@{
+@{
     Layout = null;
 }
 <!DOCTYPE html>
@@ -8,6 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - HRMS</title>
 
+    <!-- Load i18n -->
+    <script src="/js/i18n.js"></script>
     <style>
             * {
                 margin: 0;
@@ -53,7 +55,7 @@
                 backdrop-filter: blur(5px);
             }
 
-            /* 🔥 Đã chỉnh sửa CSS cho Logo */
+            /* 🔹 Đã chỉnh sửa CSS cho Logo */
             .login-title {
                 text-align: center;
                 margin-bottom: 30px;
@@ -62,7 +64,7 @@
                 .login-title img {
                     max-width: 65%; /* Thu nhỏ kích thước logo cho vừa hộp đăng nhập */
                     height: auto;
-                    border-radius: 12px; /* Bo góc mượt mà cho nền đen của logo */
+                    border-radius: 12px; /* Báo góc mượt mã cho nền đen của logo */
                     box-shadow: 0 8px 20px rgba(0,0,0,0.3); /* Đổ bóng nổi bật */
                 }
 
@@ -165,6 +167,7 @@
         }
 
         <form method="post" action="/Account/Login" onsubmit="return validateForm()">
+            @Html.AntiForgeryToken()
             <div class="input-box">
                 <input type="text" id="username" name="username" placeholder="Tài khoản" autocomplete="off" value="@ViewBag.SavedUsername" />
             </div>
@@ -210,6 +213,19 @@
 
                 return true;
             }
+            
+            // Dịch lỗi ViewBag (nếu cA) khi render
+            document.addEventListener("DOMContentLoaded", function() {
+                let serverError = "@Html.Raw(ViewBag.Error ?? "")";
+                if (serverError && window.HRMS_i18n) {
+                    if (serverError.includes("Tên đăng nhập") || serverError.includes("mật khẩu")) {
+                        let errEl = document.querySelector(".error");
+                        if (errEl) {
+                            errEl.textContent = "" || serverError;
+                        }
+                    }
+                }
+            });
     </script>
 </body>
 </html>

@@ -1,0 +1,111 @@
+@model List<giao_dien_demo.Models.LeaderApprovalItemViewModel>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="hrms-empty-state py-5">
+        <div class="hrms-empty-icon"><i class="fa-solid fa-inbox"></i></div>
+        <div class="hrms-empty-title">Không có đề xuất nào</div>
+        <div class="hrms-empty-desc">Hiện tại không có đề xuất nào thuộc danh mục này trong phạm vi quản lý của bạn.</div>
+    </div>
+}
+else
+{
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th>Nhân viên</th>
+                    <th>Loại đề xuất</th>
+                    <th>Nội dung thay đổi</th>
+                    <th>Người đề xuất</th>
+                    <th>Ngày gửi</th>
+                    <th>Hiệu lực</th>
+                    <th class="text-center">Trạng thái</th>
+                    <th class="col-actions">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center fw-bold me-2" style="width:34px; height:34px; font-size:12px; flex-shrink:0;">
+                                    @(!string.IsNullOrEmpty(item.AvatarPath) ? Html.Raw($"<img src='{item.AvatarPath}' class='rounded-circle' style='width:100%; height:100%; object-fit:cover;' />") : (!string.IsNullOrEmpty(item.EmployeeName) ? item.EmployeeName.Substring(0, 1).ToUpper() : "?"))
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size:13.5px;">@item.EmployeeName</div>
+                                    <div class="small text-muted" style="font-size:11.5px;">@item.EmployeeCode | @item.Department</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="hrms-badge hrms-badge-info">
+                                <i class="@item.WorkflowIcon me-1"></i> @item.WorkflowTypeLabel
+                            </span>
+                        </td>
+                        <td style="max-width: 250px;" class="text-truncate" title="@item.SummaryChange">
+                            <span style="font-size:13px;" class="fw-medium text-dark">@item.SummaryChange</span>
+                        </td>
+                        <td>
+                            <span class="small text-muted">@item.ProposedBy</span>
+                        </td>
+                        <td>
+                            <span class="small text-muted">@item.ProposedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        </td>
+                        <td>
+                            <span class="small text-primary fw-medium">@(item.EffectiveDate?.ToString("dd/MM/yyyy") ?? "---")</span>
+                        </td>
+                        <td class="text-center">
+                            @if (item.ApprovalStatus != null && item.ApprovalStatus.Contains("PENDING"))
+                            {
+                                <span class="hrms-badge hrms-badge-purple">
+                                    Chờ duyệt
+                                </span>
+                            }
+                            else if (item.ApprovalStatus == "APPROVED" || item.ApprovalStatus == "EFFECTIVE")
+                            {
+                                <span class="hrms-badge hrms-badge-success">
+                                    @item.ApprovalStatusLabel
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="hrms-badge hrms-badge-danger">
+                                    @item.ApprovalStatusLabel
+                                </span>
+                            }
+                        </td>
+                        <td class="col-actions">
+                            <div class="d-inline-flex gap-1 align-items-center">
+                                <button type="button" class="hrms-btn hrms-btn-xs hrms-btn-secondary" onclick="openDetailDrawer('@item.WorkflowType', @item.Id, @(item.CanApprove ? "true" : "false"), @(item.ApprovalStatus != null && !item.ApprovalStatus.Contains("PENDING") ? "true" : "false"))" title="Xem chi tiết">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                @if (item.ApprovalStatus != null && item.ApprovalStatus.Contains("PENDING"))
+                                {
+                                    if (item.CanApprove)
+                                    {
+                                        <button type="button" class="hrms-btn hrms-btn-xs hrms-btn-primary" onclick="approveItem('@item.WorkflowType', @item.Id, this)" title="Phê duyệt">
+                                            <i class="fa-solid fa-check"></i> Duyệt
+                                        </button>
+                                        <button type="button" class="hrms-btn hrms-btn-xs hrms-btn-danger" onclick="openRejectModal('@item.WorkflowType', @item.Id)" title="Từ chối">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="@(item.SelfApprovalNotice ?? "Không đủ quyền phê duyệt")">
+                                            <button type="button" class="hrms-btn hrms-btn-xs hrms-btn-secondary" disabled>
+                                                <i class="fa-solid fa-ban"></i> Tự đề xuất
+                                            </button>
+                                        </span>
+                                    }
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

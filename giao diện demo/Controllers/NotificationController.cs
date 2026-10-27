@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -9,10 +9,11 @@ using giao_dien_demo.Hubs;
 using giao_dien_demo.Models;
 using giao_dien_demo.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace giao_dien_demo.Controllers
 {
-    // Model tạm thời cho thông báo (Vì bạn đang dùng list tĩnh)
+    // Model t?m th?i cho thng bo (V b?n dang dng list tinh)
     public class ThongBaoTam
     {
         public int Id { get; set; }
@@ -20,11 +21,16 @@ namespace giao_dien_demo.Controllers
         public string NguoiGui { get; set; } = string.Empty;
         public string NguoiNhan { get; set; } = string.Empty;
         public DateTime NgayTao { get; set; } = DateTime.Now;
+        public string Type { get; set; } = "SYSTEM";
+        public string? TargetUrl { get; set; }
+        public bool IsRead { get; set; } = false;
+        public int? ReferenceId { get; set; }
     }
 
+    [Authorize]
     public class NotificationController : Controller
     {
-        // Danh sách tĩnh lưu trữ lịch sử thông báo
+        // Danh sch tinh luu tr? l?ch s? thng bo
         public static List<ThongBaoTam> list = new List<ThongBaoTam>();
 
         private readonly ApplicationDbContext _context;
@@ -41,7 +47,7 @@ namespace giao_dien_demo.Controllers
             return !string.IsNullOrEmpty(HttpContext.Session.GetString("User"));
         }
 
-        // --- 1. HIỂN THỊ DANH SÁCH THÔNG BÁO ---
+        // --- 1. HI?N TH? DNH SCH THNG BO ---
         public async Task<IActionResult> Index(string? returnTo)
         {
             if (!CheckLogin()) return RedirectToAction("Login", "Account");
@@ -50,9 +56,9 @@ namespace giao_dien_demo.Controllers
             var role = HttpContext.Session.GetString("Role");
             var realName = HttpContext.Session.GetString("RealName") ?? "";
 
-            // Lấy danh sách nhân viên "Chính thức" từ Database để HR chọn người nhận
+            // ??  S?A: Lo?i b? di?u ki?n e.Position == "Chnh th?c"
+            // By gi? h? th?ng s? l?y T?T C? nhn vin trong Database d? n?p vo danh sch ch?n ngu?i nh?n.
             ViewBag.Employees = await _context.Employees
-                                    .Where(e => e.Position == "Chính thức")
                                     .OrderBy(e => e.Name)
                                     .ToListAsync();
 
@@ -60,18 +66,24 @@ namespace giao_dien_demo.Controllers
 
             List<ThongBaoTam> hienThi;
 
-            // 🔥 LOGIC LỌC THÔNG MINH:
-            if (role == "HR" || role == "Admin" || role == "Leader")
+            // ?? LOGIC L?C THNG MINH:
+            if (role == "HR" || role == "Leader" || role == "Manager")
             {
-                // Quản lý: Thấy toàn bộ thông báo đã gửi
-                hienThi = list.OrderByDescending(x => x.NgayTao).ToList();
+                // Qu?n l: Th?y ton b? thng bo d g?i, NGO?I TR? thng bo luong c nhn c?a nhn vin
+                // V ch? th?y thng bo nh?c luong c?a chnh mnh
+                hienThi = list.Where(x => 
+                    x.Type != "SALARY_PAID" && 
+                    (x.Type != "SALARY_PAYMENT_REMINDER" || 
+                     x.NguoiNhan == user || 
+                     (!string.IsNullOrEmpty(realName) && x.NguoiNhan.Trim().ToLower() == realName.Trim().ToLower()))
+                ).OrderByDescending(x => x.NgayTao).ToList();
             }
             else
             {
-                // Nhân viên: Thấy tin "Tất cả" HOẶC tin gửi đúng "Tên đăng nhập" HOẶC "Họ tên thật"
+                // Nhn vin: Th?y tin "T?t c?" HO?C tin g?i dng "Tn dang nh?p" HO?C "H? tn th?t"
                 hienThi = list.Where(x =>
-                    x.NguoiNhan == "Tất cả" ||
-                    x.NguoiNhan == "Tất cả nhân viên" ||
+                    x.NguoiNhan == "T?t c?" ||
+                    x.NguoiNhan == "T?t c? nhn vin" ||
                     x.NguoiNhan == user ||
                     (!string.IsNullOrEmpty(realName) && x.NguoiNhan.Trim().ToLower() == realName.Trim().ToLower())
                 ).OrderByDescending(x => x.NgayTao).ToList();
@@ -80,19 +92,20 @@ namespace giao_dien_demo.Controllers
             return View(hienThi);
         }
 
-        // --- 2. GỬI THÔNG BÁO (TỪ HR/ADMIN) ---
+        // --- 2. G?I THNG BO (T? HR/ADMIN) ---
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> GuiThongBao(string noiDung, string nguoiNhan, string? returnTo)
         {
             if (!CheckLogin()) return RedirectToAction("Login", "Account");
 
-            // Lấy tên người gửi (Ưu tiên tên thật)
-            var userGui = HttpContext.Session.GetString("RealName") ?? HttpContext.Session.GetString("User") ?? "Hệ thống";
+            // L?y tn ngu?i g?i (Uu tin tn th?t)
+            var userGui = HttpContext.Session.GetString("RealName") ?? HttpContext.Session.GetString("User") ?? "H? th?ng";
             var roleGui = HttpContext.Session.GetString("Role");
 
             if (roleGui != "HR" && roleGui != "Admin" && roleGui != "Leader")
             {
-                return Json(new { success = false, message = "Bạn không có quyền gửi!" });
+                return Json(new { success = false, message = "B?n khng c quy?n g?i!" });
             }
 
             if (!string.IsNullOrWhiteSpace(noiDung))
@@ -102,19 +115,24 @@ namespace giao_dien_demo.Controllers
                     Id = list.Any() ? list.Max(x => x.Id) + 1 : 1,
                     NoiDung = noiDung,
                     NguoiGui = userGui,
-                    NguoiNhan = string.IsNullOrEmpty(nguoiNhan) ? "Tất cả nhân viên" : nguoiNhan,
+                    NguoiNhan = string.IsNullOrEmpty(nguoiNhan) ? "T?t c? nhn vin" : nguoiNhan,
                     NgayTao = DateTime.Now
                 };
                 list.Add(tbMoi);
 
-                // 🔥 SIGNALR REAL-TIME: Bắn sóng cho toàn bộ hệ thống
-                await _hubContext.Clients.All.SendAsync("ReceiveNotification", new
+                var realtimePayload = new
                 {
                     content = tbMoi.NoiDung,
                     sender = tbMoi.NguoiGui,
                     receiver = tbMoi.NguoiNhan,
                     time = tbMoi.NgayTao.ToString("HH:mm")
-                });
+                };
+                var canonicalRecipient = await _context.Users.AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Username == tbMoi.NguoiNhan && u.CanLogin);
+                if (canonicalRecipient != null)
+                    await _hubContext.Clients.User(canonicalRecipient.Username).SendAsync("ReceiveNotification", realtimePayload);
+                else if (string.IsNullOrWhiteSpace(nguoiNhan))
+                    await _hubContext.Clients.Group("role:Employee").SendAsync("ReceiveNotification", realtimePayload);
 
                 if (Request.Headers["X-Requested-With"] == "XMLHttpRequest") return Ok();
             }
@@ -122,29 +140,34 @@ namespace giao_dien_demo.Controllers
             return RedirectToAction("Index", new { returnTo = returnTo });
         }
 
-        // --- 3. THU HỒI THÔNG BÁO ---
+        // --- 3. THU H?I THNG BO ---
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> RecallByName(string noiDung)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "HR" && role != "Admin" && role != "Leader") return Forbid();
+            if (role != "HR" && role != "Leader" && role != "Manager") return Forbid();
 
             var item = list.FirstOrDefault(x => x.NoiDung == noiDung);
             if (item != null)
             {
                 list.Remove(item);
-                await _hubContext.Clients.All.SendAsync("NotificationRecalled", noiDung);
+                var canonicalRecipient = await _context.Users.AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Username == item.NguoiNhan && u.CanLogin);
+                if (canonicalRecipient != null)
+                    await _hubContext.Clients.User(canonicalRecipient.Username).SendAsync("NotificationRecalled", noiDung);
                 return Ok();
             }
             return NotFound();
         }
 
-        // --- 4. XÓA THÔNG BÁO ---
+        // --- 4. XA THNG BO ---
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Delete(int id)
         {
             var role = HttpContext.Session.GetString("Role");
-            if (role != "HR" && role != "Admin" && role != "Leader") return Forbid();
+            if (role != "HR" && role != "Leader" && role != "Manager") return Forbid();
 
             var item = list.FirstOrDefault(x => x.Id == id);
             if (item != null)
@@ -155,7 +178,21 @@ namespace giao_dien_demo.Controllers
             return NotFound();
         }
 
-        // --- 5. LẤY SỐ LƯỢNG CHO CHUÔNG THÔNG BÁO (BADGE) ---
+        // --- 4.1. NH D?U  ?C ---
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkAsRead(int id)
+        {
+            var item = list.FirstOrDefault(x => x.Id == id);
+            if (item != null)
+            {
+                item.IsRead = true;
+                return Ok();
+            }
+            return NotFound();
+        }
+
+        // --- 5. L?Y S? LU?NG CHO CHUNG THNG BO (BADGE) ---
         public JsonResult GetNotifications()
         {
             var user = HttpContext.Session.GetString("User") ?? "";
@@ -163,15 +200,22 @@ namespace giao_dien_demo.Controllers
             var realName = HttpContext.Session.GetString("RealName") ?? "";
 
             int count;
-            if (role == "HR" || role == "Admin" || role == "Leader")
+            if (role == "HR" || role == "Leader" || role == "Manager")
             {
-                count = list.Count;
+                // Qu?n l khng d?m thng bo luong c?a nhn vin
+                // V ch? d?m thng bo nh?c luong c?a chnh mnh
+                count = list.Count(x => 
+                    x.Type != "SALARY_PAID" && 
+                    (x.Type != "SALARY_PAYMENT_REMINDER" || 
+                     x.NguoiNhan == user || 
+                     (!string.IsNullOrEmpty(realName) && x.NguoiNhan.Trim().ToLower() == realName.Trim().ToLower()))
+                );
             }
             else
             {
                 count = list.Count(x =>
-                    x.NguoiNhan == "Tất cả" ||
-                    x.NguoiNhan == "Tất cả nhân viên" ||
+                    x.NguoiNhan == "T?t c?" ||
+                    x.NguoiNhan == "T?t c? nhn vin" ||
                     x.NguoiNhan == user ||
                     (!string.IsNullOrEmpty(realName) && x.NguoiNhan.Trim().ToLower() == realName.Trim().ToLower())
                 );

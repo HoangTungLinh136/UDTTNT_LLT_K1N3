@@ -1,0 +1,593 @@
+@{
+    ViewData["Title"] = "Đào tạo của tôi";
+}
+
+<div>
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+                Đào tạo của tôi
+            </h1>
+            <p class="hrms-page-subtitle">Theo dõi quá trình học tập, phát triển kỹ năng và các khóa đào tạo của bạn.</p>
+        </div>
+    </div>
+
+<div class="content">
+    <div>
+        <!-- KPI SUMMARY SKELETON -->
+        <div id="kpiSkeleton" class="row mb-4">
+            @for (int i = 0; i < 4; i++)
+            {
+                <div class="col-lg-3 col-6">
+                    <div class="card shadow-sm placeholder-glow">
+                        <div class="card-body">
+                            <span class="placeholder col-6"></span>
+                            <h3 class="placeholder col-4 mt-2"></h3>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- KPI SUMMARY CONTENT -->
+        <div id="kpiContent" class="hrms-kpi-grid hrms-kpi-grid-4 mb-4 d-none">
+            <div class="hrms-kpi-card kpi-blue">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-primary"><i class="bi bi-book"></i></div>
+                    <div class="hrms-kpi-value text-primary" id="kpiInProgress">0</div>
+                </div>
+                <div class="hrms-kpi-label">Khóa đang học</div>
+            </div>
+            <div class="hrms-kpi-card kpi-green">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-success"><i class="bi bi-check-circle"></i></div>
+                    <div class="hrms-kpi-value text-success" id="kpiCompleted">0</div>
+                </div>
+                <div class="hrms-kpi-label">Đã hoàn thành</div>
+            </div>
+            <div class="hrms-kpi-card kpi-yellow">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-warning"><i class="bi bi-award"></i></div>
+                    <div class="hrms-kpi-value text-warning" id="kpiCertificate">0</div>
+                </div>
+                <div class="hrms-kpi-label">Chứng chỉ</div>
+            </div>
+            <div class="hrms-kpi-card kpi-info">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-info"><i class="bi bi-clock"></i></div>
+                    <div class="hrms-kpi-value text-info"><span id="kpiTotalHours">0</span><small style="font-size: 14px; margin-left: 2px;">h</small></div>
+                </div>
+                <div class="hrms-kpi-label">Tổng giờ đào tạo</div>
+            </div>
+        </div>
+
+        <!-- ACTIVE COURSE HIGHLIGHT -->
+        <div class="mb-4">
+            <h4 class="mb-3 text-primary"><i class="bi bi-lightning-charge me-2"></i>Khóa học đang diễn ra</h4>
+            <div id="activeCourseSkeleton" class="card shadow-sm placeholder-glow">
+                <div class="card-body">
+                    <h5 class="placeholder col-6"></h5>
+                    <p class="placeholder col-4"></p>
+                    <span class="placeholder col-12"></span>
+                </div>
+            </div>
+            <div id="activeCourseContent" class="d-none">
+                <!-- Sẽ được render qua JS -->
+            </div>
+        </div>
+
+        <!-- MY COURSES -->
+        <div class="hrms-card mb-4 p-0">
+            <div class="hrms-card-header">
+                <h4 class="hrms-card-title mb-0"><i class="bi bi-journal-text me-2"></i>Khóa học của tôi</h4>
+            </div>
+            <div class="hrms-card-body p-0 pt-3">
+                <ul class="nav nav-tabs hrms-tabs mb-3 px-3" id="courseTabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-status="All" data-bs-toggle="pill" type="button">Tất cả</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-status="InProgress" data-bs-toggle="pill" type="button">Đang học</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-status="Completed" data-bs-toggle="pill" type="button">Đã hoàn thành</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-status="PENDING_APPROVAL" data-bs-toggle="pill" type="button">Chờ duyệt</button>
+                    </li>
+                </ul>
+
+                <div class="hrms-table-wrap">
+                    <table class="hrms-table">
+                        <thead>
+                            <tr>
+                                <th>Tên khóa học</th>
+                                <th>Hình thức</th>
+                                <th>Tiến độ</th>
+                                <th>Kết quả</th>
+                                <th>Trạng thái</th>
+                                <th class="text-center">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myCoursesTableBody">
+                            <!-- JS render -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Empty State -->
+                <div id="myCoursesEmpty" class="hrms-empty-state py-4 d-none">
+                    <div class="hrms-empty-state-icon"><i class="bi bi-journal-x"></i></div>
+                    <div class="hrms-empty-state-title">Chưa có khóa học</div>
+                    <div class="hrms-empty-state-desc">Bạn chưa được phân công hoặc đăng ký khóa học nào.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECOMMENDED COURSES -->
+        <div class="mb-4">
+            <h4 class="mb-3 text-primary"><i class="bi bi-stars me-2"></i>Khóa học đề xuất</h4>
+            <div id="recommendedCoursesContainer" class="row">
+                <!-- JS Render -->
+            </div>
+            <!-- Empty State -->
+            <div id="recommendedEmpty" class="text-center py-4 d-none">
+                <p class="text-muted">Hiện chưa có khóa học phù hợp để đề xuất.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- COURSE DETAIL DRAWER/MODAL -->
+<div class="modal fade" id="courseDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title text-primary" id="detailCourseName">Chi tiết khóa học</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="courseDetailBody">
+                <div id="detailLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <div id="detailContent" class="d-none">
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <h4 id="dtName" class="text-primary mb-1"></h4>
+                            <span class="badge bg-secondary me-2" id="dtCode"></span>
+                            <span class="badge bg-info me-2" id="dtCategory"></span>
+                            <span class="badge bg-warning text-dark" id="dtMandatory"></span>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <span id="dtStatusBadge" class="badge bg-primary fs-6"></span>
+                        </div>
+                    </div>
+                    <p id="dtDesc" class="text-muted"></p>
+                    <hr />
+                    <div class="row mb-3">
+                        <div class="col-6 col-md-3 mb-2">
+                            <small class="text-muted d-block">Giảng viên</small>
+                            <strong id="dtInstructor"></strong>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <small class="text-muted d-block">Hình thức</small>
+                            <strong id="dtMode"></strong>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <small class="text-muted d-block">Thời lượng</small>
+                            <strong id="dtDuration"></strong>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2">
+                            <small class="text-muted d-block">Kết quả</small>
+                            <strong id="dtResult"></strong>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <small class="text-muted d-block mb-1">Tiến độ học tập (<span id="dtProgressText"></span>)</small>
+                        <div class="progress" style="height: 10px;">
+                            <div id="dtProgressBar"
+                                 class="progress-bar bg-success"
+                                 role="progressbar"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+                                 aria-valuenow="0"
+                                 style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <h6 class="text-primary mt-4"><i class="bi bi-file-earmark-text me-2"></i>Tài liệu khóa học</h6>
+                    <ul class="list-group list-group-flush" id="dtMaterialsList">
+                        <!-- JS render -->
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CERTIFICATE MODAL -->
+<div class="modal fade" id="certificateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content text-center">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-0 pb-5">
+                <div id="certLoading" class="py-5"><div class="spinner-border text-warning"></div></div>
+                <div id="certContent" class="d-none px-5">
+                    <i class="bi bi-award-fill text-warning" style="font-size: 5rem;"></i>
+                    <h2 class="text-uppercase text-primary mt-3 mb-4">CHỨNG CHỈ ĐÀO TẠO</h2>
+                    <p class="fs-5 mb-1">Chứng nhận nhân viên</p>
+                    <h3 class="fw-bold text-dark mb-4" id="certEmpName"></h3>
+                    <p class="fs-5 mb-1">Đã hoàn thành xuất sắc khóa học</p>
+                    <h4 class="text-success mb-4" id="certCourseName"></h4>
+                    
+                    <div class="d-flex justify-content-center gap-4 mt-5 text-muted">
+                        <div>
+                            <small class="d-block">Ngày cấp</small>
+                            <strong id="certDate"></strong>
+                        </div>
+                        <div>
+                            <small class="d-block">Số chứng chỉ</small>
+                            <strong id="certNo"></strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="#" class="btn btn-outline-primary" id="certDownloadBtn"><i class="bi bi-download me-2"></i>Tải bản PDF</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STYLES -->
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .nav-pills .nav-link { color: #495057; }
+    .nav-pills .nav-link.active { background-color: #0d6efd; color: white; }
+    .course-card:hover { transform: translateY(-5px); transition: all 0.3s ease; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+</style>
+
+<!-- SCRIPTS -->
+@section Scripts {
+    <script>
+        let allCourses = [];
+
+        $(document).ready(function () {
+            loadSummary();
+            loadActiveCourse();
+            loadMyCourses();
+            loadRecommendedCourses();
+
+            // Tab filtering
+            $('#courseTabs button').on('click', function (e) {
+                const status = $(this).data('status');
+                renderCourses(status);
+            });
+        });
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value == null ? '' : String(value);
+            return div.innerHTML;
+        }
+
+        function safeAjaxMessage(xhr, fallback) {
+            let message = fallback;
+
+            if (
+                xhr &&
+                xhr.responseJSON &&
+                typeof xhr.responseJSON.message === 'string'
+            ) {
+                message = xhr.responseJSON.message;
+            }
+            else if (
+                xhr &&
+                typeof xhr.responseText === 'string' &&
+                xhr.responseText.trim().length > 0 &&
+                xhr.responseText.length <= 500
+            ) {
+                message = xhr.responseText;
+            }
+
+            return escapeHtml(message);
+        }
+
+        // 1. KPI
+        function loadSummary() {
+            $.get('/Training/GetMySummary', function (data) {
+                $('#kpiError').remove();
+                $('#kpiInProgress').text(data.inProgressCount);
+                $('#kpiCompleted').text(data.completedCount);
+                $('#kpiCertificate').text(data.certificateCount);
+                $('#kpiTotalHours').text(data.totalTrainingHours);
+                
+                $('#kpiSkeleton').addClass('d-none');
+                $('#kpiContent').removeClass('d-none');
+            }).fail(function() {
+                $('#kpiSkeleton').addClass('d-none');
+                $('#kpiContent').addClass('d-none');
+                $('#kpiError').remove();
+
+                $('#kpiSkeleton').after(
+                    '<div id="kpiError" class="alert alert-danger">' +
+                    '<i class="bi bi-exclamation-triangle me-2"></i>' +
+                    'Không thể tải tổng quan đào tạo. ' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="loadSummary()">' +
+                    'Thử lại</button></div>'
+                );
+            });
+        }
+
+        // 2. Active Course Highlight
+        function loadActiveCourse() {
+            $.get('/Training/GetActiveCourse', function (course) {
+                $('#activeCourseError').remove();
+                $('#activeCourseSkeleton').addClass('d-none');
+                if (course) {
+                    let btnHtml = course.Mode === 'E_Learning' || course.Mode === 'Online' 
+                        ? `<button class="btn btn-primary" onclick="continueLearning(${course.id})"><i class="bi bi-play-circle me-2"></i>Tiếp tục học</button>`
+                        : `<button class="btn btn-outline-primary" onclick="viewDetail(${course.id})"><i class="bi bi-info-circle me-2"></i>Xem chi tiết</button>`;
+
+                    const html = `
+                        <div class="card shadow-sm border-0 border-start border-primary border-5 bg-light">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h5 class="text-primary mb-2">${escapeHtml(course.courseName || '')}</h5>
+                                        <p class="text-muted mb-2"><i class="bi bi-person me-1"></i> ${escapeHtml(course.instructor || 'N/A')} &nbsp;|&nbsp; <i class="bi bi-camera-video me-1"></i> ${escapeHtml(course.mode || '--')}</p>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-3" style="height: 8px;">
+                                                <div class="progress-bar bg-success"
+                                                     role="progressbar"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100"
+                                                     aria-valuenow="${course.progressPercent}"
+                                                     aria-label="Tiến độ khóa học"
+                                                     style="width: ${course.progressPercent}%"></div>
+                                            </div>
+                                            <span class="text-success fw-bold">${course.progressPercent}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                        ${btnHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    $('#activeCourseContent').html(html).removeClass('d-none');
+                } else {
+                    $('#activeCourseContent').html('<div class="alert alert-light text-muted border"><i class="bi bi-info-circle me-2"></i>Bạn chưa có khóa học đang diễn ra.</div>').removeClass('d-none');
+                }
+            });
+        }
+
+        // 3. My Courses Table
+        function loadMyCourses() {
+            $.get('/Training/GetMyCourses', function (data) {
+                $('#myCoursesError').remove();
+                allCourses = data;
+                renderCourses('All');
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 'Enrolled': return '<span class="emp-badge emp-badge-neutral">Đã đăng ký</span>';
+                case 'InProgress': return '<span class="emp-badge emp-badge-info">Đang học</span>';
+                case 'Completed': return '<span class="emp-badge emp-badge-success">Đã hoàn thành</span>';
+                case 'PENDING_APPROVAL': return '<span class="emp-badge emp-badge-warning">Chờ duyệt</span>';
+                case 'Cancelled': return '<span class="emp-badge emp-badge-danger">Đã hủy</span>';
+                default: return `<span class="emp-badge emp-badge-neutral">${escapeHtml(status || '')}</span>`;
+            }
+        }
+        
+        function getResultText(result) {
+            switch(result) {
+                case 'Pass': return '<span class="text-success fw-bold"><i class="bi bi-check me-1"></i>Đạt</span>';
+                case 'Fail': return '<span class="text-danger fw-bold"><i class="bi bi-x me-1"></i>Không đạt</span>';
+                default: return '<span class="text-muted">-</span>';
+            }
+        }
+
+        function renderCourses(statusFilter) {
+            const tbody = $('#myCoursesTableBody');
+            tbody.empty();
+            
+            const filtered = statusFilter === 'All' ? allCourses : allCourses.filter(c => c.status === statusFilter);
+            
+            if (filtered.length === 0) {
+                $('#myCoursesEmpty').removeClass('d-none');
+            } else {
+                $('#myCoursesEmpty').addClass('d-none');
+                filtered.forEach(c => {
+                    let actions = `<button class="hrms-btn hrms-btn-ghost hrms-btn-sm me-2" onclick="viewDetail(${c.id})" title="Xem chi tiết"><i class="bi bi-eye text-primary"></i></button>`;
+                    
+                    if (c.status === 'InProgress' && (c.mode === 'E_Learning' || c.mode === 'Online')) {
+                        actions += `<button class="hrms-btn hrms-btn-ghost hrms-btn-sm me-2" onclick="continueLearning(${c.id})" title="Tiếp tục học"><i class="bi bi-play-circle text-primary"></i></button>`;
+                    }
+                    if (c.status === 'Completed' && c.hasCertificate) {
+                        actions += `<button class="hrms-btn hrms-btn-ghost hrms-btn-sm" onclick="viewCertificate(${c.id})" title="Xem chứng chỉ"><i class="bi bi-award text-warning"></i></button>`;
+                    }
+
+                    const html = `
+                        <tr>
+                            <td>
+                                <strong class="text-dark">${escapeHtml(c.courseName || '')}</strong>
+                                ${c.isMandatory ? '<span class="emp-badge emp-badge-danger ms-2">Bắt buộc</span>' : ''}
+                                <div class="text-muted" style="font-size: 13px;">${c.durationHours ? c.durationHours + 'h' : '--'}</div>
+                            </td>
+                            <td>${c.mode}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px; background-color: var(--hrms-gray-100);">
+                                        <div class="progress-bar ${c.progressPercent === 100 ? 'bg-success' : 'bg-primary'}"
+                                                 role="progressbar"
+                                                 aria-valuemin="0"
+                                                 aria-valuemax="100"
+                                                 aria-valuenow="${c.progressPercent}"
+                                                 aria-label="Tiến độ khóa học"
+                                                 style="width: ${c.progressPercent}%"></div>
+                                    </div>
+                                    <small class="fw-bold">${c.progressPercent}%</small>
+                                </div>
+                            </td>
+                            <td>${getResultText(c.result)}</td>
+                            <td>${getStatusBadge(c.status)}</td>
+                            <td class="text-center">${actions}</td>
+                        </tr>
+                    `;
+                    tbody.append(html);
+                });
+            }
+        }
+
+        // 4. Detail Drawer
+        function viewDetail(id) {
+            $('#courseDetailModal').modal('show');
+            $('#detailLoading').removeClass('d-none');
+            $('#detailContent').addClass('d-none');
+            
+            $.get('/Training/GetCourseDetail?id=' + id, function (data) {
+                $('#dtName').text(data.courseName);
+                $('#dtCode').text(data.code);
+                $('#dtCategory').text(data.category);
+                if (data.isMandatory) $('#dtMandatory').text('Bắt buộc').removeClass('d-none');
+                else $('#dtMandatory').addClass('d-none');
+                
+                $('#dtStatusBadge').html(getStatusBadge(data.status));
+                $('#dtDesc').text(data.description || 'Chưa có mô tả');
+                $('#dtInstructor').text(data.instructor || 'N/A');
+                $('#dtMode').text(data.mode);
+                $('#dtDuration').text(data.durationHours ? data.durationHours + ' giờ' : 'N/A');
+                $('#dtResult').html(getResultText(data.result));
+                
+                $('#dtProgressText').text(data.progressPercent + '%');
+                $('#dtProgressBar')
+                    .css('width', data.progressPercent + '%')
+                    .attr('aria-valuenow', data.progressPercent);
+                
+                // Materials
+                const matList = $('#dtMaterialsList');
+                matList.empty();
+                if (data.materials && data.materials.length > 0) {
+                    data.materials.forEach(m => {
+                        matList.append(`<li class="list-group-item px-0"><i class="bi bi-file-earmark-pdf text-danger me-2"></i><a href="${m.fileUrl}" target="_blank">${m.title}</a> <small class="text-muted ms-2">(${m.type})</small></li>`);
+                    });
+                } else {
+                    matList.append('<li class="list-group-item px-0 text-muted">Không có tài liệu đính kèm.</li>');
+                }
+
+                $('#detailLoading').addClass('d-none');
+                $('#detailContent').removeClass('d-none');
+            }).fail(function() {
+                $('#detailLoading').addClass('d-none');
+                $('#detailContent').html('<div class="alert alert-danger">Không thể tải thông tin khóa học. <button class="btn btn-sm btn-outline-danger ms-3" onclick="viewDetail('+id+')">Thử lại</button></div>').removeClass('d-none');
+            });
+        }
+
+        // 5. Certificate
+        function viewCertificate(id) {
+            $('#certificateModal').modal('show');
+            $('#certLoading').removeClass('d-none');
+            $('#certContent').addClass('d-none');
+            
+            $.get('/Training/GetCertificateDetail?enrollmentId=' + id, function (data) {
+                $('#certError').remove();
+                $('#certEmpName').text(data.employeeName);
+                $('#certCourseName').text(data.courseName);
+                
+                const date = new Date(data.issuedDate);
+                $('#certDate').text(date.toLocaleDateString('vi-VN'));
+                $('#certNo').text(data.certificateNumber);
+                
+                $('#certDownloadBtn').attr('href', '/Training/DownloadCertificate?certId=' + data.id);
+                
+                $('#certLoading').addClass('d-none');
+                $('#certContent').removeClass('d-none');
+            }).fail(function() {
+                $('#certLoading').addClass('d-none');
+                $('#certContent').addClass('d-none');
+                $('#certError').remove();
+
+                $('#certificateModal .modal-body').append(
+                    '<div id="certError" class="alert alert-danger">' +
+                    '<i class="bi bi-exclamation-triangle me-2"></i>' +
+                    'Không thể tải thông tin chứng chỉ. ' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger ms-2" onclick="viewCertificate(' + id + ')">' +
+                    'Thử lại</button></div>'
+                );
+            });
+        }
+
+        function continueLearning(id) {
+            toastr.info('Tính năng E-Learning Player sẽ được tích hợp trong phiên bản sau.');
+        }
+
+        // 6. Recommended & Registration
+        function loadRecommendedCourses() {
+            $.get('/Training/GetRecommendedCourses', function (data) {
+                $('#recommendedError').remove();
+                const container = $('#recommendedCoursesContainer');
+                container.empty();
+                
+                if (data.length === 0) {
+                    $('#recommendedEmpty').removeClass('d-none');
+                } else {
+                    $('#recommendedEmpty').addClass('d-none');
+                    data.forEach(c => {
+                        let capacityHtml = c.capacity ? `<small class="text-muted d-block mt-2"><i class="bi bi-people me-1"></i> ${c.enrolledCount} / ${c.capacity} học viên</small>` : '';
+                        let disabled = c.capacity && c.enrolledCount >= c.capacity ? 'disabled' : '';
+                        
+                        const html = `
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 shadow-sm course-card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="emp-badge emp-badge-info">${c.category}</span>
+                                            ${c.isMandatory ? '<span class="emp-badge emp-badge-danger">Bắt buộc</span>' : ''}
+                                        </div>
+                                        <h5 class="card-title text-primary fw-bold">${escapeHtml(c.name || '')}</h5>
+                                        <p class="card-text text-muted mb-3"><i class="bi bi-clock me-1"></i> ${c.durationHours ? c.durationHours + 'h' : '--'} &nbsp;&nbsp; <i class="bi bi-display me-1"></i> ${escapeHtml(c.mode || '--')}</p>
+                                        <button class="hrms-btn hrms-btn-primary w-100" onclick="registerCourse(${c.id}, decodeURIComponent('${encodeURIComponent(c.name || '')}'))" ${disabled}>
+                                            ${disabled ? 'Hết chỗ' : 'Đăng ký học'}
+                                        </button>
+                                        ${capacityHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        container.append(html);
+                    });
+                }
+            });
+        }
+
+        function registerCourse(courseId, courseName) {
+            if(confirm(`Bạn có chắc chắn muốn đăng ký khóa học "${courseName}"?`)) {
+                $.ajax({
+                    url: '/Training/RegisterCourse',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(courseId),
+                    success: function (res) {
+                        toastr.success(res.message);
+                        loadSummary();
+                        loadActiveCourse();
+                        loadMyCourses();
+                        loadRecommendedCourses();
+                    },
+                    error: function (xhr) {
+                        toastr.error(safeAjaxMessage(xhr, 'Có lỗi xảy ra khi đăng ký.');
+                    }
+                });
+            }
+        }
+    </script>
+}

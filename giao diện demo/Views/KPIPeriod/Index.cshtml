@@ -1,0 +1,202 @@
+@model giao_dien_demo.Models.KPIPeriodListViewModel
+@{
+    ViewData["Title"] = "Quản lý Kỳ đánh giá KPI";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-calendar-check"></i></span>
+            Quản lý Kỳ đánh giá KPI
+        </h1>
+        <div class="hrms-page-subtitle">Thiết lập chu kỳ, theo dõi tiến độ và kích hoạt kỳ đánh giá hiệu suất.</div>
+    </div>
+    <div class="hrms-page-header-actions">
+        <a href="@Url.Action("Index", "KPIConfig")" class="hrms-btn hrms-btn-secondary">
+            <i class="fa-solid fa-sliders me-1"></i> Cấu hình hệ số KPI
+        </a>
+        <button type="button" class="hrms-btn hrms-btn-primary" data-bs-toggle="modal" data-bs-target="#createPeriodModal">
+            <i class="fa-solid fa-plus me-1"></i> Tạo kỳ đánh giá mới
+        </button>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="fa-solid fa-circle-check me-2 fs-5"></i>
+        <div>@TempData["SuccessMessage"]</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2 fs-5"></i>
+        <div>@TempData["ErrorMessage"]</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="hrms-form-label">Trạng thái kỳ</label>
+                <select name="status" class="hrms-form-select">
+                    <option value="">-- Tất cả trạng thái --</option>
+                    <option value="PLANNED" selected="@(Model.StatusFilter == "PLANNED")">Dự kiến (PLANNED)</option>
+                    <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Đang diễn ra (ACTIVE)</option>
+                    <option value="CLOSED" selected="@(Model.StatusFilter == "CLOSED")">Đã đóng (CLOSED)</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="hrms-form-label">Tìm kiếm tên kỳ</label>
+                <input type="text" name="search" class="hrms-form-control" placeholder="Nhập tên kỳ đánh giá..." value="@Model.SearchTerm" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Lọc</button>
+                <a href="@Url.Action("Index", "KPIPeriod")" class="hrms-btn hrms-btn-ghost" title="Đặt lại bộ lọc"><i class="fa-solid fa-rotate-left"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-card">
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th>Tên kỳ đánh giá</th>
+                    <th>Thời gian</th>
+                    <th>Trạng thái</th>
+                    <th>Bản nháp</th>
+                    <th>Đang thực hiện</th>
+                    <th>Đang đánh giá</th>
+                    <th>Đã hoàn thành</th>
+                    <th class="col-actions">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Periods.Any())
+                {
+                    <tr>
+                        <td colspan="8">
+                            <div class="hrms-empty-state">
+                                <div class="hrms-empty-icon"><i class="fa-solid fa-folder-open"></i></div>
+                                <div class="hrms-empty-title">Chưa có kỳ đánh giá nào</div>
+                                <div class="hrms-empty-desc">Không tìm thấy kỳ đánh giá nào phù hợp với bộ lọc.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model.Periods)
+                    {
+                        <tr>
+                            <td class="fw-semibold text-dark">
+                                @item.Name
+                                <div class="small text-muted fw-normal">Tạo ngày @item.CreatedAt.ToString("dd/MM/yyyy") bởi @(item.CreatedBy ?? "N/A")</div>
+                            </td>
+                            <td>
+                                <i class="fa-regular fa-calendar text-muted me-1"></i>
+                                @item.StartDate.ToString("dd/MM/yyyy") - @item.EndDate.ToString("dd/MM/yyyy")
+                            </td>
+                            <td>
+                                @if (item.Status == "PLANNED")
+                                {
+                                    <span class="hrms-badge hrms-badge-info">
+                                        <i class="fa-solid fa-clock-rotate-left me-1"></i>Dự kiến
+                                    </span>
+                                }
+                                else if (item.Status == "ACTIVE")
+                                {
+                                    <span class="hrms-badge hrms-badge-success">
+                                        <i class="fa-solid fa-circle-play me-1"></i>Đang diễn ra
+                                    </span>
+                                }
+                                else if (item.Status == "CLOSED")
+                                {
+                                    <span class="hrms-badge hrms-badge-neutral">
+                                        <i class="fa-solid fa-lock me-1"></i>Đã đóng
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="hrms-badge hrms-badge-neutral">@item.Status</span>
+                                }
+                            </td>
+                            <td><span class="hrms-badge hrms-badge-neutral">@item.OutstandingDraft</span></td>
+                            <td><span class="hrms-badge hrms-badge-purple">@item.OutstandingActive</span></td>
+                            <td><span class="hrms-badge hrms-badge-warning">@item.OutstandingEvaluating</span></td>
+                            <td><span class="hrms-badge hrms-badge-success">@item.CompletedEvaluations</span></td>
+                            <td class="col-actions">
+                                @if (item.Status == "PLANNED")
+                                {
+                                    <form method="post" asp-action="Activate" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn kích hoạt kỳ đánh giá này?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-success">
+                                            <i class="fa-solid fa-play me-1"></i>Kích hoạt
+                                        </button>
+                                    </form>
+                                }
+                                else if (item.Status == "ACTIVE")
+                                {
+                                    <form method="post" asp-action="Close" asp-route-id="@item.Id" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn đóng kỳ đánh giá này? Sau khi đóng, các bản nháp chưa kích hoạt sẽ không thể tiếp tục.');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-danger">
+                                            <i class="fa-solid fa-lock me-1"></i>Đóng kỳ
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small"><i class="fa-solid fa-check-double me-1"></i>Đã khóa</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Tạo Kỳ Đánh Giá Mới -->
+<div class="modal fade" id="createPeriodModal" tabindex="-1" aria-labelledby="createPeriodModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-action="Create">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createPeriodModalLabel"><i class="fa-solid fa-calendar-plus text-primary me-2"></i>Tạo Kỳ Đánh Giá KPI Mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="hrms-form-label">Tên kỳ đánh giá <span class="text-danger">*</span></label>
+                        <input type="text" name="Name" class="hrms-form-control" placeholder="Ví dụ: Đánh giá KPI Quý 3/2026" required maxlength="100" />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="hrms-form-label">Ngày bắt đầu <span class="text-danger">*</span></label>
+                            <input type="date" name="StartDate" class="hrms-form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="hrms-form-label">Ngày kết thúc <span class="text-danger">*</span></label>
+                            <input type="date" name="EndDate" class="hrms-form-control" value="@DateTime.Today.AddMonths(3).ToString("yyyy-MM-dd")" required />
+                        </div>
+                    </div>
+                    <div class="form-text text-muted">
+                        Kỳ đánh giá mới sẽ bắt đầu ở trạng thái <strong>Dự kiến (PLANNED)</strong>. Bạn có thể kích hoạt khi sẵn sàng.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="hrms-btn hrms-btn-ghost" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="hrms-btn hrms-btn-primary"><i class="fa-solid fa-save me-1"></i>Lưu kỳ đánh giá</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

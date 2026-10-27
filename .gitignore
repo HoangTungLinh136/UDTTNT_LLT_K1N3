@@ -316,6 +316,22 @@ paket-files/
 __pycache__/
 *.pyc
 
+# Python virtual environments and generated caches. These patterns are
+# repository-wide so ava_service/.venv stays local to the developer machine
+# while Python source remains visible to Git.
+**/.venv/
+**/venv/
+**/env/
+**/__pycache__/
+*.pyo
+*.pyd
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+**/.mypy_cache/
+.ruff_cache/
+**/.ruff_cache/
+
 # Cake - Uncomment if you are using it
 # tools/**
 # !tools/packages.config
@@ -361,3 +377,16 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Historical analysis artifacts: never runtime or published source
+/_folder2_reference/
+
+# Large AI model binaries
+ava_service/models/
+*.bin
+

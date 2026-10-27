@@ -1,0 +1,488 @@
+@model giao_dien_demo.Models.WorkShiftViewModel
+
+@{
+    ViewData["Title"] = "Ca làm việc";
+}
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon text-primary"><i class="fa-solid fa-clock"></i></span>
+            Ca làm việc
+        </h1>
+        <p class="text-muted mb-0" style="font-size: 14px; margin-top: 4px;">Quản lý các ca làm việc và khung giờ áp dụng cho nhân viên.</p>
+        <div class="hrms-breadcrumb mt-2">
+            <a href="#">Chấm công</a>
+            <i class="fa-solid fa-chevron-right separator"></i>
+            <span>Cấu hình ca làm việc</span>
+        </div>
+    </div>
+    <div class="hrms-page-header-actions">
+        <button class="hrms-btn hrms-btn-secondary" onclick="alert('Tính năng xuất Excel đang được tích hợp.')">
+            <i class="fa-solid fa-file-excel text-success"></i> Xuất Excel
+        </button>
+        <button class="hrms-btn hrms-btn-primary ms-2" onclick="openShiftDrawer()">
+            <i class="fa-solid fa-plus"></i> Tạo ca
+        </button>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="hrms-kpi-value">@Model.TotalShifts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng ca làm</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="hrms-kpi-value">@Model.ActiveShifts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đang áp dụng</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-red">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-ban"></i></div>
+            <div class="hrms-kpi-value">@Model.InactiveShifts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Ngừng áp dụng</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-moon"></i></div>
+            <div class="hrms-kpi-value">@Model.OvernightShifts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Ca qua đêm</div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER AREA -->
+<div class="hrms-filter-section mb-4">
+    <form method="get" action="@Url.Action("Index", "WorkShift")" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Tìm kiếm</label>
+            <input type="text" name="keyword" class="form-control" value="@Model.SearchKeyword" placeholder="Tìm kiếm ca làm..." />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Loại ca</label>
+            <select name="type" class="form-select">
+                <option value="">Tất cả loại ca</option>
+                @foreach (var t in Model.ShiftTypes)
+                {
+                    if (t.Value == Model.FilterType)
+                    {
+                        <option value="@t.Value" selected>@t.Text</option>
+                    }
+                    else
+                    {
+                        <option value="@t.Value">@t.Text</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Trạng thái</label>
+            <select name="status" class="form-select">
+                <option value="">Tất cả</option>
+                <option value="Active" selected="@(Model.FilterStatus == "Active")">Đang áp dụng</option>
+                <option value="Inactive" selected="@(Model.FilterStatus == "Inactive")">Ngừng áp dụng</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="hrms-btn hrms-btn-primary">
+                <i class="fa-solid fa-filter"></i> Lọc
+            </button>
+            <a href="@Url.Action("Index", "WorkShift")" class="hrms-btn hrms-btn-secondary">
+                <i class="fa-solid fa-rotate-right"></i> Đặt lại
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- SHIFT TABLE -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body p-0">
+        @if (Model.Shifts != null && Model.Shifts.Any())
+        {
+            <div class="table-responsive">
+                <table class="hrms-table">
+                    <thead>
+                        <tr>
+                            <th>Mã ca</th>
+                            <th>Tên ca</th>
+                            <th>Loại ca</th>
+                            <th class="text-center">Khung giờ</th>
+                            <th class="text-center">Grace Period</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Shifts)
+                        {
+                            <tr>
+                                <td class="fw-bold">@s.ShiftCode</td>
+                                <td>
+                                    <div>@s.ShiftName</div>
+                                    @if(s.IsOvernight) {
+                                        <span class="badge bg-purple-subtle text-purple border border-purple-subtle mt-1" style="font-size:10px;"><i class="fa-solid fa-moon"></i> Qua đêm</span>
+                                    }
+                                    @if(s.IsOvertimeEnabled) {
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle mt-1 ms-1" style="font-size:10px;"><i class="fa-solid fa-stopwatch"></i> Tính OT</span>
+                                    }
+                                </td>
+                                <td>@s.ShiftType</td>
+                                <td class="text-center text-primary fw-bold">
+                                    @s.StartTime.ToString(@"hh\:mm") - @s.EndTime.ToString(@"hh\:mm")
+                                    <div class="small text-muted fw-normal mt-1"><i class="fa-solid fa-mug-hot"></i> Nghỉ: @s.BreakDurationMinutes phút</div>
+                                </td>
+                                <td class="text-center small">
+                                    <div class="text-danger" title="Cho phép đi muộn"><i class="fa-solid fa-person-running"></i> +@s.LateGraceMinutes p</div>
+                                    <div class="text-warning mt-1" title="Cho phép về sớm"><i class="fa-solid fa-person-walking-arrow-right"></i> -@s.EarlyLeaveGraceMinutes p</div>
+                                </td>
+                                <td class="text-center">
+                                    @if(s.Status == "Active")
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Đang áp dụng</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Ngừng áp dụng</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary hrms-btn-icon me-1" title="Chỉnh sửa" onclick="openShiftDrawer(@s.Id)">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    @if(s.Status == "Active")
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger hrms-btn-icon" title="Ngừng áp dụng" onclick="toggleStatus(@s.Id, 'Inactive')">
+                                            <i class="fa-solid fa-ban"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-success hrms-btn-icon" title="Kích hoạt" onclick="toggleStatus(@s.Id, 'Active')">
+                                            <i class="fa-solid fa-check"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="hrms-empty-state p-5">
+                <div class="empty-icon"><i class="fa-solid fa-clock text-muted"></i></div>
+                <div class="empty-title">Chưa có ca làm việc nào.</div>
+                <div class="empty-desc">Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.</div>
+                <button class="hrms-btn hrms-btn-primary mt-3" onclick="openShiftDrawer()"><i class="fa-solid fa-plus"></i> Tạo ca làm việc</button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- CREATE/EDIT SHIFT DRAWER (OFFCANVAS) -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="shiftDrawer" aria-labelledby="shiftDrawerLabel" style="width: 600px;">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="shiftDrawerLabel">Tạo ca làm việc</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div id="drawerLoadingState" class="p-5 text-center d-none">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2 text-muted">Đang tải thông tin...</div>
+    </div>
+    
+    <div id="drawerErrorState" class="p-5 text-center d-none">
+        <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size: 32px;"></i>
+        <div class="text-danger fw-bold">Lỗi tải dữ liệu.</div>
+        <button class="btn btn-sm btn-outline-secondary mt-3" onclick="closeDrawer()">Đóng</button>
+    </div>
+    
+    <div class="offcanvas-body" id="drawerFormArea">
+        <form id="shiftForm">
+            <input type="hidden" id="shiftId" value="0" />
+            
+            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">THÔNG TIN CHUNG</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Mã ca <span class="text-danger">*</span></label>
+                    <input type="text" id="shiftCode" class="form-control" required maxlength="50" />
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Tên ca <span class="text-danger">*</span></label>
+                    <input type="text" id="shiftName" class="form-control" required maxlength="200" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Loại ca</label>
+                    <select id="shiftType" class="form-select">
+                        @foreach(var t in Model.ShiftTypes)
+                        {
+                            <option value="@t.Value">@t.Text</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Trạng thái <span class="text-danger">*</span></label>
+                    <select id="shiftStatus" class="form-select">
+                        <option value="Active">Đang áp dụng</option>
+                        <option value="Inactive">Ngừng áp dụng</option>
+                    </select>
+                </div>
+            </div>
+
+            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">KHUNG GIỜ LÀM VIỆC</h6>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Giờ bắt đầu <span class="text-danger">*</span></label>
+                    <input type="time" id="startTime" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Giờ kết thúc <span class="text-danger">*</span></label>
+                    <input type="time" id="endTime" class="form-control" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" title="Thời gian nghỉ (phút)">Nghỉ giữa ca (phút)</label>
+                    <input type="number" id="breakDuration" class="form-control" value="0" min="0" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" title="Thời gian được phép đến muộn không bị tính trễ (phút)">Late Grace (phút)</label>
+                    <input type="number" id="lateGrace" class="form-control" value="0" min="0" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" title="Thời gian được phép về sớm không bị tính trễ (phút)">Early Grace (phút)</label>
+                    <input type="number" id="earlyGrace" class="form-control" value="0" min="0" />
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="isOvernight">
+                        <label class="form-check-label" for="isOvernight">Ca qua đêm (Cross-midnight)</label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" type="checkbox" id="isOvertimeEnabled">
+                        <label class="form-check-label" for="isOvertimeEnabled">Tính OT (Cho phép làm thêm)</label>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="fw-bold mb-3 text-primary border-bottom pb-2">ÁP DỤNG CHO (ASSIGNMENT)</h6>
+            <div class="mb-3">
+                <label class="form-label text-muted small mb-1">Phòng ban (Giữ Ctrl để chọn nhiều)</label>
+                <select id="assignedDepartments" class="form-select" multiple size="3">
+                    @foreach(var d in Model.Departments)
+                    {
+                        <option value="@d.Value">@d.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="form-label text-muted small mb-1">Nhân viên cụ thể (Giữ Ctrl để chọn nhiều)</label>
+                <select id="assignedEmployees" class="form-select" multiple size="4">
+                    @foreach(var e in Model.Employees)
+                    {
+                        <option value="@e.Value">@e.Text</option>
+                    }
+                </select>
+                <div class="form-text">Bỏ trống nếu áp dụng cho toàn công ty.</div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Ghi chú</label>
+                <textarea id="shiftNotes" class="form-control" rows="2" maxlength="500"></textarea>
+            </div>
+            
+            <div id="formErrorMsg" class="alert alert-danger d-none py-2 mb-4"></div>
+
+            <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-auto pb-3">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="offcanvas">Hủy</button>
+                <button type="button" class="hrms-btn hrms-btn-primary" id="btnSaveShift" onclick="saveShift()">
+                    <span id="saveSpinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-save me-1" id="saveIcon"></i> Lưu ca làm việc
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var shiftOffcanvas;
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            shiftOffcanvas = new bootstrap.Offcanvas(document.getElementById('shiftDrawer'));
+        });
+
+        function openShiftDrawer(id = 0) {
+            document.getElementById('shiftId').value = id;
+            document.getElementById('formErrorMsg').classList.add('d-none');
+            
+            if (id === 0) {
+                document.getElementById('shiftDrawerLabel').innerText = "Tạo ca làm việc";
+                document.getElementById('shiftForm').reset();
+                // Clear multi selects
+                Array.from(document.getElementById('assignedDepartments').options).forEach(opt => opt.selected = false);
+                Array.from(document.getElementById('assignedEmployees').options).forEach(opt => opt.selected = false);
+                
+                showDrawerState('form');
+                shiftOffcanvas.show();
+            } else {
+                document.getElementById('shiftDrawerLabel').innerText = "Chỉnh sửa ca làm việc";
+                showDrawerState('loading');
+                shiftOffcanvas.show();
+                
+                fetch('@Url.Action("GetShift", "WorkShift")?id=' + id)
+                    .then(res => res.ok ? res.json() : Promise.reject(res))
+                    .then(data => {
+                        document.getElementById('shiftCode').value = data.shiftCode;
+                        document.getElementById('shiftName').value = data.shiftName;
+                        document.getElementById('shiftType').value = data.shiftType;
+                        document.getElementById('shiftStatus').value = data.status;
+                        document.getElementById('startTime').value = data.startTime;
+                        document.getElementById('endTime').value = data.endTime;
+                        document.getElementById('breakDuration').value = data.breakDurationMinutes;
+                        document.getElementById('lateGrace').value = data.lateGraceMinutes;
+                        document.getElementById('earlyGrace').value = data.earlyLeaveGraceMinutes;
+                        document.getElementById('isOvernight').checked = data.isOvernight;
+                        document.getElementById('isOvertimeEnabled').checked = data.isOvertimeEnabled;
+                        document.getElementById('shiftNotes').value = data.notes || '';
+                        
+                        // Set multi selects
+                        let deptSelect = document.getElementById('assignedDepartments');
+                        Array.from(deptSelect.options).forEach(opt => opt.selected = data.assignedDepartments.includes(opt.value));
+                        
+                        let empSelect = document.getElementById('assignedEmployees');
+                        Array.from(empSelect.options).forEach(opt => opt.selected = data.assignedEmployees.includes(opt.value));
+                        
+                        showDrawerState('form');
+                    })
+                    .catch(err => {
+                        console.error('Error fetching shift', err);
+                        showDrawerState('error');
+                    });
+            }
+        }
+        
+        function showDrawerState(state) {
+            document.getElementById('drawerLoadingState').classList.add('d-none');
+            document.getElementById('drawerErrorState').classList.add('d-none');
+            document.getElementById('drawerFormArea').classList.add('d-none');
+            
+            if(state === 'loading') document.getElementById('drawerLoadingState').classList.remove('d-none');
+            if(state === 'error') document.getElementById('drawerErrorState').classList.remove('d-none');
+            if(state === 'form') document.getElementById('drawerFormArea').classList.remove('d-none');
+        }
+        
+        function closeDrawer() {
+            shiftOffcanvas.hide();
+        }
+
+        function saveShift() {
+            var form = document.getElementById('shiftForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Client side validations
+            var code = document.getElementById('shiftCode').value.trim();
+            var name = document.getElementById('shiftName').value.trim();
+            if (!code || !name) {
+                showError("Mã và tên ca không được để trống.");
+                return;
+            }
+
+            setLoading(true);
+
+            // Get selected options
+            var depts = Array.from(document.getElementById('assignedDepartments').selectedOptions).map(opt => opt.value);
+            var emps = Array.from(document.getElementById('assignedEmployees').selectedOptions).map(opt => opt.value);
+
+            var payload = {
+                id: parseInt(document.getElementById('shiftId').value),
+                shiftCode: code,
+                shiftName: name,
+                shiftType: document.getElementById('shiftType').value,
+                startTime: document.getElementById('startTime').value,
+                endTime: document.getElementById('endTime').value,
+                breakDurationMinutes: parseInt(document.getElementById('breakDuration').value || 0),
+                lateGraceMinutes: parseInt(document.getElementById('lateGrace').value || 0),
+                earlyLeaveGraceMinutes: parseInt(document.getElementById('earlyGrace').value || 0),
+                isOvernight: document.getElementById('isOvernight').checked,
+                isOvertimeEnabled: document.getElementById('isOvertimeEnabled').checked,
+                status: document.getElementById('shiftStatus').value,
+                notes: document.getElementById('shiftNotes').value,
+                assignedDepartments: depts,
+                assignedEmployees: emps
+            };
+
+            fetch('@Url.Action("SaveShift", "WorkShift")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.ok ? res.json() : res.text().then(text => Promise.reject(text)))
+            .then(data => {
+                // Success
+                window.location.reload();
+            })
+            .catch(err => {
+                console.error(err);
+                showError(typeof err === 'string' ? err : "Đã có lỗi xảy ra từ máy chủ.");
+                setLoading(false);
+            });
+        }
+        
+        function toggleStatus(id, newStatus) {
+            if(!confirm("Bạn có chắc chắn muốn " + (newStatus === 'Active' ? 'kích hoạt lại' : 'ngừng áp dụng') + " ca làm việc này? Lịch sử chấm công cũ sẽ không bị ảnh hưởng.")) {
+                return;
+            }
+            
+            fetch('@Url.Action("ToggleStatus", "WorkShift")?id=' + id + '&newStatus=' + newStatus, {
+                method: 'POST'
+            })
+            .then(res => res.ok ? window.location.reload() : alert('Lỗi khi đổi trạng thái'))
+            .catch(err => alert('Lỗi kết nối'));
+        }
+
+        function showError(msg) {
+            var el = document.getElementById('formErrorMsg');
+            el.innerText = msg;
+            el.classList.remove('d-none');
+        }
+
+        function setLoading(isLoading) {
+            var btn = document.getElementById('btnSaveShift');
+            if (isLoading) {
+                btn.disabled = true;
+                document.getElementById('saveSpinner').classList.remove('d-none');
+                document.getElementById('saveIcon').classList.add('d-none');
+            } else {
+                btn.disabled = false;
+                document.getElementById('saveSpinner').classList.add('d-none');
+                document.getElementById('saveIcon').classList.remove('d-none');
+            }
+        }
+    </script>
+}

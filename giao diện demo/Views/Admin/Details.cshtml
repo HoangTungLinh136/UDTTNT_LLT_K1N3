@@ -1,40 +1,124 @@
-﻿
 @model giao_dien_demo.Models.User
 
 @{
-    ViewData["Title"] = "Thông tin cá nhân";
+    ViewData["Title"] = "Chi tiết tài khoản";
 }
 
-<div class="container mt-4">
-    <h2>👤 Thông tin cá nhân</h2>
-    <hr />
-
-    <table class="table table-bordered">
-        <tr>
-            <th>ID</th>
-            <td>@Model.Id</td>
-        </tr>
-
-        <tr>
-            <th>Họ tên</th>
-            <td>@Model.FullName</td>
-        </tr>
-
-        <tr>
-            <th>Vai trò</th>
-            <td>@Model.Role</td>
-        </tr>
-
-        <tr>
-            <th>Trạng thái</th>
-            <td>
-                @(Model.IsOnline ? "Đang hoạt động" : "Ngoại tuyến")
-            </td>
-        </tr>
-    </table>
-
-    <a asp-controller="Admin" asp-action="Index" class="btn btn-secondary">
-        ⬅ Quay lại
-    </a>
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Users","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;">Người dùng</a>
+            <span>/</span>
+            <span>Chi tiết</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-user-circle"></i></span>
+            Chi tiết tài khoản
+        </h1>
+        <p class="hrms-page-subtitle">Thông tin đầy đủ về tài khoản hệ thống #@Model.Id — @Model.Username</p>
+    </div>
+    <div class="hrms-page-header-actions">
+        <a href="@Url.Action("EditUser","Admin", new { id = Model.Id })" class="hrms-btn hrms-btn-secondary">
+            <i class="fa-solid fa-pen"></i> Chỉnh sửa
+        </a>
+        <a href="@Url.Action("Users","Admin")" class="hrms-btn hrms-btn-ghost">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
 </div>
 
+<div class="row">
+    <div class="col-md-4">
+        <div class="hrms-card mb-4">
+            <div class="hrms-card-body text-center" style="padding: 32px 24px;">
+                <div style="width:80px; height:80px; border-radius:50%; background: linear-gradient(135deg, #3b82f6, #6366f1); display:flex; align-items:center; justify-content:center; font-size:32px; font-weight:800; color:white; margin: 0 auto 16px;">
+                    @(Model.FullName?.Length > 0 ? Model.FullName.Substring(0,1).ToUpper() : "?")
+                </div>
+                <div style="font-size:20px; font-weight:700; color: var(--hrms-text-main, #0f172a); margin-bottom:4px;">@Model.FullName</div>
+                <div style="font-size:13px; color: var(--hrms-text-muted, #64748b); margin-bottom:12px;">@Model.Username</div>
+                <span class="hrms-badge @(Model.IsOnline ? "hrms-badge-success" : "hrms-badge-neutral")">
+                    <span class="hrms-badge-dot"></span>
+                    @(Model.IsOnline ? "Đang online" : "Offline")
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="hrms-card mb-4">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-circle-info card-title-icon"></i> Thông tin tài khoản</h3>
+            </div>
+            <div class="hrms-card-body">
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px; width:40%;">ID hệ thống</td>
+                        <td style="padding:12px 0; font-weight:600; color: var(--hrms-text-main, #1e293b); font-size:14px;">#@Model.Id</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px;">Họ tên</td>
+                        <td style="padding:12px 0; font-weight:600; color: var(--hrms-text-main, #1e293b); font-size:14px;">@Model.FullName</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px;">Tên đăng nhập</td>
+                        <td style="padding:12px 0; font-weight:600; color: var(--hrms-text-main, #1e293b); font-size:14px; font-family:monospace;">@Model.Username</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px;">Email</td>
+                        <td style="padding:12px 0; font-size:14px; color: var(--hrms-text-main, #1e293b);">@(Model.Email ?? "—")</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px;">Vai trò</td>
+                        <td style="padding:12px 0;">
+                            <span class="hrms-badge hrms-badge-info">
+                                <i class="fa-solid fa-user-tag me-1"></i> @Model.Role
+                            </span>
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px;">Quyền đăng nhập</td>
+                        <td style="padding:12px 0;">
+                            @if (Model.CanLogin) {
+                                <span class="hrms-badge hrms-badge-success"><span class="hrms-badge-dot"></span>Được phép</span>
+                            } else {
+                                <span class="hrms-badge hrms-badge-danger"><span class="hrms-badge-dot"></span>Bị khóa</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--hrms-border, #f1f5f9);">
+                        <td style="padding:12px 0; color: var(--hrms-text-muted, #64748b); font-size:14px;">Trạng thái</td>
+                        <td style="padding:12px 0;">
+                            @if (Model.IsOnline) {
+                                <span class="hrms-badge hrms-badge-success"><span class="hrms-badge-dot"></span>Đang online</span>
+                            } else {
+                                var minutes = Model.LastActive.HasValue ? (int)(DateTime.Now - Model.LastActive.Value).TotalMinutes : 0;
+                                <span class="hrms-badge hrms-badge-neutral"><span class="hrms-badge-dot"></span>Offline @(minutes > 0 ? $"{minutes} phút trước" : "")</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="hrms-card">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-bolt card-title-icon"></i> Hành động nhanh</h3>
+            </div>
+            <div class="hrms-card-body d-flex gap-2 flex-wrap">
+                <a href="@Url.Action("EditUser","Admin", new { id = Model.Id })" class="hrms-btn hrms-btn-secondary">
+                    <i class="fa-solid fa-pen"></i> Chỉnh sửa thông tin
+                </a>
+                <form asp-action="GrantPermission" asp-route-id="@Model.Id" method="post" style="display:inline;"
+                      onsubmit="return confirm('@(Model.CanLogin ? "Khóa" : "Mở khóa") tài khoản này?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="hrms-btn @(Model.CanLogin ? "hrms-btn-danger" : "hrms-btn-primary")">
+                        <i class="fa-solid @(Model.CanLogin ? "fa-ban" : "fa-check")"></i>
+                        @(Model.CanLogin ? "Khóa tài khoản" : "Mở khóa tài khoản")
+                    </button>
+                </form>
+                <a href="@Url.Action("Users","Admin")" class="hrms-btn hrms-btn-ghost">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

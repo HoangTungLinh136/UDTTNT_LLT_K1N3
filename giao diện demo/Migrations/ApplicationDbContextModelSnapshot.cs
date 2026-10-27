@@ -17,10 +17,294 @@ namespace giao_diện_demo.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "9.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("giao_dien_demo.Models.AI.AiConversation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UpdatedAt");
+
+                    b.ToTable("AiConversations");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AI.AiMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Intent")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Route")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("SourceMetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WarningCode")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId", "CreatedAt");
+
+                    b.ToTable("AiMessages");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AI.UserMemory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<double>("Confidence")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(1.0);
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("EmployeeId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("MemoryKey")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<string>("MemoryType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("SourceConversationId")
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("nvarchar(128)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceConversationId")
+                        .HasDatabaseName("IX_UserMemories_SourceConversationId");
+
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_UserMemories_UserId_IsActive");
+
+                    b.HasIndex("UserId", "MemoryType", "MemoryKey", "IsActive")
+                        .HasDatabaseName("IX_UserMemories_User_Type_Key_Active");
+
+                    b.ToTable("UserMemories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AppointmentHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AppointmentRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AppointmentRecordId");
+
+                    b.ToTable("AppointmentHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AppointmentRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AppliedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DecisionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewDepartment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewJobTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NewPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreviousDepartment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreviousJobTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreviousPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("AppointmentRecords");
+                });
 
             modelBuilder.Entity("giao_dien_demo.Models.Attendance", b =>
                 {
@@ -30,13 +314,22 @@ namespace giao_diện_demo.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AdjustmentReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AdjustmentStatus")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CheckIn")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("CheckOut")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EmployeeName")
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("LateMinutes")
@@ -44,6 +337,9 @@ namespace giao_diện_demo.Migrations
 
                     b.Property<double>("OvertimeHours")
                         .HasColumnType("float");
+
+                    b.Property<TimeSpan?>("RequestedCheckOutTime")
+                        .HasColumnType("time");
 
                     b.Property<double>("StandardHours")
                         .HasColumnType("float");
@@ -53,7 +349,764 @@ namespace giao_diện_demo.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId");
+
                     b.ToTable("Attendances");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AttendanceAdjustmentAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RequestId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestId");
+
+                    b.ToTable("AttendanceAdjustmentAttachments");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AttendanceAdjustmentRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AttendanceId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<TimeSpan?>("RequestedCheckIn")
+                        .HasColumnType("time");
+
+                    b.Property<TimeSpan?>("RequestedCheckOut")
+                        .HasColumnType("time");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttendanceId");
+
+                    b.ToTable("AttendanceAdjustmentRequests");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AttendancePeriod", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LockedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AttendancePeriods");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AttendanceRuleVersion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("AllowAfterShiftOt")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AutoCalculateOt")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CheckInRoundingMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("CheckInRoundingStepMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CheckOutRoundingMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("CheckOutRoundingStepMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double>("DailyOtThreshold")
+                        .HasColumnType("float");
+
+                    b.Property<int>("EarlyLeaveFullCreditThresholdMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EarlyLeaveGraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EarlyLeaveHandlingMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("EarlyLeaveMaxDeductionMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("LateFullCreditThresholdMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LateGraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LateHandlingMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("LateMaxDeductionMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan?>("MissingCheckInAssumedTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("MissingCheckInMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<TimeSpan?>("MissingCheckOutAssumedTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("MissingCheckOutMode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("ScopeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ScopeType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("VersionCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<double>("WeeklyOtThreshold")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AttendanceRuleVersions");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Action");
+
+                    b.Property<string>("Changes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Changes");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CorrelationId");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Details");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("EventType");
+
+                    b.Property<string>("FailureReason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FailureReason");
+
+                    b.Property<string>("IPAddress")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("IPAddress");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Module");
+
+                    b.Property<string>("NewValues")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("NewValues");
+
+                    b.Property<string>("OldValues")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("OldValues");
+
+                    b.Property<string>("RequestId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("RequestId");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Resource");
+
+                    b.Property<string>("ResourceId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("ResourceId");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Role");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Status");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("Timestamp");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("UserAgent");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("UserId");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Username");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditLogs", (string)null);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BackupConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BackupType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<TimeSpan>("ExecuteTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastRunTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RetentionDays")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BackupConfigs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BackupRecord", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Checksum")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FailureReason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BackupRecords");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BenefitEnrollment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ApprovalStatus");
+
+                    b.Property<int>("BenefitProgramId")
+                        .HasColumnType("int")
+                        .HasColumnName("BenefitProgramId");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int")
+                        .HasColumnName("EmployeeId");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("EmployeeNameSnapshot");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Notes");
+
+                    b.Property<DateTime>("RegistrationDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("RegistrationDate");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("StatusReason");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("ApprovedAt");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BenefitProgramId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("BenefitEnrollments", (string)null);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BenefitEntitlement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("BenefitProgramId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BenefitProgramId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("BenefitEntitlements");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BenefitProgram", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BenefitType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsAutoApplied")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RegistrationEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RegistrationStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RequiredContractType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("RequiresApproval")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BenefitPrograms");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            BenefitType = "Insurance",
+                            Description = "Bảo hiểm theo quy định của nhà nước.",
+                            IsAutoApplied = true,
+                            Name = "Bảo hiểm Xã hội (BHXH)",
+                            RequiresApproval = false,
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            BenefitType = "Insurance",
+                            Description = "Khám chữa bệnh BHYT.",
+                            IsAutoApplied = true,
+                            Name = "Bảo hiểm Y tế (BHYT)",
+                            RequiresApproval = false,
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            BenefitType = "Health",
+                            Capacity = 100,
+                            Description = "Khám tổng quát tại bệnh viện Thu Cúc.",
+                            IsAutoApplied = false,
+                            Name = "Khám sức khỏe định kỳ 2026",
+                            RegistrationEnd = new DateTime(2026, 9, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            RegistrationStart = new DateTime(2026, 9, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            RequiresApproval = true,
+                            Status = "Open"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            BenefitType = "Allowance",
+                            Description = "Phụ cấp 35k/ngày đi làm.",
+                            IsAutoApplied = true,
+                            Name = "Phụ cấp ăn trưa",
+                            RequiresApproval = false,
+                            Status = "Open"
+                        });
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CameraConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("IPAddress")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("RtspUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CameraConfigs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CameraEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CameraConfigId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SnapshotPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ZoneName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraConfigId");
+
+                    b.ToTable("CameraEvents");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CandidateDevelopmentPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Activities")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DevelopmentGap")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Objective")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Progress")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResponsiblePerson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SuccessionCandidateId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("TargetDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SuccessionCandidateId")
+                        .IsUnique();
+
+                    b.ToTable("CandidateDevelopmentPlans");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.Contract", b =>
@@ -67,14 +1120,27 @@ namespace giao_diện_demo.Migrations
                     b.Property<string>("Content")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal?>("ContractSalarySnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("DepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Duration")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("EmployeeName")
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EmployeeSignedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
@@ -83,6 +1149,24 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("HrSignature")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JobTitleSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PdfFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedBy")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Signature")
@@ -97,7 +1181,270 @@ namespace giao_diện_demo.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId");
+
                     b.ToTable("Contracts");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CourseEnrollment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ApprovalStatus");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletionDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("CompletionDate");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int")
+                        .HasColumnName("CourseId");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int")
+                        .HasColumnName("EmployeeId");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("EmployeeNameSnapshot");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Notes");
+
+                    b.Property<decimal>("ProgressPercent")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("ProgressPercent");
+
+                    b.Property<string>("ProgressStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("ProgressStatus");
+
+                    b.Property<DateTime>("RegistrationDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("RegistrationDate");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Result");
+
+                    b.Property<decimal?>("Score")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("CourseEnrollments", (string)null);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.DismissalHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DismissalRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DismissalRecordId");
+
+                    b.ToTable("DismissalHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.DismissalRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AppliedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CurrentDepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CurrentJobTitleSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CurrentPositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DecisionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PostReliefOption")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Signer")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetDepartment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("DismissalRecords");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.EmailTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("TemplateName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmailTemplates");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.Employee", b =>
@@ -107,6 +1454,9 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcademicLevel")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Address")
                         .HasColumnType("nvarchar(max)");
@@ -133,7 +1483,10 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("EmployeeCode")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ExperienceYears")
+                        .HasColumnType("int");
 
                     b.Property<string>("Gender")
                         .HasColumnType("nvarchar(max)");
@@ -142,6 +1495,9 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("JobTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("KPIScore")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -156,15 +1512,530 @@ namespace giao_diện_demo.Migrations
                     b.Property<decimal>("PositionAllowance")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("QualificationAllowance")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("RegionalAllowanceSystem")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Salary")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeCode")
+                        .IsUnique()
+                        .HasFilter("[EmployeeCode] IS NOT NULL");
+
                     b.ToTable("Employees");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.EventOutboxMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LastAttemptAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RelatedManagerUsername")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RelatedUsername")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EventOutboxMessages");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.ExperienceConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Coefficient")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("MaxYears")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinYears")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ExperienceConfigs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Holiday", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("FromDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HolidayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsPaidHoliday")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ScopeType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ScopeValue")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("ToDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Holidays");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.HrTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AssigneeEmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AssigneeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CompletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Priority")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProgressPercent")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RelatedEmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelatedModule")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RelatedRecordCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RelatedRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReminderBeforeUnit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ReminderBeforeValue")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ReminderEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssigneeEmployeeId");
+
+                    b.HasIndex("RelatedEmployeeId");
+
+                    b.ToTable("HrTasks");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.HrTaskHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("HrTaskId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HrTaskId");
+
+                    b.ToTable("HrTaskHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentEvidence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContentType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IncidentRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UploadedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IncidentRecordId");
+
+                    b.ToTable("IncidentEvidences");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IncidentRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IncidentRecordId");
+
+                    b.ToTable("IncidentHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentParticipant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IncidentRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ParticipantRole")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("IncidentRecordId");
+
+                    b.ToTable("IncidentParticipants");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ClosedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Conclusion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IncidentCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IncidentType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("InvestigationStartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InvestigationStartedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InvestigationSummary")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProcessingNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ProcessingStartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ProcessingStartedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReportedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Resolution")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResolvedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ResponsiblePersonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResponsiblePersonNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResponsiblePersonId");
+
+                    b.ToTable("IncidentRecords");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentWitness", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IncidentRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("WitnessName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IncidentRecordId");
+
+                    b.ToTable("IncidentWitnesses");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.JobPosition", b =>
@@ -289,6 +2160,232 @@ namespace giao_diện_demo.Migrations
                         });
                 });
 
+            modelBuilder.Entity("giao_dien_demo.Models.JobTitleConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Coefficient")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("JobTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("JobTitleConfigs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPIConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Coefficient")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("KPIRating")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("KPIConfigs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPIEvaluation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CompletedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EmployeeDepartmentSnapshot")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeePositionSnapshot")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FinalRating")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("FinalScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<int?>("ManagerUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ManagerUsernameSnapshot")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("PeriodId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("ManagerUserId");
+
+                    b.HasIndex("PeriodId", "EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_KPIEvaluations_PeriodId_EmployeeId_Unique");
+
+                    b.ToTable("KPIEvaluations");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPIPeriod", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("KPIPeriods");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPITarget", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("EvaluationId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("ManagerScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("Progress")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Weight")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EvaluationId");
+
+                    b.ToTable("KPITargets");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.LeaderAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrganizationalUnit")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "OrganizationalUnit")
+                        .IsUnique()
+                        .HasDatabaseName("IX_LeaderAssignments_UserId_OrgUnit_Unique");
+
+                    b.ToTable("LeaderAssignments");
+                });
+
             modelBuilder.Entity("giao_dien_demo.Models.Leave", b =>
                 {
                     b.Property<int>("Id")
@@ -300,17 +2397,34 @@ namespace giao_diện_demo.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EmployeeName")
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeSignature")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("FromDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("LeaveType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("ToDate")
@@ -318,7 +2432,102 @@ namespace giao_diện_demo.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId");
+
                     b.ToTable("Leaves");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.ManagerAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OrganizationalUnit")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "OrganizationalUnit")
+                        .HasDatabaseName("IX_ManagerAssignments_UserId_OrgUnit");
+
+                    b.ToTable("ManagerAssignments");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.MonitoringAlert", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AcknowledgedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AcknowledgedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AlertName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CurrentValue")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MetricName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Threshold")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MonitoringAlerts");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.Notification", b =>
@@ -332,6 +2541,9 @@ namespace giao_diện_demo.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DeduplicationKey")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
 
@@ -341,9 +2553,909 @@ namespace giao_diện_demo.Migrations
                     b.Property<string>("NguoiNhan")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("NotificationType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RecipientUserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ReferenceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SenderName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("SenderUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TargetUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("DeduplicationKey")
+                        .IsUnique()
+                        .HasFilter("[DeduplicationKey] IS NOT NULL");
+
+                    b.HasIndex("RecipientUserId");
+
+                    b.HasIndex("SenderUserId");
+
                     b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.NotificationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FailureReason")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IdempotencyKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("RecipientEmail")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RuleId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TargetUserId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RuleId");
+
+                    b.ToTable("NotificationLogs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.NotificationRecipientGroup", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TargetValues")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NotificationRecipientGroups");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.NotificationRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Channel")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("EmailTemplateId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EventCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("RecipientGroupId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RuleName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmailTemplateId");
+
+                    b.HasIndex("RecipientGroupId");
+
+                    b.ToTable("NotificationRules");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingChecklistTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Assignee")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Category")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CompletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OffboardingRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OffboardingRecordId");
+
+                    b.ToTable("OffboardingChecklistTasks");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OffboardingRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OffboardingRecordId");
+
+                    b.ToTable("OffboardingHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("AttendanceClosingStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CompletedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ExitType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HandoverStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("LastWorkingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LeaveClosingStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("NoticeDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OffboardingStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ResponsiblePersonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ResponsiblePersonSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SettlementStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("OffboardingRecords");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OnboardingChecklistTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Assignee")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Category")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OnboardingRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OnboardingRecordId");
+
+                    b.ToTable("OnboardingChecklistTasks");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OnboardingRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateOfBirth")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DirectManager")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DocumentStatus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EvaluationDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvaluationNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EvaluationResult")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Evaluator")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ExpectedCompletionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Gender")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("JobTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("JoinDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OnboardingStatus")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponsiblePerson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("OnboardingRecords");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.PayrollPayment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BankAccountNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BankName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ConfirmedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CycleEndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CycleStartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("NetSalary")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentNote")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PayrollPeriod")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<double>("WorkDays")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("PayrollPayments");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.PlanningPeriod", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PlanningPeriods");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Proposal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CurrentApprovalLevel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CurrentSituation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("EstimatedCost")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("GeneratedBusinessRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GeneratedBusinessType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProposalCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProposalContent")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProposalType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ProposedEffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RelatedDepartment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RelatedEmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RelatedEmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RevisionRequestReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RevisionRequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RevisionRequestedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int?>("SourceProposalId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TargetPositionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TargetPositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TotalApprovalLevels")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RelatedEmployeeId");
+
+                    b.HasIndex("SourceProposalId");
+
+                    b.ToTable("Proposals");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.ProposalHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ProposalId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProposalId");
+
+                    b.ToTable("ProposalHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.RewardHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RewardRecordId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RewardRecordId");
+
+                    b.ToTable("RewardHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.RewardRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Achievement")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionDocumentUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("EffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("HasMonetaryReward")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPayrollSynced")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PayrollPeriod")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("PayrollSyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProposedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ProposedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("RewardAmount")
+                        .HasColumnType("float");
+
+                    b.Property<string>("RewardType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("RewardRecords");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.Salary", b =>
@@ -366,10 +3478,10 @@ namespace giao_diện_demo.Migrations
                     b.Property<double>("Discipline")
                         .HasColumnType("float");
 
-                    b.Property<int>("EmployeeId")
+                    b.Property<int?>("EmployeeId")
                         .HasColumnType("int");
 
-                    b.Property<string>("EmployeeName")
+                    b.Property<string>("EmployeeNameSnapshot")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("HolidayBonus")
@@ -401,7 +3513,751 @@ namespace giao_diện_demo.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId");
+
                     b.ToTable("Salaries");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SalaryGradeConfig", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcademicLevel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("Coefficient")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SalaryRank")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SuggestedAllowance")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SalaryGradeConfigs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionCandidate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AddedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssessmentNotes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("CompetencyScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("ExperienceScore")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PerformanceScore")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("PotentialScore")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Rank")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReadinessLevel")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SuccessionPlanId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("SuccessionPlanId");
+
+                    b.ToTable("SuccessionCandidates");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SuccessionPlanId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SuccessionPlanId");
+
+                    b.ToTable("SuccessionHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionPlan", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OwnerName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PlanningPeriodId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Priority")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Status")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TargetPositionId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanningPeriodId");
+
+                    b.HasIndex("TargetPositionId");
+
+                    b.ToTable("SuccessionPlans");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SystemConfig", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UpdatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("SystemConfigs");
+
+                    b.HasData(
+                        new
+                        {
+                            Key = "Company.Name",
+                            Category = "Company",
+                            Description = "Tên công ty",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "Công ty CP Công nghệ HRMS"
+                        },
+                        new
+                        {
+                            Key = "Company.ShortName",
+                            Category = "Company",
+                            Description = "Tên viết tắt",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "HRMS Corp"
+                        },
+                        new
+                        {
+                            Key = "Company.TaxCode",
+                            Category = "Company",
+                            Description = "Mã số thuế",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "0101234567"
+                        },
+                        new
+                        {
+                            Key = "Company.Email",
+                            Category = "Company",
+                            Description = "Email liên hệ",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "contact@hrms.vn"
+                        },
+                        new
+                        {
+                            Key = "Company.Phone",
+                            Category = "Company",
+                            Description = "Hotline",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "1900 1000"
+                        },
+                        new
+                        {
+                            Key = "Company.Website",
+                            Category = "Company",
+                            Description = "Website",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "https://hrms.vn"
+                        },
+                        new
+                        {
+                            Key = "Company.Address",
+                            Category = "Company",
+                            Description = "Địa chỉ trụ sở",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "Tầng 12, Tòa nhà Tech, Hà Nội"
+                        },
+                        new
+                        {
+                            Key = "Company.Representative",
+                            Category = "Company",
+                            Description = "Người đại diện",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "Nguyễn Văn A"
+                        },
+                        new
+                        {
+                            Key = "Loc.Language",
+                            Category = "Localization",
+                            Description = "Ngôn ngữ mặc định",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "vi-VN"
+                        },
+                        new
+                        {
+                            Key = "Loc.Timezone",
+                            Category = "Localization",
+                            Description = "Múi giờ",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "SE Asia Standard Time"
+                        },
+                        new
+                        {
+                            Key = "Loc.Currency",
+                            Category = "Localization",
+                            Description = "Tiền tệ",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "VND"
+                        },
+                        new
+                        {
+                            Key = "Storage.MaxFileSizeMB",
+                            Category = "Storage",
+                            Description = "Dung lượng upload tối đa (MB)",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "10"
+                        },
+                        new
+                        {
+                            Key = "Storage.AllowedTypes",
+                            Category = "Storage",
+                            Description = "Định dạng cho phép",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = ".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                        },
+                        new
+                        {
+                            Key = "Sys.MaintenanceMode",
+                            Category = "System",
+                            Description = "Chế độ bảo trì",
+                            UpdatedAt = new DateTime(2026, 9, 9, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            UpdatedBy = "System",
+                            Value = "false"
+                        });
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SystemErrorLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ExceptionType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("IP")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RequestId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Service")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("StackTrace")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("User")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SystemErrorLogs");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TrainingCertificate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CanonicalFileId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CanonicalFileId");
+
+                    b.Property<string>("CertificateNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("CertificateNumber");
+
+                    b.Property<string>("CertificateUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("CertificateUrl");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int")
+                        .HasColumnName("EmployeeId");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("EmployeeNameSnapshot");
+
+                    b.Property<int>("EnrollmentId")
+                        .HasColumnType("int")
+                        .HasColumnName("EnrollmentId");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("IssuedDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("IssuedDate");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("EnrollmentId")
+                        .IsUnique();
+
+                    b.ToTable("TrainingCertificates", (string)null);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TrainingCourse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("Capacity")
+                        .HasColumnType("int")
+                        .HasColumnName("Capacity");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Category");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Code");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("Description");
+
+                    b.Property<decimal?>("DurationHours")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("DurationHours");
+
+                    b.Property<string>("EligibleDepartment")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<string>("EligiblePosition")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("EndDate");
+
+                    b.Property<string>("Instructor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Instructor");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("bit")
+                        .HasColumnName("IsMandatory");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Mode");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Name");
+
+                    b.Property<int?>("PrerequisiteCourseId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ProgramId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("RegistrationEnd")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("RegistrationEnd");
+
+                    b.Property<DateTime?>("RegistrationStart")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("RegistrationStart");
+
+                    b.Property<bool>("RequiresApproval")
+                        .HasColumnType("bit")
+                        .HasColumnName("RequiresApproval");
+
+                    b.Property<string>("Skill")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("StartDate");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Status");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TrainingCourses", (string)null);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TrainingMaterial", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("Id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int")
+                        .HasColumnName("CourseId");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("FileUrl");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OriginalFileName")
+                        .HasMaxLength(520)
+                        .HasColumnType("nvarchar(520)");
+
+                    b.Property<string>("StoredFileName")
+                        .HasMaxLength(520)
+                        .HasColumnType("nvarchar(520)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("Title");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("TrainingMaterials", (string)null);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TransferHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Actor")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TransferRecordId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TransferRecordId");
+
+                    b.ToTable("TransferHistories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TransferRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("AppliedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AppliedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ApprovalStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CurrentDepartmentSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CurrentJobTitleSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CurrentPositionSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("DecisionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DecisionFilePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DecisionNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EmployeeCodeSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EmployeeNameSnapshot")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RejectedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RejectedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SubmittedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetDepartment")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetJobTitle")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TargetPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("TransferRecords");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.User", b =>
@@ -419,6 +4275,9 @@ namespace giao_diện_demo.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("EmployeeId")
+                        .HasColumnType("int");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -430,7 +4289,9 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Password")
-                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
@@ -439,11 +4300,831 @@ namespace giao_diện_demo.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId");
+
+                    b.HasIndex("Username")
+                        .IsUnique();
+
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.WorkShift", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BreakDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EarlyLeaveGraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<bool>("IsOvernight")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsOvertimeEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LateGraceMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ShiftCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ShiftName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ShiftType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WorkShifts");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.WorkShiftAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("EffectiveFrom")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TargetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("TargetValue")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("WorkShiftId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkShiftId");
+
+                    b.ToTable("WorkShiftAssignments");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AI.AiConversation", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AI.AiMessage", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.AI.AiConversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AppointmentHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.AppointmentRecord", "AppointmentRecord")
+                        .WithMany("Histories")
+                        .HasForeignKey("AppointmentRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AppointmentRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AppointmentRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Attendance", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AttendanceAdjustmentAttachment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.AttendanceAdjustmentRequest", "AttendanceAdjustmentRequest")
+                        .WithMany()
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AttendanceAdjustmentRequest");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AttendanceAdjustmentRequest", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Attendance", "Attendance")
+                        .WithMany()
+                        .HasForeignKey("AttendanceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Attendance");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BenefitEnrollment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.BenefitProgram", "Program")
+                        .WithMany()
+                        .HasForeignKey("BenefitProgramId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Program");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.BenefitEntitlement", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.BenefitProgram", "Program")
+                        .WithMany()
+                        .HasForeignKey("BenefitProgramId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Program");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CameraEvent", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.CameraConfig", "CameraConfig")
+                        .WithMany()
+                        .HasForeignKey("CameraConfigId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CameraConfig");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CandidateDevelopmentPlan", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.SuccessionCandidate", "SuccessionCandidate")
+                        .WithOne("DevelopmentPlan")
+                        .HasForeignKey("giao_dien_demo.Models.CandidateDevelopmentPlan", "SuccessionCandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SuccessionCandidate");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Contract", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CourseEnrollment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.TrainingCourse", "Course")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.DismissalHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.DismissalRecord", "DismissalRecord")
+                        .WithMany("Histories")
+                        .HasForeignKey("DismissalRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DismissalRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.DismissalRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.HrTask", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "AssigneeEmployee")
+                        .WithMany()
+                        .HasForeignKey("AssigneeEmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "RelatedEmployee")
+                        .WithMany()
+                        .HasForeignKey("RelatedEmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AssigneeEmployee");
+
+                    b.Navigation("RelatedEmployee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.HrTaskHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.HrTask", "HrTask")
+                        .WithMany()
+                        .HasForeignKey("HrTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HrTask");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentEvidence", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.IncidentRecord", "IncidentRecord")
+                        .WithMany("Evidences")
+                        .HasForeignKey("IncidentRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IncidentRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.IncidentRecord", "IncidentRecord")
+                        .WithMany("Histories")
+                        .HasForeignKey("IncidentRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IncidentRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentParticipant", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.IncidentRecord", "IncidentRecord")
+                        .WithMany("Participants")
+                        .HasForeignKey("IncidentRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("IncidentRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "ResponsiblePerson")
+                        .WithMany()
+                        .HasForeignKey("ResponsiblePersonId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ResponsiblePerson");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentWitness", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.IncidentRecord", "IncidentRecord")
+                        .WithMany("Witnesses")
+                        .HasForeignKey("IncidentRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("IncidentRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPIEvaluation", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.User", "ManagerUser")
+                        .WithMany()
+                        .HasForeignKey("ManagerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("giao_dien_demo.Models.KPIPeriod", "Period")
+                        .WithMany()
+                        .HasForeignKey("PeriodId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("ManagerUser");
+
+                    b.Navigation("Period");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPITarget", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.KPIEvaluation", "Evaluation")
+                        .WithMany("Targets")
+                        .HasForeignKey("EvaluationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Evaluation");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.LeaderAssignment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Leave", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.ManagerAssignment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Notification", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("SenderUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.NotificationLog", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.NotificationRule", "NotificationRule")
+                        .WithMany()
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("NotificationRule");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.NotificationRule", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.EmailTemplate", "EmailTemplate")
+                        .WithMany()
+                        .HasForeignKey("EmailTemplateId");
+
+                    b.HasOne("giao_dien_demo.Models.NotificationRecipientGroup", "RecipientGroup")
+                        .WithMany()
+                        .HasForeignKey("RecipientGroupId");
+
+                    b.Navigation("EmailTemplate");
+
+                    b.Navigation("RecipientGroup");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingChecklistTask", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.OffboardingRecord", "OffboardingRecord")
+                        .WithMany("ChecklistTasks")
+                        .HasForeignKey("OffboardingRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OffboardingRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.OffboardingRecord", "OffboardingRecord")
+                        .WithMany("Histories")
+                        .HasForeignKey("OffboardingRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OffboardingRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OnboardingChecklistTask", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.OnboardingRecord", "OnboardingRecord")
+                        .WithMany("ChecklistTasks")
+                        .HasForeignKey("OnboardingRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OnboardingRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OnboardingRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.PayrollPayment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Proposal", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "RelatedEmployee")
+                        .WithMany()
+                        .HasForeignKey("RelatedEmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("giao_dien_demo.Models.Proposal", "SourceProposal")
+                        .WithMany()
+                        .HasForeignKey("SourceProposalId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("RelatedEmployee");
+
+                    b.Navigation("SourceProposal");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.ProposalHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Proposal", "Proposal")
+                        .WithMany()
+                        .HasForeignKey("ProposalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Proposal");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.RewardHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.RewardRecord", "RewardRecord")
+                        .WithMany("Histories")
+                        .HasForeignKey("RewardRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RewardRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.RewardRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Salary", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionCandidate", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.SuccessionPlan", "SuccessionPlan")
+                        .WithMany("Candidates")
+                        .HasForeignKey("SuccessionPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("SuccessionPlan");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.SuccessionPlan", "SuccessionPlan")
+                        .WithMany("Histories")
+                        .HasForeignKey("SuccessionPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SuccessionPlan");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionPlan", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.PlanningPeriod", "PlanningPeriod")
+                        .WithMany("SuccessionPlans")
+                        .HasForeignKey("PlanningPeriodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.JobPosition", "TargetPosition")
+                        .WithMany()
+                        .HasForeignKey("TargetPositionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PlanningPeriod");
+
+                    b.Navigation("TargetPosition");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TrainingCertificate", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.CourseEnrollment", "Enrollment")
+                        .WithOne("Certificate")
+                        .HasForeignKey("giao_dien_demo.Models.TrainingCertificate", "EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("Enrollment");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TrainingMaterial", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.TrainingCourse", "Course")
+                        .WithMany("Materials")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TransferHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.TransferRecord", "TransferRecord")
+                        .WithMany("Histories")
+                        .HasForeignKey("TransferRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TransferRecord");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TransferRecord", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.User", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.WorkShiftAssignment", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.WorkShift", "WorkShift")
+                        .WithMany()
+                        .HasForeignKey("WorkShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("WorkShift");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AI.AiConversation", b =>
+                {
+                    b.Navigation("Messages");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.AppointmentRecord", b =>
+                {
+                    b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.CourseEnrollment", b =>
+                {
+                    b.Navigation("Certificate");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.DismissalRecord", b =>
+                {
+                    b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.IncidentRecord", b =>
+                {
+                    b.Navigation("Evidences");
+
+                    b.Navigation("Histories");
+
+                    b.Navigation("Participants");
+
+                    b.Navigation("Witnesses");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.KPIEvaluation", b =>
+                {
+                    b.Navigation("Targets");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OffboardingRecord", b =>
+                {
+                    b.Navigation("ChecklistTasks");
+
+                    b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.OnboardingRecord", b =>
+                {
+                    b.Navigation("ChecklistTasks");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.PlanningPeriod", b =>
+                {
+                    b.Navigation("SuccessionPlans");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.RewardRecord", b =>
+                {
+                    b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionCandidate", b =>
+                {
+                    b.Navigation("DevelopmentPlan");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.SuccessionPlan", b =>
+                {
+                    b.Navigation("Candidates");
+
+                    b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TrainingCourse", b =>
+                {
+                    b.Navigation("Enrollments");
+
+                    b.Navigation("Materials");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.TransferRecord", b =>
+                {
+                    b.Navigation("Histories");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,0 +1,104 @@
+[
+  {
+    "Id": "31d9e4d9-85bf-4624-9755-5ad76364b612",
+    "Name": "B\u1EA3ng l\u01B0\u01A1ng m\u1EB7c \u0111\u1ECBnh",
+    "Description": "M\u1EABu hi\u1EC3n th\u1ECB \u0111\u1EA7y \u0111\u1EE7 c\u00E1c c\u1ED9t ti\u00EAu chu\u1EA9n",
+    "Status": "ACTIVE",
+    "IsDefault": true,
+    "CreatedAt": "2026-09-06T18:29:13.5502727+07:00",
+    "UpdatedAt": "2026-09-06T18:29:13.5502737+07:00",
+    "Columns": [
+      {
+        "FieldKey": "EmployeeCode",
+        "DisplayName": "M\u00E3 NV",
+        "IsVisible": true,
+        "Order": 1,
+        "IsRequired": true
+      },
+      {
+        "FieldKey": "EmployeeName",
+        "DisplayName": "T\u00EAn nh\u00E2n vi\u00EAn",
+        "IsVisible": true,
+        "Order": 2,
+        "IsRequired": true
+      },
+      {
+        "FieldKey": "DepartmentName",
+        "DisplayName": "Ph\u00F2ng ban",
+        "IsVisible": true,
+        "Order": 3,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "SalaryMonth",
+        "DisplayName": "K\u1EF3 l\u01B0\u01A1ng",
+        "IsVisible": true,
+        "Order": 4,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "BaseSalary",
+        "DisplayName": "L\u01B0\u01A1ng c\u01A1 b\u1EA3n",
+        "IsVisible": true,
+        "Order": 5,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "PerformanceSalary",
+        "DisplayName": "L\u01B0\u01A1ng hi\u1EC7u su\u1EA5t",
+        "IsVisible": false,
+        "Order": 6,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "AllowanceCost",
+        "DisplayName": "Ph\u1EE5 c\u1EA5p",
+        "IsVisible": true,
+        "Order": 7,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "OvertimeCost",
+        "DisplayName": "T\u0103ng ca",
+        "IsVisible": true,
+        "Order": 8,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "Reward",
+        "DisplayName": "Th\u01B0\u1EDFng",
+        "IsVisible": true,
+        "Order": 9,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "TotalSalary",
+        "DisplayName": "T\u1ED5ng thu nh\u1EADp",
+        "IsVisible": true,
+        "Order": 10,
+        "IsRequired": true
+      },
+      {
+        "FieldKey": "Insurance",
+        "DisplayName": "B\u1EA3o hi\u1EC3m",
+        "IsVisible": true,
+        "Order": 11,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "TaxTNCN",
+        "DisplayName": "Thu\u1EBF TNCN",
+        "IsVisible": true,
+        "Order": 12,
+        "IsRequired": false
+      },
+      {
+        "FieldKey": "NetSalary",
+        "DisplayName": "Th\u1EF1c l\u0129nh",
+        "IsVisible": true,
+        "Order": 13,
+        "IsRequired": true
+      }
+    ]
+  }
+]

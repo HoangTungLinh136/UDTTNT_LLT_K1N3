@@ -1,0 +1,302 @@
+@{
+    ViewData["Title"] = "Chi phí nhân sự - Ban lãnh đạo";
+
+    var currentTotalGross = ViewBag.CurrentTotalGross ?? 0;
+    var currentAverage = ViewBag.CurrentAverage ?? 0;
+    var previousTotalGross = ViewBag.PreviousTotalGross ?? 0;
+    var currentHeadcount = ViewBag.CurrentHeadcount ?? 0;
+
+    double changePercent = 0;
+    if (previousTotalGross > 0)
+    {
+        changePercent = ((currentTotalGross - previousTotalGross) / previousTotalGross) * 100;
+    }
+
+    var byDepartment = ViewBag.ByDepartment as IEnumerable<dynamic>;
+    var trendData = ViewBag.TrendData as IEnumerable<dynamic>;
+    var allowedDepartments = ViewBag.AllowedDepartments as List<string>;
+    var availablePeriods = ViewBag.AvailablePeriods as List<DateTime>;
+}
+
+@if (ViewBag.Error != null)
+{
+    <div class="hrms-alert hrms-alert-danger">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> @ViewBag.Error
+    </div>
+    return;
+}
+
+<style>
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .kpi-card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid var(--hrms-border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .kpi-title { color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+    .kpi-value { color: #1e293b; font-size: 24px; font-weight: 700; }
+    .kpi-change { font-size: 13px; font-weight: 500; margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 20px; }
+    .change-up { background: #fef2f2; color: #ef4444; }
+    .change-down { background: #ecfdf5; color: #10b981; }
+    .change-neutral { background: #f1f5f9; color: #64748b; }
+    
+    .chart-container { background: #fff; padding: 24px; border-radius: 12px; border: 1px solid var(--hrms-border-light); box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 24px; height: 400px; }
+</style>
+
+<div class="hrms-page-header mb-4 d-flex justify-content-between align-items-center">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-coins"></i></span>
+            Phân tích Chi phí nhân sự
+        </h1>
+        <div class="hrms-page-subtitle">Tổng hợp và theo dõi phân bổ quỹ lương, chi phí theo phòng ban trong tổ chức.</div>
+    </div>
+</div>
+
+<!-- BỘ LỌC -->
+<div class="card mb-4" style="border: 1px solid var(--hrms-border-light); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div class="card-body p-3">
+        <form method="get" class="row gx-3 gy-2 align-items-center">
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Kỳ tính lương (Tháng/Năm)</label>
+                <select name="month" class="form-select form-select-sm" style="width: 150px;" onchange="this.form.submit()">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        var isSelected = ViewBag.SelectedMonth == m;
+                        @if (isSelected) {
+                            <option value="@m" selected>Tháng @m</option>
+                        } else {
+                            <option value="@m">Tháng @m</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">&nbsp;</label>
+                <select name="year" class="form-select form-select-sm" style="width: 120px;" onchange="this.form.submit()">
+                    @if (availablePeriods != null)
+                    {
+                        foreach (var y in availablePeriods.Select(p => p.Year).Distinct().OrderByDescending(y => y))
+                        {
+                            var isSelected = ViewBag.SelectedYear == y;
+                            @if (isSelected) {
+                                <option value="@y" selected>Năm @y</option>
+                            } else {
+                                <option value="@y">Năm @y</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Phòng ban</label>
+                <select name="department" class="form-select form-select-sm" style="width: 250px;" onchange="this.form.submit()">
+                    <option value="">-- Tất cả đơn vị quản lý --</option>
+                    @if (allowedDepartments != null)
+                    {
+                        foreach (var dept in allowedDepartments)
+                        {
+                            var isSelected = ViewBag.SelectedDepartment == dept;
+                            @if (isSelected) {
+                                <option value="@dept" selected>@dept</option>
+                            } else {
+                                <option value="@dept">@dept</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto ms-auto d-flex align-items-end">
+                <a href="@Url.Action("Index")" class="btn btn-sm btn-light mt-4" style="border: 1px solid #cbd5e1;"><i class="fa-solid fa-rotate-right me-1"></i> Làm mới</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-nav-grid mb-4">
+    <a href="javascript:void(0)" class="hrms-nav-card active" onclick="switchTab('tab1', this)">
+        <i class="fa-solid fa-sack-dollar nav-icon"></i>
+        <span class="nav-title">Tổng quỹ lương</span>
+    </a>
+    <a href="javascript:void(0)" class="hrms-nav-card" onclick="switchTab('tab2', this)">
+        <i class="fa-solid fa-building-columns nav-icon"></i>
+        <span class="nav-title">Chi phí theo phòng ban</span>
+    </a>
+    <a href="javascript:void(0)" class="hrms-nav-card" onclick="switchTab('tab3', this)">
+        <i class="fa-solid fa-chart-area nav-icon"></i>
+        <span class="nav-title">Xu hướng chi phí</span>
+    </a>
+</div>
+
+@if (currentTotalGross == 0 && (byDepartment == null || !byDepartment.Any()))
+{
+    <div class="hrms-alert hrms-alert-warning">
+        <i class="fa-solid fa-inbox me-2"></i> Không có dữ liệu chi phí nhân sự trong kỳ được chọn.
+    </div>
+}
+else
+{
+    <!-- TAB 1: TỔNG QUỸ LƯƠNG -->
+    <div id="tab1" class="tab-content active">
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="kpi-card">
+                    <div class="kpi-title">Tổng quỹ lương (Gross)</div>
+                    <div class="kpi-value text-primary">@string.Format("{0:N0} ₫", currentTotalGross)</div>
+                    @if (changePercent > 0)
+                    {
+                        <div class="kpi-change change-up"><i class="fa-solid fa-arrow-up"></i> Tăng @string.Format("{0:N1}", changePercent)%</div>
+                    }
+                    else if (changePercent < 0)
+                    {
+                        <div class="kpi-change change-down"><i class="fa-solid fa-arrow-down"></i> Giảm @string.Format("{0:N1}", Math.Abs(changePercent))%</div>
+                    }
+                    else
+                    {
+                        <div class="kpi-change change-neutral"><i class="fa-solid fa-minus"></i> Không đổi</div>
+                    }
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card">
+                    <div class="kpi-title">Tổng số nhân sự được tính</div>
+                    <div class="kpi-value text-success">@string.Format("{0:N0}", currentHeadcount) <span style="font-size: 14px; color: #64748b; font-weight: 500;">nhân sự</span></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="kpi-card">
+                    <div class="kpi-title">Chi phí bình quân / nhân sự</div>
+                    <div class="kpi-value text-warning">@string.Format("{0:N0} ₫", currentAverage)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border: 1px solid var(--hrms-border-light); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;">
+            <div class="card-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 16px 20px;">
+                <h6 class="mb-0" style="font-weight: 600; color: #1e293b;">Chi tiết phân bổ theo phòng ban</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0 hrms-table" style="font-size: 14px;">
+                    <thead style="background: #f1f5f9; color: #475569;">
+                        <tr>
+                            <th style="padding: 12px 20px;">Đơn vị / Phòng ban</th>
+                            <th class="text-end" style="padding: 12px 20px;">Số NV</th>
+                            <th class="text-end" style="padding: 12px 20px;">Tổng chi phí (Gross)</th>
+                            <th class="text-end" style="padding: 12px 20px;">CP Bình quân</th>
+                            <th class="text-end" style="padding: 12px 20px;">Tỷ trọng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var dept in byDepartment)
+                        {
+                            <tr>
+                                <td style="padding: 12px 20px; font-weight: 500;">@dept.Department</td>
+                                <td class="text-end" style="padding: 12px 20px;">@dept.Headcount</td>
+                                <td class="text-end text-primary" style="padding: 12px 20px; font-weight: 600;">@string.Format("{0:N0} ₫", dept.TotalGross)</td>
+                                <td class="text-end" style="padding: 12px 20px;">@string.Format("{0:N0} ₫", dept.Average)</td>
+                                <td class="text-end" style="padding: 12px 20px;">
+                                    <div class="d-flex align-items-center justify-content-end gap-2">
+                                        <span>@string.Format("{0:N1}%", dept.Percentage)</span>
+                                        <div class="progress" style="width: 50px; height: 6px;">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: @string.Format("{0:N0}%", dept.Percentage)" aria-valuenow="@dept.Percentage" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: CHI PHÍ THEO PHÒNG BAN -->
+    <div id="tab2" class="tab-content">
+        <div class="chart-container">
+            <canvas id="deptChart"></canvas>
+        </div>
+    </div>
+
+    <!-- TAB 3: XU HƯỚNG CHI PHÍ -->
+    <div id="tab3" class="tab-content">
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function switchTab(tabId, el) {
+            // Update nav active state
+            document.querySelectorAll('.hrms-nav-card').forEach(c => c.classList.remove('active'));
+            if(el) el.classList.add('active');
+            
+            // Update content display
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Initialize Charts if data exists
+        @if (currentTotalGross > 0)
+        {
+            <text>
+            const deptCtx = document.getElementById('deptChart');
+            if (deptCtx) {
+                new Chart(deptCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(byDepartment.Select(d => d.Department))),
+                        datasets: [{
+                            label: 'Tổng chi phí (VNĐ)',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(byDepartment.Select(d => d.TotalGross))),
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Phân bổ chi phí theo phòng ban', font: { size: 16 } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            const trendCtx = document.getElementById('trendChart');
+            if (trendCtx) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(trendData.Select(d => d.Month))),
+                        datasets: [{
+                            label: 'Tổng chi phí (VNĐ)',
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(trendData.Select(d => d.TotalGross))),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#10b981',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Xu hướng chi phí 6 tháng gần nhất', font: { size: 16 } }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            }
+            </text>
+        }
+    </script>
+}

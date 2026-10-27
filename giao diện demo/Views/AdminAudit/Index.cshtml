@@ -1,0 +1,400 @@
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<style>
+/* Drawer scoped styling */
+.audit-drawer-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 1000; display: none; opacity: 0; transition: opacity 0.3s; }
+.audit-drawer { position: fixed; top: 0; right: -600px; width: 520px; max-width: 100%; height: 100vh; background: var(--hrms-surface, #ffffff); z-index: 1001; box-shadow: -4px 0 20px rgba(0,0,0,0.12); transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; }
+.drawer-open .audit-drawer-overlay { display: block; opacity: 1; }
+.drawer-open .audit-drawer { right: 0; }
+.drawer-header { padding: 18px 24px; border-bottom: 1px solid var(--hrms-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center; }
+.drawer-title { font-size: 17px; font-weight: 700; margin: 0; color: var(--hrms-text-main, #1e293b); }
+.drawer-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--hrms-text-muted, #94a3b8); }
+.drawer-close:hover { color: var(--hrms-text-main, #334155); }
+.drawer-body { padding: 24px; overflow-y: auto; flex: 1; }
+
+.detail-section { margin-bottom: 24px; }
+.detail-section h4 { margin: 0 0 12px; font-size: 13px; color: var(--hrms-text-muted, #64748b); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.detail-item { background: var(--hrms-background, #f8fafc); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--hrms-border, #e2e8f0); }
+.detail-label { font-size: 12px; color: var(--hrms-text-muted, #64748b); margin-bottom: 4px; }
+.detail-val { font-size: 14px; font-weight: 500; color: var(--hrms-text-main, #1e293b); word-break: break-all; }
+
+/* Diff View */
+.diff-container { display: flex; gap: 12px; margin-top: 12px; }
+.diff-panel { flex: 1; background: var(--hrms-background, #f8fafc); border: 1px solid var(--hrms-border, #e2e8f0); border-radius: 8px; overflow: hidden; }
+.diff-header { padding: 8px 12px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--hrms-border, #e2e8f0); }
+.diff-header.old { background: #fee2e2; color: #991b1b; }
+.diff-header.new { background: #dcfce7; color: #166534; }
+.diff-content { padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto; }
+
+.loading-spinner { display: none; margin: 20px auto; text-align: center; color: var(--hrms-primary, #2563eb); font-size: 24px; }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>Audit Log</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-scroll"></i></span>
+            Audit Log
+        </h1>
+        <p class="hrms-page-subtitle">Nhật ký kiểm toán hệ thống bất biến (Immutable & Read-Only Governance)</p>
+    </div>
+    <div class="hrms-page-header-actions">
+        <button class="hrms-btn hrms-btn-secondary" id="btn-export" onclick="exportCsv()"><i class="fa-solid fa-file-csv"></i> Xuất CSV</button>
+    </div>
+</div>
+
+<!-- KPI Summary Cards -->
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-chart-line"></i></div>
+            <div class="hrms-kpi-value" id="sum-total">0</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng sự kiện hôm nay</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-red">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="hrms-kpi-value" id="sum-failed">0</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đăng nhập thất bại (Hôm nay)</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-yellow">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-pen-to-square"></i></div>
+            <div class="hrms-kpi-value" id="sum-data">0</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Thay đổi dữ liệu (Hôm nay)</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="hrms-kpi-value" id="sum-sec">0</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Sự kiện bảo mật (Hôm nay)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="hrms-tabs mb-4">
+    <button class="hrms-tab active audit-tab" data-tab="activity"><i class="fa-solid fa-list-ul me-1"></i> Hoạt động</button>
+    <button class="hrms-tab audit-tab" data-tab="login"><i class="fa-solid fa-right-to-bracket me-1"></i> Đăng nhập</button>
+    <button class="hrms-tab audit-tab" data-tab="datachange"><i class="fa-solid fa-pen-to-square me-1"></i> Thay đổi dữ liệu</button>
+    <button class="hrms-tab audit-tab" data-tab="security"><i class="fa-solid fa-shield-halved me-1"></i> Bảo mật</button>
+</div>
+
+<!-- Filter Toolbar -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-2 col-sm-6">
+                <label class="hrms-form-label">Từ ngày</label>
+                <input type="date" id="filter-from" class="hrms-form-control" />
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <label class="hrms-form-label">Đến ngày</label>
+                <input type="date" id="filter-to" class="hrms-form-control" />
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <label class="hrms-form-label">Tài khoản</label>
+                <input type="text" id="filter-user" class="hrms-form-control" placeholder="Username..." />
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <label class="hrms-form-label">Module / Action</label>
+                <div class="d-flex gap-1">
+                    <input type="text" id="filter-module" class="hrms-form-control" placeholder="Module..." />
+                    <input type="text" id="filter-action" class="hrms-form-control" placeholder="Action..." />
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <label class="hrms-form-label">Trạng thái</label>
+                <select id="filter-status" class="hrms-form-select">
+                    <option value="">Tất cả</option>
+                    <option value="Success">Thành công</option>
+                    <option value="Failed">Thất bại</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-sm-6">
+                <label class="hrms-form-label">Tìm kiếm</label>
+                <input type="text" id="filter-search" class="hrms-form-control" placeholder="Resource, ID..." />
+            </div>
+            <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+                <button class="hrms-btn hrms-btn-ghost" id="btn-reset" onclick="resetFilters()"><i class="fa-solid fa-rotate-right"></i> Đặt lại</button>
+                <button class="hrms-btn hrms-btn-primary" id="btn-search" onclick="loadData(1)"><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="hrms-card">
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Người dùng</th>
+                    <th>Phân hệ</th>
+                    <th>Thao tác</th>
+                    <th>Đối tượng</th>
+                    <th>Trạng thái</th>
+                    <th>IP / Thiết bị</th>
+                    <th class="col-actions" style="text-align: right;">Chi tiết</th>
+                </tr>
+            </thead>
+            <tbody id="audit-tbody">
+                <!-- Data rendered by JS -->
+            </tbody>
+        </table>
+        
+        <div id="loading" class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+        
+        <div class="hrms-pagination d-flex justify-content-between align-items-center p-3" style="border-top: 1px solid var(--hrms-border, #f1f5f9);">
+            <div class="page-info" id="page-info" style="font-size: 13px; color: var(--hrms-text-muted, #64748b);">Đang tải...</div>
+            <div class="d-flex gap-2">
+                <button class="hrms-btn hrms-btn-sm hrms-btn-secondary" id="btn-prev" onclick="changePage(-1)">Trước</button>
+                <button class="hrms-btn hrms-btn-sm hrms-btn-secondary" id="btn-next" onclick="changePage(1)">Sau</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drawer Detail -->
+<div class="audit-drawer-overlay" onclick="closeDrawer()"></div>
+<div class="audit-drawer">
+    <div class="drawer-header">
+        <h3 class="drawer-title">Chi tiết Sự kiện Audit</h3>
+        <button class="drawer-close" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="drawer-body" id="drawer-body">
+        <div style="text-align:center; padding: 40px; color: var(--hrms-text-muted, #64748b);"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let currentTab = 'activity';
+    let currentPage = 1;
+    const pageSize = 20;
+
+    $(document).ready(function() {
+        loadSummary();
+        loadData(1);
+
+        $('.audit-tab').click(function() {
+            $('.audit-tab').removeClass('active');
+            $(this).addClass('active');
+            currentTab = $(this).data('tab');
+            loadData(1);
+        });
+    });
+
+    function loadSummary() {
+        $.get('/AdminAudit/GetSummary', function(res) {
+            $('#sum-total').text(res.totalToday);
+            $('#sum-failed').text(res.loginFailedToday);
+            $('#sum-data').text(res.dataChangeToday);
+            $('#sum-sec').text(res.securityToday);
+        });
+    }
+
+    function getFilters() {
+        return {
+            tab: currentTab,
+            from: $('#filter-from').val(),
+            to: $('#filter-to').val(),
+            user: $('#filter-user').val(),
+            module: $('#filter-module').val(),
+            actionStr: $('#filter-action').val(),
+            status: $('#filter-status').val(),
+            search: $('#filter-search').val(),
+            page: currentPage,
+            pageSize: pageSize
+        };
+    }
+
+    function resetFilters() {
+        $('#filter-from').val('');
+        $('#filter-to').val('');
+        $('#filter-user').val('');
+        $('#filter-module').val('');
+        $('#filter-action').val('');
+        $('#filter-status').val('');
+        $('#filter-search').val('');
+        loadData(1);
+    }
+
+    function loadData(page) {
+        currentPage = page;
+        $('#audit-tbody').empty();
+        $('#loading').show();
+        $('#btn-prev').prop('disabled', true);
+        $('#btn-next').prop('disabled', true);
+
+        $.get('/AdminAudit/GetLogs', getFilters(), function(res) {
+            $('#loading').hide();
+            renderTable(res.data);
+            
+            let start = (currentPage - 1) * pageSize + 1;
+            let end = Math.min(currentPage * pageSize, res.total);
+            if (res.total === 0) start = 0;
+            
+            $('#page-info').text(`Hiển thị ${start} - ${end} trên tổng ${res.total} bản ghi`);
+            $('#btn-prev').prop('disabled', currentPage <= 1);
+            $('#btn-next').prop('disabled', end >= res.total);
+        }).fail(function() {
+            $('#loading').hide();
+            $('#audit-tbody').html('<tr><td colspan="8" style="text-align:center; color:red; padding:24px;">Lỗi tải dữ liệu kiểm toán.</td></tr>');
+        });
+    }
+
+    function changePage(delta) {
+        loadData(currentPage + delta);
+    }
+
+    function renderTable(data) {
+        if (!data || data.length === 0) {
+            $('#audit-tbody').html('<tr><td colspan="8" style="text-align:center; color: var(--hrms-text-muted, #64748b); padding:40px;">Không tìm thấy bản ghi nào phù hợp.</td></tr>');
+            return;
+        }
+
+        let html = '';
+        data.forEach(item => {
+            let statusBadge = '';
+            if (item.status === 'Success') statusBadge = '<span class="hrms-badge hrms-badge-success">Thành công</span>';
+            else if (item.status === 'Failed') statusBadge = '<span class="hrms-badge hrms-badge-danger">Thất bại</span>';
+            else statusBadge = `<span class="hrms-badge hrms-badge-info">${item.status || 'N/A'}</span>`;
+
+            let date = new Date(item.timestamp).toLocaleString('vi-VN');
+            
+            html += `
+                <tr>
+                    <td style="color: var(--hrms-text-muted, #64748b); font-size:13px;">${date}</td>
+                    <td>
+                        <div style="font-weight:600; color: var(--hrms-text-main, #1e293b);">${item.username || 'System'}</div>
+                        <div style="font-size:12px; color: var(--hrms-text-muted, #64748b);">${item.role || ''}</div>
+                    </td>
+                    <td><span class="hrms-badge hrms-badge-neutral">${item.module || 'System'}</span></td>
+                    <td><code style="background:var(--hrms-background, #f1f5f9); padding:2px 6px; border-radius:4px;">${item.action || ''}</code></td>
+                    <td>
+                        <div style="color: var(--hrms-text-main, #1e293b);">${item.resource || ''}</div>
+                        <div style="font-size:12px; color: var(--hrms-text-muted, #64748b);">${item.resourceId || ''}</div>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div style="font-size:13px; font-family:monospace; color: var(--hrms-text-muted, #64748b);">${item.ipAddress || ''}</div>
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="hrms-btn hrms-btn-sm hrms-btn-ghost" onclick="viewDetail(${item.id})"><i class="fa-solid fa-eye me-1"></i> Chi tiết</button>
+                    </td>
+                </tr>
+            `;
+        });
+        $('#audit-tbody').html(html);
+    }
+
+    function viewDetail(id) {
+        $('body').addClass('drawer-open');
+        $('#drawer-body').html('<div style="text-align:center; padding: 40px; color: var(--hrms-text-muted, #64748b);"><i class="fa-solid fa-circle-notch fa-spin fa-2x"></i></div>');
+
+        $.get('/AdminAudit/GetDetail?id=' + id, function(item) {
+            let date = new Date(item.timestamp).toLocaleString('vi-VN');
+            let statusBadge = item.status === 'Success' ? '<span class="hrms-badge hrms-badge-success">Thành công</span>' : '<span class="hrms-badge hrms-badge-danger">Thất bại</span>';
+
+            let html = `
+                <div class="detail-section">
+                    <h4>Thông tin chung</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="detail-label">ID Sự kiện</div><div class="detail-val">#${item.id}</div></div>
+                        <div class="detail-item"><div class="detail-label">Thời gian</div><div class="detail-val">${date}</div></div>
+                        <div class="detail-item"><div class="detail-label">Người dùng</div><div class="detail-val">${item.username || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Vai trò</div><div class="detail-val">${item.role || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Module</div><div class="detail-val">${item.module || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Hành động</div><div class="detail-val">${item.action || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Đối tượng</div><div class="detail-val">${item.resource || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">ID Đối tượng</div><div class="detail-val">${item.resourceId || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Trạng thái</div><div class="detail-val">${statusBadge}</div></div>
+                        <div class="detail-item"><div class="detail-label">Phân loại</div><div class="detail-val">${item.eventType || 'N/A'}</div></div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4>Môi trường / Bối cảnh</h4>
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="detail-label">IP Address</div><div class="detail-val">${item.ipAddress || 'N/A'}</div></div>
+                        <div class="detail-item"><div class="detail-label">User Agent</div><div class="detail-val">${item.userAgent || 'N/A'}</div></div>
+                    </div>
+                </div>
+            `;
+
+            if (item.failureReason) {
+                html += `
+                <div class="detail-section">
+                    <h4>Lý do lỗi</h4>
+                    <div class="detail-item" style="border-color:#fca5a5; background:#fef2f2; color:#991b1b;">
+                        ${item.failureReason}
+                    </div>
+                </div>`;
+            }
+
+            if (item.oldValues || item.newValues) {
+                let oldVal = item.oldValues ? formatJson(item.oldValues) : 'Không có';
+                let newVal = item.newValues ? formatJson(item.newValues) : 'Không có';
+                let changedFields = item.changes ? formatJson(item.changes) : '';
+
+                html += `
+                <div class="detail-section">
+                    <h4>Dữ liệu thay đổi ${changedFields ? '(Các trường: '+changedFields+')' : ''}</h4>
+                    <div class="diff-container">
+                        <div class="diff-panel">
+                            <div class="diff-header old">Dữ liệu cũ (Before)</div>
+                            <div class="diff-content">${oldVal}</div>
+                        </div>
+                        <div class="diff-panel">
+                            <div class="diff-header new">Dữ liệu mới (After)</div>
+                            <div class="diff-content">${newVal}</div>
+                        </div>
+                    </div>
+                </div>`;
+            }
+
+            $('#drawer-body').html(html);
+        });
+    }
+
+    function formatJson(jsonStr) {
+        try {
+            let obj = JSON.parse(jsonStr);
+            return JSON.stringify(obj, null, 2);
+        } catch(e) {
+            return jsonStr;
+        }
+    }
+
+    function closeDrawer() {
+        $('body').removeClass('drawer-open');
+    }
+
+    function exportCsv() {
+        let qs = $.param(getFilters());
+        window.location.href = '/AdminAudit/ExportCsv?' + qs;
+    }
+</script>
+}

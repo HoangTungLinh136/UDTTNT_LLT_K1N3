@@ -1,0 +1,9 @@
+{
+  "AiProvider": {
+    "ProviderName": "Groq",
+    "BaseUrl": "https://api.groq.com/openai/v1/",
+    "ModelName": "llama-3.1-8b-instant",
+    "ApiKey": "",
+    "IsActive": true
+  }
+}

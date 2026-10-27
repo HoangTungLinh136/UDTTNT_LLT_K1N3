@@ -1,251 +1,344 @@
-﻿@using giao_dien_demo.Models
-@inject giao_dien_demo.Data.ApplicationDbContext _context
-
+@using giao_dien_demo.Models
 @{
-    ViewData["Title"] = "📊 Trang chủ hệ thống";
+    ViewData["Title"] = "Tổng quan hệ thống";
 
-    var users = _context.Users.ToList();
+    var total = ViewBag.Total ?? 0;
+    var activeAccounts = ViewBag.ActiveAccounts ?? 0;
+    var disabledAccounts = ViewBag.DisabledAccounts ?? 0;
+    var working = ViewBag.Working ?? 0;
+    var leave = ViewBag.Leave ?? 0;
 
-    var total = users.Count;
-    var working = users.Count(x => x.IsOnline);
-    var leave = users.Count(x => !x.IsOnline);
+    var roleCounts = ViewBag.RoleCounts as IEnumerable<dynamic> ?? new List<dynamic>();
+    var recentAudits = ViewBag.RecentAudits as List<AuditLog> ?? new List<AuditLog>();
 }
 
-<div class="dashboard-cards">
+<style>
+.admin-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+.admin-nav-card {
+    padding: 16px;
+    border: 1px solid var(--hrms-border, #e2e8f0);
+    border-radius: var(--hrms-radius-md, 8px);
+    background: var(--hrms-surface, #ffffff);
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.2s ease-in-out;
+}
+.admin-nav-card:hover {
+    border-color: var(--hrms-primary, #2563eb);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+    transform: translateY(-2px);
+    color: inherit;
+}
+.admin-nav-icon {
+    font-size: 22px;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+.admin-nav-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--hrms-text-main, #1e293b);
+}
+.admin-nav-desc {
+    font-size: 12px;
+    color: var(--hrms-text-muted, #64748b);
+    margin-top: 4px;
+    line-height: 1.4;
+}
+</style>
 
-    <div class="card blue">
-        👨‍💼 Tổng nhân viên
-        <div class="number" id="totalCount">@total</div>
+<div class="hrms-page-header">
+    @Html.AntiForgeryToken()
+    <div class="hrms-page-header-left">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-gauge-high"></i></span>
+            Tổng quan hệ thống
+        </h1>
+        <p class="hrms-page-subtitle">Bảng điều khiển quản trị kỹ thuật, phân phối tài khoản & giám sát hệ thống</p>
     </div>
-
-    <div class="card green">
-        ✅ Đang làm
-        <div class="number" id="workingCount">@working</div>
+    <div class="hrms-page-header-actions">
+        <a asp-action="Index" class="hrms-btn hrms-btn-secondary"><i class="fa-solid fa-arrows-rotate"></i> Làm mới</a>
+        <a asp-action="Users" class="hrms-btn hrms-btn-primary">
+            <i class="fa-solid fa-users"></i> Quản lý người dùng
+        </a>
     </div>
-
-    <div class="card red">
-        ❌ Nghỉ việc
-        <div class="number" id="leaveCount">@leave</div>
-    </div>
-
 </div>
 
-<!-- TÌM KIẾM + THÊM -->
-<div style="margin-top:30px; margin-bottom:20px; display:flex; gap:15px; align-items:center;">
+<!-- KPI GRID TỔNG QUAN HỆ THỐNG -->
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="hrms-kpi-value" id="totalCount">@total</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng tài khoản</div>
+        </div>
+    </div>
 
-    <input type="text"
-           id="searchInput"
-           class="form-control"
-           placeholder="🔍 Tìm kiếm tài khoản..."
-           style="max-width:400px;" />
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="hrms-kpi-value">@activeAccounts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tài khoản hợp lệ (CanLogin)</div>
+        </div>
+    </div>
 
-    <a asp-controller="Account"
-           asp-action="Register"
-           class="btn btn-success">
-        ➕ Thêm tài khoản
-    </a>
+    <div class="hrms-kpi-card kpi-red">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-lock"></i></div>
+            <div class="hrms-kpi-value">@disabledAccounts</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tài khoản bị khóa</div>
+        </div>
+    </div>
 
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-signal"></i></div>
+            <div class="hrms-kpi-value" id="workingCount">@working</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đang trực tuyến (Online)</div>
+        </div>
+    </div>
 </div>
 
-<!-- BẢNG TÀI KHOẢN -->
-<div class="account-table-wrapper">
+<!-- BIỂU ĐỒ & PHÂN PHỐI VAI TRÒ -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="hrms-card h-100">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-chart-pie card-title-icon"></i> Tình trạng trực tuyến tài khoản</h3>
+            </div>
+            <div class="hrms-card-body" style="display: flex; align-items: center; justify-content: center; padding: 24px;">
+                <div style="width: 200px; height: 200px;">
+                    <canvas id="accountChart"></canvas>
+                </div>
+                <div style="margin-left: 32px; display: flex; flex-direction: column; gap: 14px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 32px; font-size: 14px;">
+                        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10B981; margin-right:8px;"></span>Đang online</span>
+                        <strong>@working</strong>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 32px; font-size: 14px;">
+                        <span><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#94A3B8; margin-right:8px;"></span>Ngoại tuyến</span>
+                        <strong>@leave</strong>
+                    </div>
+                    <div style="margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--hrms-border, #f1f5f9);">
+                        <a asp-action="Users" class="hrms-btn hrms-btn-sm hrms-btn-secondary" style="width: 100%; justify-content: center;">
+                            <i class="fa-solid fa-users me-1"></i> Danh sách tài khoản
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <h3 style="margin-bottom:20px;">📋 Danh sách tài khoản</h3>
+    <div class="col-md-6">
+        <div class="hrms-card h-100">
+            <div class="hrms-card-header d-flex justify-content-between align-items-center">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-shield-halved card-title-icon"></i> Phân phối vai trò hệ thống</h3>
+                <a asp-controller="AdminRole" asp-action="Index" class="hrms-btn hrms-btn-sm hrms-btn-ghost">
+                    Phân quyền <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="hrms-card-body" style="padding: 20px 24px;">
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    @foreach (var group in roleCounts)
+                    {
+                        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--hrms-border, #f8fafc);">
+                            <span style="color: #334155; font-weight: 500;">
+                                <i class="fa-solid fa-user-tag" style="margin-right: 8px; color: var(--hrms-primary, #2563eb);"></i>@group.Role
+                            </span>
+                            <span class="hrms-badge hrms-badge-info" style="font-weight: 600;">
+                                @group.Count tài khoản
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <div style="overflow-x:auto;">
-        <table class="table table-hover table-bordered" style="min-width:1100px;">
-            <thead class="table-primary">
+<!-- ĐIỀU HƯỚNG CÁC MODULE QUẢN TRỊ KỸ THUẬT -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-header">
+        <h3 class="hrms-card-title"><i class="fa-solid fa-cubes card-title-icon"></i> Các phân hệ quản trị kỹ thuật hệ thống</h3>
+    </div>
+    <div class="hrms-card-body">
+        <div class="admin-nav-grid">
+            <a asp-controller="Admin" asp-action="Users" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #2563eb;"><i class="fa-solid fa-users"></i></div>
+                <div class="admin-nav-title">Người dùng</div>
+                <div class="admin-nav-desc">Quản trị tài khoản & trạng thái CanLogin</div>
+            </a>
+
+            <a asp-controller="AdminRole" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #4f46e5;"><i class="fa-solid fa-lock"></i></div>
+                <div class="admin-nav-title">Vai trò & phân quyền</div>
+                <div class="admin-nav-desc">Cấu hình RBAC, phân quyền chức năng</div>
+            </a>
+
+            <a asp-controller="AdminOrg" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #0ea5e9;"><i class="fa-solid fa-sitemap"></i></div>
+                <div class="admin-nav-title">Đơn vị tổ chức</div>
+                <div class="admin-nav-desc">Cấu trúc tổ chức & phòng ban</div>
+            </a>
+
+            <a asp-controller="AdminSecurity" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #dc2626;"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="admin-nav-title">Chính sách bảo mật</div>
+                <div class="admin-nav-desc">Password policy, lockout, sessions</div>
+            </a>
+
+            <a asp-controller="AdminNotificationConfig" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #d97706;"><i class="fa-solid fa-bell-slash"></i></div>
+                <div class="admin-nav-title">Cấu hình thông báo</div>
+                <div class="admin-nav-desc">Kênh, quy tắc và mẫu thông báo</div>
+            </a>
+
+            <a asp-controller="AdminIntegration" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #10b981;"><i class="fa-solid fa-plug"></i></div>
+                <div class="admin-nav-title">Tích hợp hệ thống</div>
+                <div class="admin-nav-desc">API, webhook, thiết bị chấm công</div>
+            </a>
+
+            <a asp-controller="AdminAudit" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #475569;"><i class="fa-solid fa-scroll"></i></div>
+                <div class="admin-nav-title">Audit Log</div>
+                <div class="admin-nav-desc">Nhật ký kiểm toán bất biến</div>
+            </a>
+
+            <a asp-controller="AdminBackup" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #7c3aed;"><i class="fa-solid fa-database"></i></div>
+                <div class="admin-nav-title">Sao lưu & phục hồi</div>
+                <div class="admin-nav-desc">Snapshot, sao lưu & khôi phục DB</div>
+            </a>
+
+            <a asp-controller="AdminSettings" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #ea580c;"><i class="fa-solid fa-gear"></i></div>
+                <div class="admin-nav-title">Cấu hình hệ thống</div>
+                <div class="admin-nav-desc">Tham số kỹ thuật toàn hệ thống</div>
+            </a>
+
+            <a asp-controller="AdminMonitoring" asp-action="Index" class="admin-nav-card">
+                <div class="admin-nav-icon" style="color: #0891b2;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="admin-nav-title">System Monitoring</div>
+                <div class="admin-nav-desc">Giám sát hiệu năng và tài nguyên</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- NHẬT KÝ KIỂM TOÁN GẦN ĐÂY (AUDIT LOG - READ ONLY) -->
+<div class="hrms-card">
+    <div class="hrms-card-header d-flex justify-content-between align-items-center">
+        <h3 class="hrms-card-title"><i class="fa-solid fa-clock-rotate-left card-title-icon"></i> Hoạt động kiểm toán gần đây</h3>
+        <a asp-controller="AdminAudit" asp-action="Index" class="hrms-btn hrms-btn-sm hrms-btn-ghost">
+            Xem toàn bộ nhật ký <i class="fa-solid fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
                 <tr>
-                    <th style="width:80px;">STT</th>
-                    <th>Tên đăng nhập</th>
-                    <th>Vai trò</th>
-                    <th>Trạng thái</th>
-                    <th style="min-width:420px;">Hành động</th>
+                    <th style="width:180px;">Thời gian</th>
+                    <th>Tài khoản</th>
+                    <th>Phân hệ</th>
+                    <th>Hành động</th>
+                    <th>Tài nguyên</th>
+                    <th style="text-align:center;">Trạng thái</th>
                 </tr>
             </thead>
-
-            <tbody id="accountTableBody">
-                @{
-                    int stt = 1;
-                }
-
-                @foreach (var user in users)
+            <tbody>
+                @if (!recentAudits.Any())
                 {
-                    <tr id="row-@user.Id">
-                        <td>@stt</td>
-                        <td>@user.FullName</td>
-                        <td>@user.Role</td>
-
-                        <td>
-                            @if (user.IsOnline)
+                    <tr>
+                        <td colspan="6" style="text-align:center; padding: 24px; color: var(--hrms-text-muted, #94a3b8);">
+                            Chưa có bản ghi nhật ký kiểm toán nào.
+                        </td>
+                    </tr>
+                }
+                @foreach (var audit in recentAudits)
+                {
+                    <tr>
+                        <td class="col-date" style="color: var(--hrms-text-muted, #64748b); font-size:13px;">@audit.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td style="font-weight:600; color: var(--hrms-text-main, #1e293b);">@audit.Username</td>
+                        <td><span class="hrms-badge hrms-badge-neutral">@audit.Module</span></td>
+                        <td><code>@audit.Action</code></td>
+                        <td>@audit.Resource</td>
+                        <td style="text-align:center;">
+                            @if (audit.Status == "Success")
                             {
-                                <span style="color:green; font-weight:bold;">
-                                    Đang hoạt động
-                                </span>
+                                <span class="hrms-badge hrms-badge-success">Success</span>
                             }
                             else
                             {
-                                var minutes = user.LastActive.HasValue
-                                    ? (int)(DateTime.Now - user.LastActive.Value).TotalMinutes
-                                    : 0;
-
-                                <span style="color:gray;">
-                                    Đã hoạt động @minutes phút trước
-                                </span>
+                                <span class="hrms-badge hrms-badge-danger">@(audit.Status ?? "Failed")</span>
                             }
                         </td>
-
-                        <td>
-                            <a asp-controller="Admin"
-                                   asp-action="Details"
-                                   asp-route-id="@user.Id">
-                                👁 Xem
-                            </a>
-
-                            |
-
-                            <a asp-controller="Admin"
-                                   asp-action="EditUser"
-                                   asp-route-id="@user.Id">
-                                ✏ Sửa
-                            </a>
-
-                            |
-
-                            <a href="javascript:void(0)"
-                                   onclick="deleteWithUndo(@user.Id, this)">
-                                🗑 Xóa
-                            </a>
-
-                            |
-
-                            <a asp-controller="Admin"
-                                   asp-action="GrantPermission"
-                                   asp-route-id="@user.Id"
-                                   style="color:@(user.CanLogin ? "red" : "green"); font-weight:bold;">
-                                @(user.CanLogin ? "🔒 Thu hồi" : "🛡 Cấp quyền")
-                            </a>
-                        </td>
                     </tr>
-
-                    stt++;
                 }
             </tbody>
         </table>
     </div>
-
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-    let deleteTimer = null;
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const ctx = document.getElementById('accountChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Đang online', 'Ngoại tuyến'],
+                    datasets: [{
+                        data: [@working, @leave],
+                        backgroundColor: ['#10B981', '#94A3B8'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' ' + context.label + ': ' + context.raw + ' tài khoản';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
 
-    // ===== SIGNALR REALTIME =====
-    const connection = new signalR.HubConnectionBuilder()
-    .withUrl("/dashboardHub")
-    .build();
+        const connection = window.HRMSSignalRConnection;
 
-    connection.on("NewUserAdded", function (user) {
-    let total = document.getElementById("totalCount");
-    total.innerText = parseInt(total.innerText) + 1;
+        connection.on("NewUserAdded", function () {
+            let total = document.getElementById("totalCount");
+            if (total) total.innerText = parseInt(total.innerText) + 1;
+        });
 
-    const row = `
-    <tr id="row-${user.id}">
-    <td>*</td>
-    <td>${user.fullName}</td>
-    <td>${user.role}</td>
-    <td><span style="color:green;">Đang hoạt động</span></td>
-    <td>Vừa thêm mới</td>
-    </tr>
-    `;
+        connection.on("UserDeleted", function () {
+            let total = document.getElementById("totalCount");
+            if (total) total.innerText = Math.max(0, parseInt(total.innerText) - 1);
+        });
 
-    document.getElementById("accountTableBody")
-    .insertAdjacentHTML("afterbegin", row);
-    });
-
-    connection.on("UserDeleted", function () {
-    let total = document.getElementById("totalCount");
-    total.innerText = Math.max(0, parseInt(total.innerText) - 1);
-    });
-
-    connection.start()
-    .then(() => console.log("Admin realtime connected"))
-    .catch(err => console.error(err));
-
-    // ===== TÌM KIẾM =====
-    document.addEventListener("DOMContentLoaded", function () {
-    const searchInput = document.getElementById("searchInput");
-
-    if (searchInput) {
-    searchInput.addEventListener("keyup", function () {
-    let keyword = this.value.toLowerCase();
-    let rows = document.querySelectorAll("#accountTableBody tr");
-
-    rows.forEach(row => {
-    let text = row.innerText.toLowerCase();
-    row.style.display = text.includes(keyword) ? "" : "none";
-    });
-    });
-    }
-    });
-
-    // ===== XÓA + KHÔI PHỤC =====
-    function deleteWithUndo(id, btn) {
-    const row = btn.closest("tr");
-    row.style.display = "none";
-
-    let oldBox = document.getElementById("undoBox");
-    if (oldBox) oldBox.remove();
-
-    let undoBox = document.createElement("div");
-    undoBox.id = "undoBox";
-
-    undoBox.style.position = "fixed";
-    undoBox.style.bottom = "20px";
-    undoBox.style.right = "20px";
-    undoBox.style.background = "#333";
-    undoBox.style.color = "white";
-    undoBox.style.padding = "15px";
-    undoBox.style.borderRadius = "8px";
-    undoBox.style.zIndex = "9999";
-
-    undoBox.innerHTML = `
-    Đã xóa tài khoản
-    <button onclick="undoDelete()"
-    style="margin-left:10px; color:yellow; border:none; background:none; cursor:pointer;">
-    Khôi phục
-    </button>
-    <span id="countdown">(10)</span>
-    `;
-
-    document.body.appendChild(undoBox);
-
-    let seconds = 10;
-
-    deleteTimer = setInterval(() => {
-    seconds--;
-
-    let countdown = document.getElementById("countdown");
-    if (countdown) {
-    countdown.innerText = "(" + seconds + ")";
-    }
-
-    if (seconds <= 0) {
-    clearInterval(deleteTimer);
-    window.location.href = '/Admin/DeleteUser?id=' + id;
-    }
-    }, 1000);
-    }
-
-    function undoDelete() {
-    clearInterval(deleteTimer);
-
-    let undoBox = document.getElementById("undoBox");
-    if (undoBox) {
-    undoBox.remove();
-    }
-
-    location.reload();
-    }
-</script>
+    </script>
+}

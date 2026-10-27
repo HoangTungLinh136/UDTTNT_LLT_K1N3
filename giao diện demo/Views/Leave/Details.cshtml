@@ -1,0 +1,266 @@
+@model giao_dien_demo.Models.Leave
+@{
+    ViewData["Title"] = "Chi tiết đơn nghỉ phép";
+}
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   MODULE NGHỈ PHÉP — DETAILS STYLES
+   ============================================================ */
+.leave-page { padding: 0; }
+
+.leave-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.leave-header-left { display: flex; flex-direction: column; gap: 6px; }
+.leave-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    letter-spacing: -0.3px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.leave-page-title .leave-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 17px;
+    flex-shrink: 0;
+}
+.leave-back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px;
+    font-weight: 600; color: #64748b; text-decoration: none; transition: 0.2s;
+}
+.leave-back-link:hover { color: #3b82f6; }
+
+/* --- CARD DISPLAY --- */
+.leave-details-card {
+    background: #fff; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    border: 1px solid #f1f5f9; overflow: hidden; max-width: 800px; margin: 0 auto;
+}
+.leave-details-header {
+    padding: 24px; border-bottom: 1px solid #f1f5f9;
+    background: linear-gradient(135deg, #1e293b, #334155); color: white;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.leave-details-title { font-size: 18px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+.leave-id-badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+
+.leave-details-body { padding: 32px; }
+
+.details-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-bottom: 24px; }
+.details-item { display: flex; flex-direction: column; gap: 6px; }
+.details-label { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.details-value { font-size: 15px; font-weight: 600; color: #0f172a; }
+
+.reason-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-bottom: 24px; }
+.reason-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.reason-text { font-size: 15px; color: #1e293b; line-height: 1.6; }
+
+.signature-section { display: flex; justify-content: flex-end; margin-top: 32px; padding-top: 24px; border-top: 1px dashed #e2e8f0; }
+.signature-box-display { text-align: center; min-width: 200px; }
+.signature-date { font-size: 13.5px; color: #64748b; font-style: italic; margin-bottom: 12px; }
+.signature-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.cursive-part { font-family: 'Dancing Script', cursive; font-size: 42px; color: #1d4ed8; line-height: 1; margin: 10px 0 5px; }
+.printed-part { font-family: inherit; font-size: 16px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
+
+.badge-status { padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.status-pending { background: #fef3c7; color: #d97706; }
+.status-approved { background: #dcfce7; color: #166534; }
+.status-rejected { background: #fee2e2; color: #b91c1c; }
+
+/* ========================================================= */
+/* CẤU HÌNH IN (QUAN TRỌNG ĐỂ XÓA SIDEBAR/TOPBAR KHI IN) */
+/* ========================================================= */
+@@media print {
+    .sidebar, .topbar, .no-print, .btn, #robot-chat-container, .leave-page-header {
+        display: none !important;
+    }
+    .app-container, .main-content, .content-area {
+        margin: 0 !important; padding: 0 !important; width: 100% !important;
+    }
+    .leave-details-card {
+        box-shadow: none !important; border: none !important; padding: 0 !important; width: 100% !important; max-width: 100% !important;
+    }
+    .leave-details-header {
+        background: transparent !important; color: #000 !important; border-bottom: 2px solid #000; padding-left: 0; padding-right: 0;
+    }
+    .leave-id-badge { display: none; }
+    .leave-details-title { color: #000 !important; font-size: 24px; text-transform: uppercase; text-align: center; width: 100%; }
+    
+    .reason-box { background: transparent !important; border: 1px solid #000 !important; }
+    .status-badge-container { display: none; }
+    
+    .signature-date, .cursive-part, .printed-part, .signature-title { color: #000 !important; }
+    .cursive-part { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+</style>
+
+<div class="leave-page">
+
+    <div class="leave-page-header no-print">
+        <div class="leave-header-left">
+            <a asp-action="Index" class="leave-back-link">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách
+            </a>
+            <h1 class="leave-page-title">
+                <span class="leave-icon"><i class="fas fa-file-alt"></i></span>
+                Chi Tiết Đơn Nghỉ Phép
+            </h1>
+        </div>
+        <div class="leave-header-actions">
+            <button class="btn btn-primary" onclick="window.print()" style="border-radius:10px; font-weight: 600;">
+                <i class="fas fa-print me-1"></i> In / Xuất PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="leave-details-card">
+        <div class="leave-details-header">
+            <h2 class="leave-details-title">ĐƠN XIN NGHỈ PHÉP</h2>
+            <div class="leave-id-badge">Mã đơn: #@Model.Id</div>
+        </div>
+
+        <div class="leave-details-body">
+            
+            <div class="d-flex justify-content-between align-items-start mb-4">
+                <div>
+                    <div style="font-size: 14px; color: #64748b; margin-bottom: 4px;">Kính gửi:</div>
+                    <div style="font-size: 15px; font-weight: 700; color: #0f172a;">Ban Giám đốc & Phòng Hành chính Nhân sự</div>
+                </div>
+                <div class="status-badge-container">
+                    @if (Model.Status == "Chờ duyệt")
+                    {
+                        <span class="badge-status status-pending"><i class="fas fa-hourglass-half"></i> Chờ duyệt</span>
+                    }
+                    else if (Model.Status == "Đã duyệt")
+                    {
+                        <span class="badge-status status-approved"><i class="fas fa-check-circle"></i> Đã duyệt</span>
+                    }
+                    else
+                    {
+                        <span class="badge-status status-rejected"><i class="fas fa-times-circle"></i> Từ chối</span>
+                    }
+                </div>
+            </div>
+
+            <div class="details-grid">
+                <div class="details-item">
+                    <span class="details-label">Người làm đơn</span>
+                    <span class="details-value">
+                        @(Model.Employee?.Name ?? Model.EmployeeName)
+                        <span class="text-muted" style="font-size: 13px; font-weight: 500;">(@(Model.Employee?.EmployeeCode ?? "---"))</span>
+                    </span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Phòng ban</span>
+                    <span class="details-value">@(Model.Employee?.Department ?? "---")</span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Loại nghỉ</span>
+                    <span class="details-value">@(string.IsNullOrWhiteSpace(Model.LeaveType) ? "Nghỉ phép năm" : Model.LeaveType)</span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Thời gian nghỉ</span>
+                    <span class="details-value text-primary">
+                        @Model.FromDate.ToString("dd/MM/yyyy") <i class="fas fa-arrow-right mx-2" style="font-size:12px; color: #94a3b8;"></i> @Model.ToDate.ToString("dd/MM/yyyy")
+                    </span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Số ngày</span>
+                    <span class="details-value">@((Model.ToDate.Date - Model.FromDate.Date).Days + 1) ngày</span>
+                </div>
+                <div class="details-item">
+                    <span class="details-label">Ngày gửi đơn</span>
+                    <span class="details-value">@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            <div class="reason-box">
+                <div class="reason-title"><i class="fas fa-quote-left text-muted"></i> Lý do xin nghỉ</div>
+                <div class="reason-text">@Model.Reason</div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.ReviewedBy) || Model.ReviewedAt.HasValue || !string.IsNullOrEmpty(Model.RejectionReason))
+            {
+                <div class="reason-box" style="border-left: 4px solid @(Model.Status == "Đã từ chối" || Model.Status == "Từ chối" ? "#ef4444" : "#10b981");">
+                    <div class="reason-title" style="color: #0f172a;">
+                        <i class="fas fa-user-check text-primary"></i> Thông tin phê duyệt
+                    </div>
+                    <div class="row g-2 mt-1">
+                        <div class="col-sm-6">
+                            <span class="text-muted" style="font-size: 13px;">Người duyệt:</span>
+                            <strong class="ms-1" style="color: #0f172a;">@(Model.ReviewedBy ?? "Chưa duyệt")</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted" style="font-size: 13px;">Thời gian duyệt:</span>
+                            <strong class="ms-1" style="color: #0f172a;">@(Model.ReviewedAt?.ToString("dd/MM/yyyy HH:mm") ?? "---")</strong>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.RejectionReason))
+                        {
+                            <div class="col-12 mt-2">
+                                <span class="text-danger" style="font-size: 13px; font-weight: 600;">Lý do từ chối:</span>
+                                <div style="color: #b91c1c; background: #fef2f2; padding: 8px 12px; border-radius: 6px; font-size: 14px; margin-top: 4px;">
+                                    @Model.RejectionReason
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div style="font-size: 14.5px; color: #475569; line-height: 1.6;">
+                Tôi xin cam đoan sẽ bàn giao công việc đầy đủ cho người có liên quan và đi làm lại đúng thời gian quy định.
+                Kính mong Ban Giám đốc xem xét chấp thuận.<br>
+                <strong>Xin trân trọng cảm ơn!</strong>
+            </div>
+
+            <div class="signature-section">
+                <div class="signature-box-display">
+                    <div class="signature-date">Ngày @Model.CreatedDate.ToString("dd") tháng @Model.CreatedDate.ToString("MM") năm @Model.CreatedDate.ToString("yyyy")</div>
+                    <div class="signature-title">Người làm đơn</div>
+                    
+                    @if (!string.IsNullOrEmpty(Model.EmployeeSignature))
+                    {
+                        if (Model.EmployeeSignature.StartsWith("data:image/"))
+                        {
+                            <div style="padding: 10px 0;">
+                                <img src="@Model.EmployeeSignature" alt="Chữ ký" style="max-height: 80px; max-width: 200px; object-fit: contain;" />
+                            </div>
+                            <div class="printed-part">@(Model.Employee?.Name ?? Model.EmployeeName)</div>
+                        }
+                        else
+                        {
+                            var nameParts = Model.EmployeeSignature.Trim().Split(' ');
+                            var lastName = nameParts.Last();
+                            
+                            <div class="cursive-part">@lastName</div>
+                            <div class="printed-part">@Model.EmployeeSignature</div>
+                        }
+                    }
+                    else
+                    {
+                        <div style="height: 80px; display:flex; align-items:center; justify-content:center; color:#94a3b8; font-style:italic;">
+                            (Chưa ký tên)
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

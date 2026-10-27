@@ -1,0 +1,10 @@
+{
+  "MinPasswordLength": 6,
+  "RequireUppercase": false,
+  "RequireLowercase": false,
+  "RequireDigit": false,
+  "RequireSpecialChar": false,
+  "SessionIdleTimeoutMinutes": 30,
+  "TrustedIPs": [],
+  "EnableIPWhitelist": false
+}

@@ -1,155 +1,1964 @@
-﻿/* RESET */
+/* ================================================================
+   HRMS — DESIGN SYSTEM v2.0
+   File: wwwroot/css/dashboard.css
+   Áp dụng cho toàn hệ thống. Không hard-code dữ liệu.
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   1. CSS CUSTOM PROPERTIES (DESIGN TOKENS)
+   ---------------------------------------------------------------- */
+:root {
+  /* ================================================================
+     1. CANONICAL SEMANTIC DESIGN TOKENS (UI-03B)
+     ================================================================ */
+  /* Colors — Primary Brand (Canonical: #2563EB) */
+  --color-primary:        #2563EB;
+  --color-primary-hover:  #1D4ED8;
+  --color-primary-subtle: #EFF6FF;
+  --color-primary-alpha:  rgba(37, 99, 235, 0.12);
+
+  /* Colors — Secondary / Neutral */
+  --color-secondary:       #64748B;
+  --color-secondary-hover: #475569;
+
+  /* Surfaces */
+  --surface-page:          #F8FAFC;
+  --surface-card:          #FFFFFF;
+  --surface-muted:         #F1F5F9;
+  --surface-hover:         #F8FAFD;
+
+  /* Text */
+  --text-primary:          #0F172A;
+  --text-secondary:        #475569;
+  --text-muted:            #94A3B8;
+  --text-inverse:          #FFFFFF;
+
+  /* Borders */
+  --border-default:        #E2E8F0;
+  --border-subtle:         #F1F5F9;
+  --border-strong:         #CBD5E1;
+
+  /* Status — Success */
+  --status-success:        #10B981;
+  --status-success-hover:  #059669;
+  --status-success-subtle: rgba(16, 185, 129, 0.12);
+  --status-success-text:   #047857;
+
+  /* Status — Warning */
+  --status-warning:        #F59E0B;
+  --status-warning-hover:  #D97706;
+  --status-warning-subtle: rgba(245, 158, 11, 0.12);
+  --status-warning-text:   #92400E;
+
+  /* Status — Danger */
+  --status-danger:         #EF4444;
+  --status-danger-hover:   #DC2626;
+  --status-danger-subtle:  rgba(239, 68, 68, 0.12);
+  --status-danger-text:    #991B1B;
+
+  /* Status — Info */
+  --status-info:           #3B82F6;
+  --status-info-hover:     #2563EB;
+  --status-info-subtle:    rgba(59, 130, 246, 0.12);
+  --status-info-text:      #1D4ED8;
+
+  /* Status — Purple (PENDING_LEADER executive approval) */
+  --status-purple:         #8B5CF6;
+  --status-purple-hover:   #7C3AED;
+  --status-purple-subtle:  rgba(139, 92, 246, 0.12);
+  --status-purple-text:    #5B21B6;
+
+  /* Accent Accompanying Colors */
+  --color-cyan:            #06B6D4;
+  --color-cyan-alpha:      rgba(6, 182, 212, 0.12);
+  --color-orange:          #F97316;
+  --color-orange-alpha:    rgba(249, 115, 22, 0.12);
+
+  /* Spacing Scale (4, 8, 12, 16, 24, 32, 40) */
+  --space-xs:   4px;
+  --space-sm:   8px;
+  --space-md-sm:12px;
+  --space-md:   16px;
+  --space-lg:   24px;
+  --space-xl:   32px;
+  --space-2xl:  40px;
+
+  /* Border Radius */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;
+  --radius-full: 999px;
+
+  /* Shadows */
+  --shadow-xs:  0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm:  0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+
+  /* Transition */
+  --transition: all 0.2s ease;
+
+  /* ================================================================
+     BACKWARD-COMPATIBILITY ALIASES (Preserving legacy --hrms-* names)
+     ================================================================ */
+  --hrms-primary:        var(--color-primary);
+  --hrms-primary-light:  #3B82F6;
+  --hrms-primary-dark:   var(--color-primary-hover);
+  --hrms-primary-alpha:  var(--color-primary-alpha);
+
+  --hrms-blue:           var(--status-info);
+  --hrms-blue-alpha:     var(--status-info-subtle);
+  --hrms-green:          var(--status-success);
+  --hrms-green-alpha:    var(--status-success-subtle);
+  --hrms-yellow:         var(--status-warning);
+  --hrms-yellow-alpha:   var(--status-warning-subtle);
+  --hrms-red:            var(--status-danger);
+  --hrms-red-alpha:      var(--status-danger-subtle);
+  --hrms-purple:         var(--status-purple);
+  --hrms-purple-alpha:   var(--status-purple-subtle);
+  --hrms-cyan:           var(--color-cyan);
+  --hrms-cyan-alpha:     var(--color-cyan-alpha);
+  --hrms-orange:         var(--color-orange);
+  --hrms-orange-alpha:   var(--color-orange-alpha);
+
+  --hrms-bg:             var(--surface-page);
+  --hrms-surface:        var(--surface-card);
+  --hrms-surface-2:      var(--surface-muted);
+  --hrms-background:     var(--surface-page);
+  --hrms-border:         var(--border-default);
+  --hrms-border-light:   var(--border-subtle);
+
+  --attendance-primary:  var(--color-orange);
+  --payroll-primary:     var(--status-success);
+
+  --hrms-text-primary:   var(--text-primary);
+  --hrms-text-secondary: var(--text-secondary);
+  --hrms-text-muted:     var(--text-muted);
+  --hrms-text-link:      var(--color-primary);
+
+  --sidebar-bg-from:     #FFFFFF;
+  --sidebar-bg-to:       #FFFFFF;
+  --sidebar-width:       240px;
+  --sidebar-text:        #64748B;
+  --sidebar-text-active: var(--color-primary);
+  --sidebar-active-bg:   #EFF6FF;
+  --sidebar-active-accent: var(--color-primary);
+}
+
+/* ----------------------------------------------------------------
+   2. BASE RESET
+   ---------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f8fafc;
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: var(--hrms-text-primary);
+  background-color: var(--hrms-bg);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* LAYOUT CHÍNH */
+/* ----------------------------------------------------------------
+   3. LAYOUT
+   ---------------------------------------------------------------- */
 .app-container {
-    display: flex;
-    min-height: 100vh;
-    background: #f8fafc;
+  display: flex;
+  min-height: 100vh;
 }
 
-/* SIDEBAR */
+/* ----------------------------------------------------------------
+   4. SIDEBAR
+   ---------------------------------------------------------------- */
 .sidebar {
-    width: 240px;
-    min-height: 100vh;
-    background: linear-gradient(180deg, #0F172A, #1E293B);
-    color: white;
-    padding: 20px;
-    box-sizing: border-box;
-    border-radius: 0 20px 20px 0;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg-from);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 72px; left: 0;
+  height: calc(100vh - 72px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 990;
+  border-right: 1px solid var(--hrms-border);
+  transition: width 0.3s ease;
 }
 
-.logo {
-    font-size: 30px;
-    font-weight: bold;
-    margin-bottom: 30px;
-    text-align: center;
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 2px; }
+
+/* Logo */
+.sidebar .logo-container {
+  padding: 20px 16px 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+  text-align: center;
+}
+.sidebar .logo-container img {
+  max-width: 80%;
+  height: auto;
+  mix-blend-mode: screen;
+  filter: brightness(1.3);
 }
 
-/* MENU */
-.menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+/* Nav group label */
+.sidebar .nav-group-label {
+  padding: 14px 20px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(139,164,200,0.5);
+  user-select: none;
 }
 
-    .menu li {
-        margin: 15px 0;
-    }
+/* Menu */
+.sidebar .menu {
+  list-style: none;
+  padding: 6px 10px;
+  margin: 0;
+  flex-grow: 1;
+}
+.sidebar .menu li { margin: 1px 0; }
 
-    .menu a {
-        color: white;
-        text-decoration: none;
-        padding: 12px 15px;
-        display: block;
-        border-radius: 10px;
-        transition: 0.3s;
-        font-size: 17px;
-    }
+.sidebar .menu li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+}
+.sidebar .menu li a .nav-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity 0.2s;
+}
+.sidebar .menu li a .nav-text { flex: 1; }
 
-        .menu a:hover {
-            background: rgba(255,255,255,0.12);
-            padding-left: 20px;
-        }
+.sidebar .menu li a:hover {
+  background: #f8fafc;
+  color: #1e293b;
+  text-decoration: none;
+  padding-left: 16px;
+}
+.sidebar .menu li a:hover .nav-icon { opacity: 1; color: var(--hrms-primary); }
 
-/* MAIN CONTENT */
+.sidebar .menu li a.active {
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-text-active);
+  border-left: 3px solid var(--sidebar-active-accent);
+  padding-left: 9px;
+  font-weight: 600;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+.sidebar .menu li a.active .nav-icon { opacity: 1; color: var(--sidebar-active-accent); }
+
+/* Sidebar Submenu */
+.sidebar .menu li.has-submenu > a {
+  justify-content: space-between;
+}
+.sidebar .menu li.has-submenu > a .nav-chevron {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+  color: var(--hrms-text-muted);
+}
+.sidebar .menu li.has-submenu.open > a .nav-chevron {
+  transform: rotate(180deg);
+}
+.sidebar .menu li .submenu {
+  list-style: none;
+  padding: 0 0 0 28px;
+  margin: 0;
+  display: none;
+}
+.sidebar .menu li.open .submenu {
+  display: block;
+}
+.sidebar .menu li .submenu li a {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sidebar-text);
+  border-left: 1px solid var(--hrms-border);
+  border-radius: 0;
+  margin: 2px 0;
+}
+.sidebar .menu li .submenu li a:hover {
+  color: var(--hrms-primary);
+  border-left-color: var(--hrms-primary);
+  background: transparent;
+  padding-left: 16px;
+}
+.sidebar .menu li .submenu li a.active {
+  color: var(--hrms-primary);
+  border-left: 2px solid var(--hrms-primary);
+  background: transparent;
+  font-weight: 600;
+  padding-left: 15px;
+}
+
+.sidebar .menu li.nav-divider {
+  margin: 10px 0 4px;
+  border-top: 1px solid var(--hrms-border);
+  padding-top: 10px;
+}
+
+.logout-link { color: #ef4444 !important; }
+.logout-link:hover { background: #fef2f2 !important; color: #dc2626 !important; }
+
+/* Notification badge in sidebar */
+.sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: var(--hrms-red);
+  color: white;
+  border-radius: var(--radius-full);
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: auto;
+}
+
+/* ----------------------------------------------------------------
+   5. MAIN CONTENT
+   ---------------------------------------------------------------- */
 .main-content {
-    flex: 1;
-    padding: 25px;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: calc(100% - var(--sidebar-width));
 }
 
-/* TOPBAR */
+/* ----------------------------------------------------------------
+   6. TOPBAR
+   ---------------------------------------------------------------- */
 .topbar {
-    margin-bottom: 25px;
+  height: 72px;
+  background: var(--hrms-surface);
+  border-bottom: 1px solid var(--hrms-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  box-shadow: none;
 }
+.topbar-left { display: flex; align-items: center; gap: 24px; }
+.app-launcher-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: var(--hrms-text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.app-launcher-btn:hover { background: var(--hrms-surface-2); color: var(--hrms-primary); }
+.topbar-logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: #0f172a; text-decoration: none; }
+.topbar-logo img { height: 28px; }
+.topbar-module-name { font-size: 15px; font-weight: 600; color: #334155; border-left: 1px solid var(--hrms-border); padding-left: 16px; }
 
-    .topbar h2 {
-        font-size: 38px;
-        font-weight: bold;
-        color: #1e293b;
-    }
+.topbar-center { flex: 1; display: flex; justify-content: center; max-width: 500px; margin: 0 24px; }
+.topbar-search {
+  width: 100%;
+  position: relative;
+}
+.topbar-search input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+}
+.topbar-search input:focus { border-color: var(--hrms-primary); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.topbar-search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.topbar-search kbd { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; padding: 2px 6px; background: #fff; border: 1px solid #e2e8f0; border-radius: 4px; color: #64748b; }
 
-/* BODY CONTENT */
+.topbar-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--hrms-text-primary);
+  margin: 0;
+}
+.topbar-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--hrms-text-muted);
+}
+.topbar-breadcrumb .bc-sep { opacity: 0.4; }
+.topbar-breadcrumb .bc-current { color: var(--hrms-text-secondary); font-weight: 500; }
+
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.topbar-action-btn {
+  background: transparent;
+  border: none;
+  color: var(--hrms-text-secondary);
+  font-size: 18px;
+  cursor: pointer;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: all 0.2s;
+}
+.topbar-action-btn:hover { background: #f1f5f9; color: var(--hrms-primary); }
+.topbar-new-feature {
+  background: #f59e0b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.topbar-user-info { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.3; }
+.topbar-user-name { font-size: 14px; font-weight: 600; color: #1e293b; }
+.topbar-user-role { font-size: 12px; color: #64748b; }
+.topbar-greeting { font-size: 13.5px; font-weight: 500; color: var(--hrms-text-secondary); display: none; }
+.topbar-greeting strong { color: var(--hrms-text-primary); }
+.topbar-divider { width: 1px; height: 22px; background: var(--hrms-border); display: none; }
+
+.topbar-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--hrms-primary), var(--hrms-purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.topbar-avatar:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(79,70,229,0.35); }
+
+/* ----------------------------------------------------------------
+   7. CONTENT AREA
+   ---------------------------------------------------------------- */
 .content-area {
-    background: white;
-    padding: 25px;
-    border-radius: 20px;
-    min-height: 85vh;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  flex: 1;
+  padding: 24px 28px;
+  margin-top: 72px; /* For fixed header */
 }
 
-/* DASHBOARD CARDS */
-.dashboard-cards {
+/* App Launcher Popover */
+.app-launcher-popover {
+  position: fixed;
+  top: 72px;
+  left: 24px;
+  width: 320px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  border: 1px solid #e2e8f0;
+  z-index: 1001;
+  display: none;
+  padding: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.app-launcher-popover.show {
+  display: grid;
+  animation: fadeInDown 0.2s ease;
+}
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.app-launcher-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-radius: 8px;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.2s;
+  text-align: center;
+}
+.app-launcher-item:hover { background: #f8fafc; color: var(--hrms-primary); text-decoration: none; }
+.app-launcher-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  color: inherit;
+  transition: all 0.2s;
+}
+.app-launcher-item:hover .app-launcher-icon { background: #eff6ff; }
+.app-launcher-text { font-size: 12px; font-weight: 500; }
+
+/* ----------------------------------------------------------------
+   8. PAGE HEADER (HRMS Standard)
+   ---------------------------------------------------------------- */
+.hrms-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.hrms-page-header-left,
+.hrms-page-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.hrms-page-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.3px;
+  line-height: 1.3;
+}
+.hrms-page-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.hrms-page-icon.blue   { background: linear-gradient(135deg, #3B82F6, #2563EB); }
+.hrms-page-icon.green  { background: linear-gradient(135deg, #10B981, #059669); }
+.hrms-page-icon.purple { background: linear-gradient(135deg, #8B5CF6, #6366F1); }
+.hrms-page-icon.yellow { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.hrms-page-icon.red    { background: linear-gradient(135deg, #EF4444, #DC2626); }
+.hrms-page-icon.cyan   { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+.hrms-page-icon.indigo { background: linear-gradient(135deg, #4F46E5, #3730A3); }
+
+.hrms-page-subtitle {
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+.hrms-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.hrms-breadcrumb a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: var(--transition);
+}
+.hrms-breadcrumb a:hover {
+  color: var(--color-primary);
+}
+.hrms-breadcrumb .separator {
+  font-size: 10px;
+  color: var(--border-strong);
+}
+.hrms-page-header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ----------------------------------------------------------------
+   9. SECTION CARD
+   ---------------------------------------------------------------- */
+.hrms-card {
+  background: var(--hrms-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--hrms-border-light);
+  overflow: hidden;
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+}
+.hrms-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.hrms-card-solid {
+  color: white;
+  border: none;
+}
+.hrms-card-solid .hr-card-title, 
+.hrms-card-solid .hr-card-value {
+  color: white !important;
+}
+.hrms-card-solid.bg-orange { background: #f97316; box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2); }
+.hrms-card-solid.bg-blue { background: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+.hrms-card-solid.bg-green { background: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+
+.hrms-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--hrms-border-light);
+  gap: 12px;
+}
+.hrms-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--hrms-text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hrms-card-title .card-title-icon {
+  font-size: 14px;
+  color: var(--hrms-primary);
+}
+.hrms-card-body { padding: 20px; }
+.hrms-card-body.p-0 { padding: 0; }
+
+/* ----------------------------------------------------------------
+   10. KPI CARDS
+   ---------------------------------------------------------------- */
+.hrms-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.hrms-kpi-grid-4 { grid-template-columns: repeat(4, 1fr); }
+.hrms-kpi-grid-6 { grid-template-columns: repeat(6, 1fr); }
+.hrms-kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+.hrms-kpi-card {
+  background: var(--hrms-surface);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  border: 1px solid var(--hrms-border-light);
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+  cursor: default;
+}
+.hrms-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.hrms-kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.hrms-kpi-card.kpi-blue::before   { background: var(--hrms-blue); }
+.hrms-kpi-card.kpi-green::before  { background: var(--hrms-green); }
+.hrms-kpi-card.kpi-yellow::before { background: var(--hrms-yellow); }
+.hrms-kpi-card.kpi-red::before    { background: var(--hrms-red); }
+.hrms-kpi-card.kpi-purple::before { background: var(--hrms-purple); }
+.hrms-kpi-card.kpi-cyan::before   { background: var(--hrms-cyan); }
+.hrms-kpi-card.kpi-orange::before { background: var(--hrms-orange); }
+.hrms-kpi-card.kpi-indigo::before { background: var(--hrms-primary); }
+
+.hrms-kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.hrms-kpi-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.hrms-kpi-card.kpi-blue   .hrms-kpi-icon { background: var(--hrms-blue-alpha);   color: var(--hrms-blue); }
+.hrms-kpi-card.kpi-green  .hrms-kpi-icon { background: var(--hrms-green-alpha);  color: var(--hrms-green); }
+.hrms-kpi-card.kpi-yellow .hrms-kpi-icon { background: var(--hrms-yellow-alpha); color: var(--hrms-yellow); }
+.hrms-kpi-card.kpi-red    .hrms-kpi-icon { background: var(--hrms-red-alpha);    color: var(--hrms-red); }
+.hrms-kpi-card.kpi-purple .hrms-kpi-icon { background: var(--hrms-purple-alpha); color: var(--hrms-purple); }
+.hrms-kpi-card.kpi-cyan   .hrms-kpi-icon { background: var(--hrms-cyan-alpha);   color: var(--hrms-cyan); }
+.hrms-kpi-card.kpi-orange .hrms-kpi-icon { background: var(--hrms-orange-alpha); color: var(--hrms-orange); }
+.hrms-kpi-card.kpi-indigo .hrms-kpi-icon { background: var(--hrms-primary-alpha); color: var(--hrms-primary); }
+
+.hrms-kpi-body { flex: 1; }
+.hrms-kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--hrms-text-muted);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.hrms-kpi-value {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--hrms-text-primary);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+.hrms-kpi-value.kpi-blue   { color: var(--hrms-blue); }
+.hrms-kpi-value.kpi-green  { color: var(--hrms-green); }
+.hrms-kpi-value.kpi-yellow { color: var(--hrms-yellow); }
+.hrms-kpi-value.kpi-red    { color: var(--hrms-red); }
+.hrms-kpi-value.kpi-purple { color: var(--hrms-purple); }
+
+/* Horizontal statistic-card variant used by workflow dashboards (Transfer reference). */
+.hrms-kpi-card.hrms-kpi-horizontal {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  min-height: 80px;
+  padding: 18px 20px;
+}
+.hrms-kpi-card.hrms-kpi-horizontal::before { display: none; }
+.hrms-kpi-horizontal .hrms-kpi-top { flex: 0 0 auto; align-items: center; }
+.hrms-kpi-horizontal .hrms-kpi-label { text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
+.hrms-kpi-horizontal .hrms-kpi-value { font-size: 26px; line-height: 1; }
+
+/* Legacy HR views keep their existing IDs; this scopes the shared horizontal treatment to those KPI grids. */
+.hrms-kpi-grid:has(#training-total) > .hrms-kpi-card,
+.hrms-kpi-grid:has(#total) > .hrms-kpi-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  min-height: 80px;
+  padding: 18px 20px;
+}
+.hrms-kpi-grid:has(#training-total) > .hrms-kpi-card::before,
+.hrms-kpi-grid:has(#total) > .hrms-kpi-card::before { display: none; }
+.hrms-kpi-grid:has(#training-total) .hrms-kpi-top,
+.hrms-kpi-grid:has(#total) .hrms-kpi-top { flex: 0 0 auto; align-items: center; }
+.hrms-kpi-grid:has(#training-total) .hrms-kpi-label,
+.hrms-kpi-grid:has(#total) .hrms-kpi-label { text-transform: none; letter-spacing: 0; margin-bottom: 4px; }
+.hrms-kpi-grid:has(#training-total) .hrms-kpi-value,
+.hrms-kpi-grid:has(#total) .hrms-kpi-value { font-size: 26px; line-height: 1; }
+
+.hrms-kpi-sub {
+  font-size: 12px;
+  color: var(--hrms-text-muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hrms-kpi-sub .sub-good  { color: var(--hrms-green); }
+.hrms-kpi-sub .sub-warn  { color: var(--hrms-yellow); }
+.hrms-kpi-sub .sub-bad   { color: var(--hrms-red); }
+
+/* ----------------------------------------------------------------
+   11. FILTER BAR
+   ---------------------------------------------------------------- */
+.hrms-filter-bar {
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-xs);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+/* Manager workspace filters use the shared HRMS controls while remaining usable
+   inside the card header: one row on desktop, wrapping at tablet widths and
+   stacking on phones. */
+.manager-filter {
+  display: flex;
+  align-items: center;
+  flex: 1 1 520px;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.manager-filter .form-control {
+  flex: 1 1 220px;
+  min-width: 180px;
+  width: auto;
+  height: 38px;
+}
+.manager-filter .hrms-btn { flex: 0 0 auto; }
+.hrms-card-header > .manager-filter + .text-muted { flex: 0 0 auto; white-space: nowrap; }
+.manager-empty { min-height: 180px; }
+.manager-scope-note { display: inline-flex; align-items: center; gap: 6px; color: var(--hrms-text-muted); }
+.manager-scope-note i { color: var(--hrms-primary); font-size: 12px; }
+.manager-scope-note strong { color: var(--hrms-text-secondary); font-weight: 600; }
+.hrms-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+}
+.hrms-search-wrap .search-icon {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 13px;
+  pointer-events: none;
+}
+.hrms-search-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-muted);
+  transition: var(--transition);
+  outline: none;
+  box-sizing: border-box;
+}
+.hrms-search-input:focus {
+  border-color: var(--color-primary);
+  background: var(--surface-card);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+}
+.hrms-filter-select {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-muted);
+  outline: none;
+  transition: var(--transition);
+  min-width: 160px;
+  box-sizing: border-box;
+}
+.hrms-filter-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+}
+.hrms-filter-divider { width: 1px; height: 28px; background: var(--border-default); flex-shrink: 0; }
+
+/* ----------------------------------------------------------------
+   12. BUTTONS
+   ---------------------------------------------------------------- */
+.hrms-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: var(--transition);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.hrms-btn:hover { text-decoration: none; }
+.hrms-btn:active { transform: scale(0.98); }
+.hrms-btn:disabled,
+.hrms-btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+.hrms-btn.loading {
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.hrms-btn-sm { padding: 5px 12px; font-size: 12.5px; }
+.hrms-btn-xs { padding: 3px 8px; font-size: 12px; }
+.hrms-btn-lg { padding: 10px 20px; font-size: 15px; }
+
+/* Primary */
+.hrms-btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.hrms-btn-primary:hover {
+  background: var(--color-primary-hover);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.25);
+}
+
+/* Secondary */
+.hrms-btn-secondary {
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+}
+.hrms-btn-secondary:hover {
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+/* Success */
+.hrms-btn-success {
+  background: var(--status-success);
+  color: #fff;
+  border-color: var(--status-success);
+}
+.hrms-btn-success:hover {
+  background: var(--status-success-hover);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+}
+
+/* Danger */
+.hrms-btn-danger {
+  background: var(--status-danger);
+  color: #fff;
+  border-color: var(--status-danger);
+}
+.hrms-btn-danger:hover {
+  background: var(--status-danger-hover);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.25);
+}
+
+/* Warning */
+.hrms-btn-warning {
+  background: var(--status-warning);
+  color: #fff;
+  border-color: var(--status-warning);
+}
+.hrms-btn-warning:hover {
+  background: var(--status-warning-hover);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(245,158,11,0.25);
+}
+
+/* Ghost / outline */
+.hrms-btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.hrms-btn-ghost:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary-hover);
+}
+
+/* Info */
+.hrms-btn-info {
+  background: var(--status-info);
+  color: #fff;
+  border-color: var(--status-info);
+}
+.hrms-btn-info:hover {
+  background: var(--status-info-hover);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+}
+
+/* ----------------------------------------------------------------
+   13. STATUS BADGES
+   ---------------------------------------------------------------- */
+.hrms-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.hrms-badge-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Success — Approved / Completed / Paid */
+.hrms-badge-success {
+  background: var(--status-success-subtle);
+  color: var(--status-success-text);
+  border: 1px solid rgba(16,185,129,0.25);
+}
+.hrms-badge-success .hrms-badge-dot { background: var(--status-success); }
+
+/* Warning — Pending / Not checked out */
+.hrms-badge-warning {
+  background: var(--status-warning-subtle);
+  color: var(--status-warning-text);
+  border: 1px solid rgba(245,158,11,0.25);
+}
+.hrms-badge-warning .hrms-badge-dot { background: var(--status-warning); }
+
+/* Danger — Rejected / Abnormal / Overdue */
+.hrms-badge-danger {
+  background: var(--status-danger-subtle);
+  color: var(--status-danger-text);
+  border: 1px solid rgba(239,68,68,0.25);
+}
+.hrms-badge-danger .hrms-badge-dot { background: var(--status-danger); }
+
+/* Info — Info / Default */
+.hrms-badge-info {
+  background: var(--status-info-subtle);
+  color: var(--status-info-text);
+  border: 1px solid rgba(59,130,246,0.25);
+}
+.hrms-badge-info .hrms-badge-dot { background: var(--status-info); }
+
+/* Purple — PENDING_LEADER / Executive */
+.hrms-badge-purple {
+  background: var(--status-purple-subtle);
+  color: var(--status-purple-text);
+  border: 1px solid rgba(139,92,246,0.25);
+}
+.hrms-badge-purple .hrms-badge-dot { background: var(--status-purple); }
+
+/* Secondary / Neutral */
+.hrms-badge-neutral {
+  background: rgba(148,163,184,0.12);
+  color: var(--text-secondary);
+  border: 1px solid rgba(148,163,184,0.25);
+}
+.hrms-badge-neutral .hrms-badge-dot { background: var(--text-muted); }
+
+/* ----------------------------------------------------------------
+   14. TABLE
+   ---------------------------------------------------------------- */
+.hrms-table-wrap {
+  overflow-x: auto;
+  background: var(--surface-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.hrms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.hrms-table thead th {
+  padding: 11px 14px;
+  background: var(--surface-muted);
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-default);
+  white-space: nowrap;
+}
+.hrms-table thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+.hrms-table thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+
+.hrms-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.15s ease;
+}
+.hrms-table tbody tr:last-child { border-bottom: none; }
+.hrms-table tbody tr:hover { background: var(--surface-hover); }
+
+.hrms-table tbody td {
+  padding: 12px 14px;
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+.hrms-table .text-end { text-align: right; }
+.hrms-table .text-center { text-align: center; }
+.hrms-table .col-money { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.hrms-table .col-date  { white-space: nowrap; color: var(--text-secondary); }
+.hrms-table .col-id    { color: var(--text-muted); font-size: 12px; font-family: monospace; }
+.hrms-table .col-actions { text-align: right; white-space: nowrap; }
+
+/* Employee avatar + name in table */
+.hrms-employee-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hrms-employee-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--hrms-primary), var(--hrms-purple));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.hrms-employee-name { font-weight: 600; color: var(--hrms-text-primary); font-size: 13.5px; }
+.hrms-employee-id   { font-size: 11.5px; color: var(--hrms-text-muted); }
+
+/* ----------------------------------------------------------------
+   15. TABS
+   ---------------------------------------------------------------- */
+.hrms-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--hrms-surface-2);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  border: 1px solid var(--hrms-border-light);
+  flex-wrap: wrap;
+}
+.hrms-tab-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--hrms-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.hrms-tab-btn:hover { background: rgba(0,0,0,0.04); color: var(--hrms-text-primary); }
+.hrms-tab-btn.active {
+  background: var(--hrms-surface);
+  color: var(--hrms-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+}
+.hrms-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 5px;
+}
+.hrms-tab-btn.active .hrms-tab-count { background: var(--hrms-primary-alpha); color: var(--hrms-primary); }
+.hrms-tab-btn:not(.active) .hrms-tab-count { background: rgba(0,0,0,0.07); color: var(--hrms-text-muted); }
+
+/* ----------------------------------------------------------------
+   16. ALERT / NOTICE BARS
+   ---------------------------------------------------------------- */
+.hrms-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.hrms-alert-warning {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-left: 4px solid var(--hrms-yellow);
+  color: #92400E;
+}
+.hrms-alert-info {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-left: 4px solid var(--hrms-blue);
+  color: #1D4ED8;
+}
+.hrms-alert-success {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  border-left: 4px solid var(--hrms-green);
+  color: #047857;
+}
+.hrms-alert-danger {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-left: 4px solid var(--hrms-red);
+  color: #991B1B;
+}
+.hrms-alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.hrms-alert-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: inherit;
+  opacity: 0.6;
+  padding: 0;
+  line-height: 1;
+}
+.hrms-alert-close:hover { opacity: 1; }
+
+/* ----------------------------------------------------------------
+   17. EMPTY STATE
+   ---------------------------------------------------------------- */
+.hrms-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 12px;
+}
+.hrms-empty-icon {
+  width: 64px; height: 64px;
+  border-radius: var(--radius-xl);
+  background: var(--hrms-surface-2);
+  border: 1px solid var(--hrms-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--hrms-text-muted);
+  margin-bottom: 4px;
+}
+.hrms-empty-title { font-size: 15px; font-weight: 700; color: var(--hrms-text-secondary); margin: 0; }
+.hrms-empty-desc  { font-size: 13px; color: var(--hrms-text-muted); margin: 0; max-width: 320px; }
+
+/* ----------------------------------------------------------------
+   18. PAGINATION
+   ---------------------------------------------------------------- */
+.hrms-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 13px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.hrms-pagination-info { font-size: 13px; color: var(--text-muted); }
+.hrms-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.hrms-page-item { display: inline-flex; }
+.hrms-page-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: var(--transition);
+}
+.hrms-page-link:hover {
+  background: var(--surface-muted);
+  color: var(--color-primary);
+  border-color: var(--color-primary-alpha);
+  text-decoration: none;
+}
+.hrms-page-item.active .hrms-page-link {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+.hrms-page-item.disabled .hrms-page-link {
+  opacity: 0.5;
+  pointer-events: none;
+  background: var(--surface-muted);
+}
+
+/* ----------------------------------------------------------------
+   19. MODAL ENHANCEMENTS (Bootstrap override)
+   ---------------------------------------------------------------- */
+.modal-content {
+  border: none;
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.modal-header {
+  background: var(--hrms-surface-2);
+  border-bottom: 1px solid var(--hrms-border-light);
+  padding: 16px 20px;
+}
+.modal-title { font-size: 16px; font-weight: 700; color: var(--hrms-text-primary); }
+.modal-body { padding: 20px; }
+.modal-footer {
+  background: var(--hrms-surface-2);
+  border-top: 1px solid var(--hrms-border-light);
+  padding: 14px 20px;
+  gap: 10px;
+}
+
+/* ----------------------------------------------------------------
+   20. FORM CONTROLS
+   ---------------------------------------------------------------- */
+.hrms-form-group { margin-bottom: 16px; }
+.hrms-form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.hrms-form-label .required,
+.required { color: var(--status-danger); margin-left: 3px; }
+.hrms-form-control {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  outline: none;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+.hrms-form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+}
+.hrms-form-control::placeholder { color: var(--text-muted); }
+.hrms-form-select {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--surface-card);
+  outline: none;
+  transition: var(--transition);
+  box-sizing: border-box;
+}
+.hrms-form-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+}
+.hrms-form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* ----------------------------------------------------------------
+   21. NOTIFICATION BADGE (global)
+   ---------------------------------------------------------------- */
+.notification-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: var(--hrms-red);
+  color: white;
+  border-radius: var(--radius-full);
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 700;
+  transition: var(--transition);
+  line-height: 1;
+  margin-left: 5px;
+}
+
+/* ----------------------------------------------------------------
+   22. STAT MINI (small inline stats)
+   ---------------------------------------------------------------- */
+.hrms-stat-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--hrms-surface-2);
+  border: 1px solid var(--hrms-border-light);
+}
+.hrms-stat-mini-icon { font-size: 18px; }
+.hrms-stat-mini-val  { font-size: 18px; font-weight: 800; color: var(--hrms-text-primary); line-height: 1; }
+.hrms-stat-mini-lbl  { font-size: 11.5px; color: var(--hrms-text-muted); }
+
+/* ----------------------------------------------------------------
+   23. WELCOME BANNER (for dashboards)
+   ---------------------------------------------------------------- */
+.hrms-welcome-banner {
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 50%, #162d4a 100%);
+  border-radius: var(--radius-xl);
+  padding: 24px 32px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(14,39,68,0.3);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.hrms-welcome-banner::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(99,179,237,0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hrms-welcome-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -50px; right: 180px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.hrms-welcome-left { position: relative; z-index: 1; }
+.hrms-welcome-greeting {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 6px;
+}
+.hrms-welcome-name {
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+}
+.hrms-welcome-date {
+  font-size: 13px;
+  color: rgba(255,255,255,0.55);
+  margin: 0;
+}
+.hrms-welcome-right {
+  position: relative; z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.hrms-welcome-stat {
+  text-align: center;
+  padding: 10px 16px;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.1);
+  min-width: 90px;
+}
+.hrms-welcome-stat-val { font-size: 22px; font-weight: 800; color: #fff; line-height: 1; }
+.hrms-welcome-stat-lbl { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 3px; }
+
+/* ----------------------------------------------------------------
+   24. DEPARTMENT BAR CHART (simple CSS bar)
+   ---------------------------------------------------------------- */
+.hrms-dept-bar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.hrms-dept-bar-label {
+  width: 160px;
+  font-size: 13px;
+  color: var(--hrms-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+.hrms-dept-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--hrms-border-light);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.hrms-dept-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--hrms-primary-light), var(--hrms-blue));
+  transition: width 0.7s ease;
+}
+.hrms-dept-bar-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--hrms-text-primary);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ----------------------------------------------------------------
+   25. TASK ITEM (Việc cần xử lý)
+   ---------------------------------------------------------------- */
+.hrms-task-list { list-style: none; padding: 0; margin: 0; }
+.hrms-task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hrms-border-light);
+  gap: 12px;
+}
+.hrms-task-item:last-child { border-bottom: none; }
+.hrms-task-left { display: flex; align-items: center; gap: 12px; }
+.hrms-task-icon-wrap {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.hrms-task-name  { font-size: 13.5px; font-weight: 600; color: var(--hrms-text-primary); }
+.hrms-task-desc  { font-size: 12px; color: var(--hrms-text-muted); }
+.hrms-task-right { display: flex; align-items: center; gap: 10px; }
+
+/* ----------------------------------------------------------------
+   26. SIGNATURE PAD (preserve)
+   ---------------------------------------------------------------- */
+canvas#signature-pad {
+  position: relative;
+  z-index: 10;
+  touch-action: none;
+}
+
+/* ----------------------------------------------------------------
+   27. AI CHAT / ROBOT (preserve existing styles)
+   ---------------------------------------------------------------- */
+@keyframes robot-float {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+@keyframes robot-glow {
+  0%   { box-shadow: 0 4px 15px rgba(59,130,246,0.35); }
+  50%  { box-shadow: 0 4px 28px rgba(59,130,246,0.65); }
+  100% { box-shadow: 0 4px 15px rgba(59,130,246,0.35); }
+}
+#robot-trigger {
+  animation: robot-float 3s ease-in-out infinite, robot-glow 2.5s infinite;
+}
+#robot-trigger:hover {
+  transform: scale(1.12) rotate(8deg) !important;
+  transition: all 0.3s ease;
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ----------------------------------------------------------------
+   28. RESPONSIVE
+   ---------------------------------------------------------------- */
+@media (max-width: 1200px) {
+  .hrms-kpi-grid-6 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 992px) {
+  .hrms-kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .hrms-kpi-grid-6 { grid-template-columns: repeat(2, 1fr); }
+  .hrms-kpi-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .hrms-welcome-banner { padding: 20px 22px; }
+}
+@media (max-width: 768px) {
+  :root { --sidebar-width: 0px; }
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; width: 100%; }
+  .content-area { padding: 16px; }
+  .hrms-kpi-grid-4, .hrms-kpi-grid-6, .hrms-kpi-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .hrms-filter-bar { flex-direction: column; align-items: stretch; }
+  .manager-filter { flex-direction: column; align-items: stretch; flex-basis: 100%; }
+  .manager-filter .form-control, .manager-filter .hrms-btn { width: 100%; min-width: 0; }
+  .hrms-card-header > .manager-filter + .text-muted { width: 100%; }
+  .hrms-search-wrap { max-width: 100%; }
+  .hrms-page-header { flex-direction: column; gap: 12px; }
+  .topbar { padding: 0 16px; }
+}
+@media (max-width: 480px) {
+  .hrms-kpi-grid-4, .hrms-kpi-grid-6, .hrms-kpi-grid-3 { grid-template-columns: 1fr 1fr; }
+  .hrms-kpi-value { font-size: 22px; }
+}
+
+/* ----------------------------------------------------------------
+   29. UTILITY CLASSES & ACCESSIBILITY
+   ---------------------------------------------------------------- */
+.hrms-text-primary   { color: var(--text-primary) !important; }
+.hrms-text-secondary { color: var(--text-secondary) !important; }
+.hrms-text-muted     { color: var(--text-muted) !important; }
+.hrms-text-success   { color: var(--status-success) !important; }
+.hrms-text-warning   { color: var(--status-warning) !important; }
+.hrms-text-danger    { color: var(--status-danger) !important; }
+.hrms-text-blue      { color: var(--color-primary) !important; }
+.hrms-fw-600 { font-weight: 600 !important; }
+.hrms-fw-700 { font-weight: 700 !important; }
+.hrms-fw-800 { font-weight: 800 !important; }
+
+/* Focus Visible for Accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.hrms-btn:focus-visible,
+.hrms-form-control:focus-visible,
+.hrms-form-select:focus-visible,
+.hrms-search-input:focus-visible,
+.hrms-filter-select:focus-visible,
+.hrms-tab-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-alpha);
+  border-color: var(--color-primary);
+}
+
+/* ----------------------------------------------------------------
+   30. PRINT
+   ---------------------------------------------------------------- */
+@media print {
+  .sidebar, .topbar, #robot-chat-container { display: none !important; }
+  .main-content { margin-left: 0 !important; }
+  .content-area { padding: 0 !important; }
+  .hrms-card { box-shadow: none !important; border: 1px solid #ddd !important; }
+}
+
+/* ----------------------------------------------------------------
+   31. WELCOME BANNER STAT SECTION
+   ---------------------------------------------------------------- */
+.hrms-welcome-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255,255,255,0.12); border-radius: 12px;
+  padding: 14px 20px; min-width: 100px; text-align: center;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.hrms-welcome-stat-val {
+  font-size: 28px; font-weight: 800; color: #fff;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.hrms-welcome-stat-lbl {
+  font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.65);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px;
+}
+.hrms-welcome-right {
+  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+}
+
+/* ----------------------------------------------------------------
+   32. DEPT BAR CHART
+   ---------------------------------------------------------------- */
+.hrms-dept-bar-item {
+  display: flex; align-items: center; gap: 10px;
+}
+.hrms-dept-bar-label {
+  font-size: 13px; font-weight: 500; color: #334155;
+  min-width: 120px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.hrms-dept-bar-track {
+  flex: 1; height: 8px; background: #f1f5f9;
+  border-radius: 99px; overflow: hidden;
+}
+.hrms-dept-bar-fill {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  transition: width 0.6s ease;
+}
+.hrms-dept-bar-val {
+  font-size: 13px; font-weight: 700; color: #1d4ed8;
+  min-width: 28px; text-align: right;
+}
+
+/* ----------------------------------------------------------------
+   33. BADGE DOT INDICATOR
+   ---------------------------------------------------------------- */
+.hrms-badge-dot {
+  display: inline-block; width: 7px; height: 7px;
+  border-radius: 50%; background: currentColor;
+  margin-right: 4px; vertical-align: middle;
+}
+.hrms-badge.hrms-badge-success .hrms-badge-dot { animation: pulse-green 2s infinite; }
+@keyframes pulse-green {
+  0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+  100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+}
+
+/* ----------------------------------------------------------------
+   34. CARD BODY PADDING OVERRIDE
+   ---------------------------------------------------------------- */
+.hrms-card-body.p-0 { padding: 0 !important; }
+
+/* ----------------------------------------------------------------
+   35. SIDEBAR COLLAPSE
+   ---------------------------------------------------------------- */
+.sidebar .menu a.nav-link[data-bs-toggle="collapse"] {
     display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
 }
-
-.card {
-    flex: 1;
-    min-width: 220px;
-    color: white;
-    padding: 25px;
-    border-radius: 18px;
-    font-size: 20px;
-    font-weight: bold;
-    box-shadow: 0 8px 18px rgba(0,0,0,0.12);
-    transition: 0.3s;
+.sidebar .menu a.nav-link .nav-text {
+    flex-grow: 1;
 }
-
-    .card:hover {
-        transform: translateY(-5px);
-    }
-
-/* MÀU CARD */
-.blue {
-    background: linear-gradient(135deg, #06B6D4, #3B82F6);
+.sidebar .menu a.nav-link .nav-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.8rem;
+    opacity: 0.7;
 }
-
-.green {
-    background: linear-gradient(135deg, #22C55E, #84CC16);
+.sidebar .menu a.nav-link:not(.collapsed) .nav-arrow {
+    transform: rotate(180deg);
 }
-
-.red {
-    background: linear-gradient(135deg, #F43F5E, #EF4444);
+.sidebar .menu .submenu {
+    list-style: none;
+    padding-left: 2rem;
+    margin-top: 0.2rem;
+    margin-bottom: 0.5rem;
 }
-
-.purple {
-    background: linear-gradient(135deg, #8B5CF6, #6366F1);
+.sidebar .menu .submenu li {
+    margin-bottom: 0.2rem;
 }
-.card-link {
-    flex: 1;
-    min-width: 250px;
+.sidebar .menu .submenu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: var(--hrms-text-muted, #94a3b8);
     text-decoration: none;
-    color: white;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 13px;
+    transition: all 0.2s ease;
+}
+.sidebar .menu .submenu a:hover,
+.sidebar .menu .submenu a.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: 500;
 }
 
-.number {
-    font-size: 38px;
-    margin-top: 15px;
-    font-weight: bold;
-}
-.orange {
-    background: linear-gradient(135deg, #F59E0B, #F97316);
+/* HIDE OLD LOCAL PAGE TITLES */
+.att-page-header h1,
+.salary-page-title,
+.leave-page-title,
+.profile-page-title,
+.employee-page-title,
+.contract-page-title,
+.report-page-title {
+    display: none !important;
 }
 
-.teal {
-    background: linear-gradient(135deg, #14B8A6, #06B6D4);
+/* ----------------------------------------------------------------
+   NEW COMPONENT: HRMS NAV GRID (LEADERSHIP)
+   ---------------------------------------------------------------- */
+.hrms-nav-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 8px; /* For scrollbar */
 }
-.purple {
-    background: linear-gradient(135deg, #7C3AED, #6366F1);
+
+/* Tùy chỉnh thanh cuộn cho mượt mà */
+.hrms-nav-grid::-webkit-scrollbar {
+    height: 6px;
 }
-.orange {
-    background: linear-gradient(135deg, #F59E0B, #F97316);
+.hrms-nav-grid::-webkit-scrollbar-track {
+    background: transparent;
 }
-.number {
-    font-size: 32px;
-    font-weight: bold;
-    margin-top: 10px;
-    color: white;
+.hrms-nav-grid::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
 }
+.hrms-nav-grid::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+
+.hrms-nav-card {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row; /* Icon and text on the same row */
+    align-items: center;
+    justify-content: center;
+    background-color: var(--hrms-surface);
+    border: 1px solid var(--hrms-border);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    text-align: center;
+    text-decoration: none;
+    color: var(--hrms-text-primary);
+    transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; /* Remove transform for no layout shift */
+    box-shadow: var(--shadow-xs);
+    cursor: pointer;
+    width: fit-content;
+    gap: 8px;
+}
+
+.hrms-nav-card .nav-icon {
+    font-size: 18px; /* Smaller icon for horizontal layout */
+    margin-bottom: 0;
+    color: var(--hrms-text-muted);
+    transition: color 0.2s;
+}
+
+.hrms-nav-card .nav-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+.hrms-nav-card:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--hrms-primary-light);
+    background-color: #f8fafc;
+}
+
+.hrms-nav-card:hover .nav-icon {
+    color: var(--hrms-primary);
+}
+
+.hrms-nav-card.active {
+    background-color: var(--sidebar-active-bg);
+    border-color: var(--hrms-primary);
+    box-shadow: 0 0 0 1px var(--hrms-primary);
+}
+
+.hrms-nav-card.active .nav-icon {
+    color: var(--hrms-primary);
+}
+
+.hrms-nav-card.active .nav-title {
+    color: var(--hrms-primary);
+    font-weight: 600;
+}
+
+/* ================================================================
+   EMPLOYEE SELF-SERVICE: BACKWARD COMPATIBILITY BRIDGE
+   Harmonizes active legacy .emp-* with canonical .hrms-* tokens.
+   (Audited in UI-03G: dead selectors .emp-page-*, .emp-card*,
+   .emp-table* safely cleaned. Active .emp-kpi-* and .emp-badge*
+   retained for dynamic JS / Benefit / Training / Reward).
+   ================================================================ */
+
+/* KPI Card Compatibility (Active: Views/Benefit/Index.cshtml) */
+.emp-kpi-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    transition: var(--transition);
+}
+.emp-kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-default);
+}
+.emp-kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+.emp-kpi-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.emp-kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+.emp-kpi-trend {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+.emp-kpi-trend.up { color: var(--status-success); }
+.emp-kpi-trend.down { color: var(--status-danger); }
+.emp-kpi-trend.neutral { color: var(--text-muted); }
+
+/* Badges Compatibility (Active: Training/Index.cshtml, Reward/Index.cshtml, Benefit/Index.cshtml) */
+.emp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+.emp-badge-success { background: var(--status-success-subtle); color: var(--status-success-text); border: 1px solid rgba(16,185,129,0.25); }
+.emp-badge-warning { background: var(--status-warning-subtle); color: var(--status-warning-text); border: 1px solid rgba(245,158,11,0.25); }
+.emp-badge-danger  { background: var(--status-danger-subtle);  color: var(--status-danger-text);  border: 1px solid rgba(239,68,68,0.25); }
+.emp-badge-info    { background: var(--status-info-subtle);    color: var(--status-info-text);    border: 1px solid rgba(59,130,246,0.25); }
+.emp-badge-neutral { background: rgba(148,163,184,0.12);       color: var(--text-secondary);       border: 1px solid rgba(148,163,184,0.25); }

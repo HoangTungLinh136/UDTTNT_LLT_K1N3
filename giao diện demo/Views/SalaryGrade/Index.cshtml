@@ -1,0 +1,136 @@
+﻿@model IEnumerable<giao_dien_demo.Models.SalaryGradeConfig>
+
+@{
+    ViewData["Title"] = "Cấu hành Bậc Lương Tham Chiếu";
+}
+
+<style>
+    body { background: #f4f6f9; }
+    .salary-grade-container {
+        max-width: 900px;
+        margin: 30px auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .sg-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    .sg-table th, .sg-table td {
+        padding: 12px;
+        border: 1px solid #e0e0e0;
+        text-align: center;
+    }
+    .sg-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+    .sg-table input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+    .sg-table input:focus {
+        border-color: #4A90E2;
+        outline: none;
+    }
+    .btn-save {
+        background: #4A90E2;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 20px;
+        transition: 0.3s;
+    }
+    .btn-save:hover { background: #357ABD; }
+    .alert-info {
+        background-color: #e8f4fd;
+        border-left: 4px solid #4A90E2;
+        padding: 15px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+    }
+</style>
+
+<div class="salary-grade-container">
+    <h2><i class="fas fa-layer-group"></i> Cấu hành Bậc Lương & Phụ cấp bằng cấp</h2>
+    
+    <div class="alert-info">
+        <strong>Lưu A quan trọng:</strong> Bảng này là <b>bảng tham chiếu</b>. Khối HR sửa thông tin nhân viên và chọn "Trình độ học vấn", hệ thống sẽ gợi A mức phụ cấp tương ứng ở cột "Phụ cấp gợi A". Hệ thống KHÔNG tự động thay đổi lương của nhân viên nếu không có sự xác nhận của HR.
+    </div>
+
+    <table class="sg-table" id="sgTable">
+        <thead>
+            <tr>
+                <th>Trình độ</th>
+                <th>Bậc</th>
+                <th>Hệ số</th>
+                <th>Phụ cấp gợi A (VNĐ)</th>
+                <th>Ghi chA</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var item in Model)
+            {
+                <tr data-id="@item.Id">
+                    <td style="font-weight: bold;">@item.AcademicLevel</td>
+                    <td><input type="number" class="ipt-rank" value="@item.SalaryRank" min="1" /></td>
+                    <td><input type="number" step="0.1" class="ipt-coeff" value="@item.Coefficient" min="0" /></td>
+                    <td><input type="number" class="ipt-allowance" value="@item.SuggestedAllowance" min="0" /></td>
+                    <td><input type="text" class="ipt-notes" value="@item.Notes" placeholder="Và dụ: Chỉ Áp dụng HĐ chính thức..." /></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div style="text-align: right;">
+        <button type="button" class="btn-save" id="btnSaveConfig">🔹 Lưu Cấu Hành</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.getElementById('btnSaveConfig').addEventListener('click', function() {
+        const rows = document.querySelectorAll('#sgTable tbody tr');
+        let data = [];
+        
+        rows.forEach(row => {
+            data.push({
+                Id: parseInt(row.getAttribute('data-id')),
+                SalaryRank: parseInt(row.querySelector('.ipt-rank').value) || 0,
+                Coefficient: parseFloat(row.querySelector('.ipt-coeff').value) || 0,
+                SuggestedAllowance: parseFloat(row.querySelector('.ipt-allowance').value) || 0,
+                Notes: row.querySelector('.ipt-notes').value
+            });
+        });
+
+        fetch('/SalaryGrade/SaveConfigs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => {
+            if (response.ok) {
+                Swal.fire('Thành công!', 'Đã lưu cấu hành bậc lương tham chiếu.', 'success');
+            } else {
+                Swal.fire('Lỗi!', 'Không thể lưu cấu hành. Vui lòng thử lại.', 'error');
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Lỗi!', 'Lỗi kết nối máy chủ.', 'error');
+        });
+    });
+</script>
+

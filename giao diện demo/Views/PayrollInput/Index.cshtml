@@ -1,0 +1,491 @@
+@{
+    ViewData["Title"] = "Nhập liệu tính lương";
+}
+
+<!-- Cần tải thư viện cho Select2 nếu muốn, nhưng để cho nhẹ dùng thẻ select cơ bản với Bootstrap -->
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1 fw-bold text-dark">Nhập liệu tính lương</h3>
+        <p class="text-muted mb-0">Tổng hợp dữ liệu đầu vào cho kỳ lương hiện tại.</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-3">
+        <!-- Period Selector -->
+        <div class="input-group" style="width: 200px;">
+            <span class="input-group-text bg-white"><i class="fas fa-calendar-alt text-muted"></i></span>
+            <select class="form-select border-start-0 ps-0" id="periodSelector" onchange="loadData()">
+                @foreach (var p in ViewBag.Periods)
+                {
+                    if (p == ViewBag.CurrentPeriod)
+                    {
+                        <option value="@p" selected>Kỳ @p</option>
+                    }
+                    else
+                    {
+                        <option value="@p">Kỳ @p</option>
+                    }
+                }
+            </select>
+        </div>
+        
+        <!-- Actions -->
+        <button class="btn btn-outline-secondary" onclick="alert('Tính năng import Excel sẽ được cập nhật trong phiên bản sau.')">
+            <i class="fas fa-file-import me-2"></i>Import Excel
+        </button>
+        <button class="btn btn-primary" onclick="syncAttendance()">
+            <i class="fas fa-sync-alt me-2" id="syncIcon"></i>Đồng bộ chấm công
+        </button>
+        <button class="btn btn-success" onclick="openManualInputDrawer()">
+            <i class="fas fa-plus me-2"></i>Nhập dữ liệu
+        </button>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 rounded-3 p-3 me-3 text-primary">
+                    <i class="fas fa-users fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Tổng nhân viên</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiTotalEmployees">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 rounded-3 p-3 me-3 text-success">
+                    <i class="fas fa-check-circle fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Đủ dữ liệu</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiEnoughData">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-danger bg-opacity-10 rounded-3 p-3 me-3 text-danger">
+                    <i class="fas fa-exclamation-triangle fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Thiếu dữ liệu</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiMissingData">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-warning bg-opacity-10 rounded-3 p-3 me-3 text-warning">
+                    <i class="fas fa-keyboard fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Nhập tay (Manual)</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiManualCount">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs & Filters -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-bottom p-0">
+        <ul class="nav nav-tabs border-0 px-4 pt-3" id="componentTabs">
+            <li class="nav-item">
+                <a class="nav-link active fw-semibold pb-3 border-0 text-dark" href="#" onclick="filterByCategory('All', this)">Tất cả</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('Lương', this)">Lương</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('Công', this)">Công</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('OT', this)">OT</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('Phụ cấp', this)">Phụ cấp</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('Thưởng', this)">Thưởng</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('Khấu trừ', this)">Khấu trừ</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="filterByCategory('Điều chỉnh', this)">Điều chỉnh</a>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="card-body p-4 bg-light">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="searchKeyword" placeholder="Tìm tên, mã nhân viên..." onkeyup="applyFilters()">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" id="filterSource" onchange="applyFilters()">
+                    <option value="">Tất cả nguồn</option>
+                    <option value="SYSTEM">Hệ thống (SYSTEM)</option>
+                    <option value="SYNCED">Đồng bộ (SYNCED)</option>
+                    <option value="MANUAL">Nhập tay (MANUAL)</option>
+                </select>
+            </div>
+            <div class="col-md-6 text-end">
+                <button class="btn btn-outline-secondary" onclick="alert('Tính năng tải file mẫu sẽ có ở phiên bản tới')">
+                    <i class="fas fa-download me-2"></i>Tải file mẫu
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="white-space: nowrap;">
+            <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-4 py-3">Nhân viên</th>
+                    <th class="py-3">Thành phần</th>
+                    <th class="py-3 text-end">Giá trị</th>
+                    <th class="py-3 text-center">Nguồn</th>
+                    <th class="py-3">Kỳ lương</th>
+                    <th class="py-3">Cập nhật</th>
+                    <th class="pe-4 py-3 text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="inputTableBody">
+                <!-- Rows will be injected here via JS -->
+            </tbody>
+        </table>
+        
+        <div id="tableEmptyState" class="text-center py-5 text-muted d-none">
+            <i class="fas fa-inbox fs-1 mb-3"></i>
+            <p>Chưa có dữ liệu nhập lương.<br><small>Bạn chưa nhập dữ liệu nào cho kỳ lương hiện tại.</small></p>
+            <button class="btn btn-primary mt-2" onclick="syncAttendance()">Đồng bộ ngay</button>
+        </div>
+
+        <div id="tableLoadingState" class="text-center py-5 text-primary">
+            <div class="spinner-border mb-3" role="status"></div>
+            <p>Đang tải dữ liệu...</p>
+        </div>
+    </div>
+</div>
+
+
+<!-- Offcanvas Drawer: Nhập dữ liệu lương -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="manualInputDrawer" style="width: 450px;">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title fw-bold">Nhập dữ liệu lương</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+      <form id="manualInputForm" onsubmit="submitManualInput(event)">
+          
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Kỳ lương <span class="text-danger">*</span></label>
+              <input type="text" class="form-control bg-light" id="drawerPeriod" readonly>
+          </div>
+
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Nhân viên <span class="text-danger">*</span></label>
+              <select class="form-select" id="drawerEmployee" required>
+                  <option value="">-- Chọn nhân viên --</option>
+                  @foreach (var emp in ViewBag.Employees)
+                  {
+                      <option value="@emp.Id">@emp.Name</option>
+                  }
+              </select>
+          </div>
+
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Thành phần lương <span class="text-danger">*</span></label>
+              <select class="form-select" id="drawerComponent" required onchange="handleComponentChange()">
+                  <option value="">-- Chọn thành phần --</option>
+              </select>
+          </div>
+
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Giá trị <span class="text-danger">*</span></label>
+              <div class="input-group">
+                  <input type="number" step="0.01" class="form-control" id="drawerValue" required>
+                  <span class="input-group-text" id="drawerValueUnit">---</span>
+              </div>
+          </div>
+          
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Nguồn dữ liệu <span class="text-danger">*</span></label>
+              <input type="text" class="form-control bg-light text-primary fw-bold" value="MANUAL (Nhập tay)" readonly>
+          </div>
+          
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Ghi chú</label>
+              <textarea class="form-control" id="drawerNote" rows="3" placeholder="Lý do điều chỉnh (tuỳ chọn)..."></textarea>
+          </div>
+
+      </form>
+  </div>
+  <div class="offcanvas-footer border-top p-3 d-flex gap-2">
+      <button type="button" class="btn btn-light flex-grow-1" data-bs-dismiss="offcanvas">Huỷ</button>
+      <button type="button" class="btn btn-primary flex-grow-1" onclick="submitManualInput(event)">
+          Lưu dữ liệu
+      </button>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allData = [];
+        let allowedComponents = [];
+        let currentCategory = 'All';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchAllowedComponents();
+            await loadData();
+        });
+
+        async function fetchAllowedComponents() {
+            try {
+                let res = await fetch('/PayrollInput/GetAllowedComponents');
+                allowedComponents = await res.json();
+                
+                // Populate drawer select
+                let select = document.getElementById('drawerComponent');
+                allowedComponents.filter(c => c.allowsManualInput).forEach(c => {
+                    let opt = document.createElement('option');
+                    opt.value = c.code;
+                    opt.text = c.name + ' (' + c.category + ')';
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function loadData() {
+            let period = document.getElementById('periodSelector').value;
+            document.getElementById('drawerPeriod').value = period;
+            
+            showLoading();
+            await loadKPI(period);
+            
+            try {
+                let res = await fetch(`/PayrollInput/GetInputData?period=${period}`);
+                let result = await res.json();
+                if (result.success) {
+                    allData = result.data;
+                    applyFilters();
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function loadKPI(period) {
+            try {
+                let res = await fetch(`/PayrollInput/GetKPI?period=${period}`);
+                let result = await res.json();
+                if (result.success) {
+                    let k = result.data;
+                    document.getElementById('kpiTotalEmployees').innerText = k.totalEmployees;
+                    document.getElementById('kpiEnoughData').innerText = k.enoughDataCount;
+                    document.getElementById('kpiMissingData').innerText = k.missingDataCount;
+                    document.getElementById('kpiManualCount').innerText = k.manualInputCount;
+                }
+            } catch(e) {}
+        }
+
+        function showLoading() {
+            document.getElementById('inputTableBody').innerHTML = '';
+            document.getElementById('tableLoadingState').classList.remove('d-none');
+            document.getElementById('tableEmptyState').classList.add('d-none');
+        }
+
+        function filterByCategory(cat, elm) {
+            // Update active tab style
+            document.querySelectorAll('#componentTabs .nav-link').forEach(link => {
+                link.classList.remove('active', 'text-dark');
+                link.classList.add('text-muted');
+                link.style.borderBottom = "none";
+            });
+            elm.classList.remove('text-muted');
+            elm.classList.add('active', 'text-dark');
+            
+            currentCategory = cat;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let kw = document.getElementById('searchKeyword').value.toLowerCase();
+            let src = document.getElementById('filterSource').value;
+
+            let filtered = allData.filter(d => {
+                let matchCat = (currentCategory === 'All') || (d.category === currentCategory);
+                let matchSrc = (src === '') || (d.sourceType === src);
+                let matchKw = d.employeeName.toLowerCase().includes(kw) || d.employeeCode.toLowerCase().includes(kw);
+                return matchCat && matchSrc && matchKw;
+            });
+
+            renderTable(filtered);
+        }
+
+        function renderTable(data) {
+            document.getElementById('tableLoadingState').classList.add('d-none');
+            let tbody = document.getElementById('inputTableBody');
+            
+            if (data.length === 0) {
+                document.getElementById('tableEmptyState').classList.remove('d-none');
+                tbody.innerHTML = '';
+                return;
+            }
+
+            document.getElementById('tableEmptyState').classList.add('d-none');
+            
+            let html = '';
+            data.forEach(d => {
+                let srcBadge = '';
+                if (d.sourceType === 'SYSTEM') srcBadge = '<span class="badge bg-secondary bg-opacity-10 text-secondary border">HỆ THỐNG</span>';
+                else if (d.sourceType === 'SYNCED') srcBadge = '<span class="badge bg-primary bg-opacity-10 text-primary border">ĐỒNG BỘ</span>';
+                else if (d.sourceType === 'MANUAL') srcBadge = '<span class="badge bg-warning bg-opacity-10 text-warning border">NHẬP TAY</span>';
+                else if (d.sourceType === 'IMPORTED') srcBadge = '<span class="badge bg-info bg-opacity-10 text-info border">IMPORT</span>';
+
+                let dt = new Date(d.updatedAt);
+                let timeStr = dt.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) + ' ' + dt.toLocaleDateString('vi-VN');
+
+                html += `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-semibold text-dark">${d.employeeName}</div>
+                            <div class="text-muted small">${d.employeeCode} &bull; ${d.departmentName}</div>
+                        </td>
+                        <td>
+                            <div class="fw-medium text-dark">${d.componentName}</div>
+                            <div class="text-muted small">${d.category}</div>
+                        </td>
+                        <td class="text-end fw-bold text-primary">
+                            ${d.valueFormatted}
+                        </td>
+                        <td class="text-center">
+                            ${srcBadge}
+                        </td>
+                        <td>Kỳ ${d.payrollPeriod}</td>
+                        <td>
+                            <div class="text-dark small">${d.updatedBy}</div>
+                            <div class="text-muted" style="font-size:0.75rem">${timeStr}</div>
+                        </td>
+                        <td class="pe-4 text-center">
+                            <button class="btn btn-sm btn-light text-muted" onclick="alert('Tính năng xem chi tiết/log sẽ có trong phiên bản sau.')"><i class="fas fa-ellipsis-v"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function syncAttendance() {
+            let period = document.getElementById('periodSelector').value;
+            let icon = document.getElementById('syncIcon');
+            icon.classList.add('fa-spin');
+            
+            try {
+                let res = await fetch(`/PayrollInput/SyncAttendance?period=${period}`, { method: 'POST' });
+                let result = await res.json();
+                if (result.success) {
+                    alert("Đồng bộ dữ liệu thành công!");
+                    await loadData();
+                } else {
+                    alert("Có lỗi: " + result.message);
+                }
+            } catch(e) {
+                alert("Lỗi kết nối");
+            } finally {
+                icon.classList.remove('fa-spin');
+            }
+        }
+
+        function openManualInputDrawer() {
+            var myOffcanvas = new bootstrap.Offcanvas(document.getElementById('manualInputDrawer'));
+            myOffcanvas.show();
+        }
+
+        function handleComponentChange() {
+            let code = document.getElementById('drawerComponent').value;
+            let unitSpan = document.getElementById('drawerValueUnit');
+            if (!code) {
+                unitSpan.innerText = '---';
+                return;
+            }
+            let comp = allowedComponents.find(c => c.code === code);
+            if (comp) {
+                if (comp.dataType === 'MONEY') unitSpan.innerText = 'VNĐ';
+                else if (comp.dataType === 'HOURS') unitSpan.innerText = 'Giờ';
+                else if (comp.dataType === 'DAYS') unitSpan.innerText = 'Ngày';
+                else unitSpan.innerText = '';
+            }
+        }
+
+        async function submitManualInput(e) {
+            e.preventDefault();
+            let period = document.getElementById('periodSelector').value;
+            let empId = document.getElementById('drawerEmployee').value;
+            let comp = document.getElementById('drawerComponent').value;
+            let val = document.getElementById('drawerValue').value;
+            let note = document.getElementById('drawerNote').value;
+
+            if (!empId || !comp || !val) {
+                alert("Vui lòng điền đủ thông tin bắt buộc.");
+                return;
+            }
+
+            let payload = {
+                payrollPeriod: period,
+                employeeId: parseInt(empId),
+                componentCode: comp,
+                value: parseFloat(val),
+                note: note
+            };
+
+            try {
+                let res = await fetch('/PayrollInput/SaveManualInput', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                let result = await res.json();
+                if (result.success) {
+                    alert("Đã lưu dữ liệu thành công!");
+                    bootstrap.Offcanvas.getInstance(document.getElementById('manualInputDrawer')).hide();
+                    
+                    // Reset form
+                    document.getElementById('drawerEmployee').value = '';
+                    document.getElementById('drawerComponent').value = '';
+                    document.getElementById('drawerValue').value = '';
+                    document.getElementById('drawerNote').value = '';
+                    document.getElementById('drawerValueUnit').innerText = '---';
+
+                    await loadData();
+                } else {
+                    alert(result.message);
+                }
+            } catch(e) {
+                alert("Có lỗi xảy ra");
+            }
+        }
+    </script>
+    
+    <style>
+        .nav-tabs .nav-link { margin-bottom: -1px; background: transparent; border-bottom: 2px solid transparent !important; }
+        .nav-tabs .nav-link.active { border-bottom-color: #0d6efd !important; }
+        #componentTabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    </style>
+}

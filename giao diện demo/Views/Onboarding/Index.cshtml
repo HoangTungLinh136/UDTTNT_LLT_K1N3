@@ -1,0 +1,1313 @@
+@model List<giao_dien_demo.Models.OnboardingRecord>
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Hội nhập nhân viên";
+    var role = Context.Session.GetString("Role") ?? "";
+
+    var departments = ViewBag.Departments as List<string> ?? new List<string>();
+    string searchName   = ViewBag.CurrentSearch as string ?? "";
+    string currentDept  = ViewBag.CurrentDept   as string ?? "";
+    string currentStatus= ViewBag.CurrentStatus as string ?? "";
+    int? currentMonth   = ViewBag.CurrentMonth  as int?;
+    int? currentYear    = ViewBag.CurrentYear   as int?;
+
+    int statNew         = ViewBag.StatNewEmployees ?? 0;
+    int statPending     = ViewBag.StatPending      ?? 0;
+    int statInProgress  = ViewBag.StatInProgress   ?? 0;
+    int statCompleted   = ViewBag.StatCompleted     ?? 0;
+
+    bool hasFilter = !string.IsNullOrWhiteSpace(searchName) ||
+                     !string.IsNullOrWhiteSpace(currentDept) ||
+                     !string.IsNullOrWhiteSpace(currentStatus) ||
+                     currentMonth.HasValue || currentYear.HasValue;
+}
+
+<style>
+/* ============================================================
+   MODULE HỘI NHẬP — ONBOARDING PAGE STYLES
+   Reuse design tokens từ dashboard.css + site.css
+   ============================================================ */
+
+/* --- PAGE WRAPPER --- */
+.ob-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* --- PAGE HEADER --- */
+.ob-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.ob-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ob-page-title .ob-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: #eff6ff;
+    display: flex; align-items: center; justify-content: center;
+    color: #3b82f6; font-size: 17px; flex-shrink: 0;
+}
+.ob-header-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+.ob-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* --- STATISTICS CARDS --- */
+.ob-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+}
+.ob-stat-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.ob-stat-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+}
+.ob-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ob-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+.ob-stat-icon.indigo { background: #eef2ff; color: #6366f1; }
+.ob-stat-icon.green  { background: #f0fdf4; color: #22c55e; }
+.ob-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.ob-stat-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+.ob-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+/* --- TOOLBAR --- */
+.ob-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* --- FILTER BAR --- */
+.ob-filter-bar {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 18px;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.ob-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 340px; }
+.ob-search-wrap .sicon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+.ob-search-input {
+    width: 100%; padding: 9px 12px 9px 34px;
+    border: 1px solid #e2e8f0; border-radius: 9px;
+    font-size: 13.5px; color: #334155; background: #f8fafc; outline: none; transition: all 0.2s;
+}
+.ob-search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.ob-filter-select {
+    padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 9px;
+    font-size: 13.5px; color: #334155; background: #f8fafc; min-width: 160px; outline: none;
+}
+.ob-filter-select:focus { border-color: #3b82f6; }
+
+/* --- BUTTONS --- */
+.btn-ob-primary {
+    background: #3b82f6; color: #fff; border: none;
+    padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-ob-primary:hover { background: #2563eb; color: #fff; }
+.btn-ob-outline {
+    background: #fff; color: #475569; border: 1px solid #e2e8f0;
+    padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    text-decoration: none; transition: all 0.2s;
+}
+.btn-ob-outline:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.btn-ob-reset {
+    background: #fff; color: #64748b; border: 1px solid #e2e8f0;
+    padding: 9px 14px; border-radius: 9px; font-size: 13px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    text-decoration: none; transition: all 0.2s; white-space: nowrap;
+}
+.btn-ob-reset:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+/* --- TABLE CARD --- */
+.ob-table-card {
+    background: #fff; border-radius: 14px;
+    border: 1px solid #f1f5f9; overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.ob-table-header {
+    padding: 14px 18px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.ob-table-title {
+    font-size: 14px; font-weight: 700; color: #0f172a;
+    display: flex; align-items: center; gap: 8px;
+}
+.count-chip {
+    background: #eff6ff; color: #1d4ed8;
+    font-size: 11px; font-weight: 700; border-radius: 20px; padding: 2px 9px;
+}
+
+.ob-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ob-table thead th {
+    background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    padding: 11px 14px; border-bottom: 2px solid #e2e8f0; white-space: nowrap;
+}
+.ob-table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+.ob-table tbody tr:last-child td { border-bottom: none; }
+.ob-table tbody tr:hover td { background: #f8fafc; }
+
+/* --- EMPLOYEE CELL --- */
+.emp-cell { display: flex; align-items: center; gap: 10px; }
+.emp-av {
+    width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    display: flex; align-items: center; justify-content: center;
+    color: #475569; font-weight: 700; font-size: 14px;
+    overflow: hidden;
+}
+.emp-av img { width: 100%; height: 100%; object-fit: cover; }
+.emp-name { font-weight: 600; color: #0f172a; font-size: 13.5px; display: block; }
+.emp-code { font-size: 11.5px; color: #64748b; display: block; margin-top: 1px; }
+
+/* --- PROGRESS CELL --- */
+.prog-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 110px; }
+.prog-bar-bg { height: 6px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.prog-bar-fill { height: 100%; border-radius: 99px; transition: width 0.3s; }
+.prog-bar-fill.c-green  { background: #22c55e; }
+.prog-bar-fill.c-blue   { background: #3b82f6; }
+.prog-bar-fill.c-amber  { background: #f59e0b; }
+.prog-label { font-size: 11.5px; color: #64748b; display: flex; justify-content: space-between; }
+
+/* --- STATUS BADGES --- */
+.badge-ob-pending     { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge-ob-inprogress  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge-ob-completed   { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.badge-ob-cancelled   { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+
+/* --- ACTION BUTTONS --- */
+.btn-icon-only {
+    width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: 1px solid #e2e8f0; color: #64748b; background: white;
+    transition: all 0.2s; cursor: pointer; text-decoration: none;
+}
+.btn-icon-only:hover { background: #f8fafc; border-color: #cbd5e1; color: #0f172a; }
+.btn-icon-only.view:hover   { color: #3b82f6; border-color: #bfdbfe; background: #eff6ff; }
+.btn-icon-only.start:hover  { color: #6366f1; border-color: #c7d2fe; background: #eef2ff; }
+.btn-icon-only.complete:hover { color: #22c55e; border-color: #bbf7d0; background: #f0fdf4; }
+.btn-icon-only.cancel:hover { color: #ef4444; border-color: #fecaca; background: #fef2f2; }
+.btn-icon-only:disabled, .btn-icon-only.disabled {
+    opacity: 0.4; cursor: not-allowed; pointer-events: none;
+}
+
+/* --- EMPTY STATE --- */
+.ob-empty { text-align: center; padding: 52px 20px; }
+.ob-empty-icon { font-size: 44px; color: #cbd5e1; margin-bottom: 12px; }
+.ob-empty-title { font-size: 15px; font-weight: 700; color: #334155; margin-bottom: 6px; }
+.ob-empty-sub { font-size: 13px; color: #94a3b8; }
+
+/* ─────────────────────────────────────────
+   DRAWER — Shared overlay/panel pattern
+───────────────────────────────────────── */
+.ob-drawer-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(15,23,42,0.35); z-index: 1040; backdrop-filter: blur(2px);
+}
+.ob-drawer-overlay.open { display: block; }
+
+.ob-drawer {
+    position: fixed; top: 0; right: -560px; width: 540px; max-width: 96vw;
+    height: 100vh; background: #fff; z-index: 1050;
+    box-shadow: -8px 0 32px rgba(15,23,42,0.12);
+    display: flex; flex-direction: column;
+    transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+    overflow: hidden;
+}
+.ob-drawer.open { right: 0; }
+
+.drawer-header {
+    padding: 18px 20px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.drawer-title { font-size: 16px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.drawer-close {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+    background: #fff; color: #64748b; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.drawer-close:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
+.drawer-footer {
+    padding: 14px 20px; border-top: 1px solid #f1f5f9; flex-shrink: 0;
+    display: flex; align-items: center; gap: 10px; justify-content: flex-end;
+    background: #f8fafc;
+}
+
+/* Detail drawer sections */
+.detail-section { border: 1px solid #f1f5f9; border-radius: 12px; overflow: hidden; }
+.detail-section-title {
+    padding: 10px 14px; background: #f8fafc;
+    font-size: 12px; font-weight: 700; color: #475569;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: 7px;
+}
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.detail-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; }
+.detail-item:nth-last-child(-n+2) { border-bottom: none; }
+.detail-label { font-size: 11.5px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 3px; }
+.detail-value { font-size: 13.5px; color: #0f172a; font-weight: 500; }
+.detail-item.full { grid-column: 1 / -1; }
+
+/* Checklist in drawer */
+.checklist-item {
+    padding: 10px 14px; border-bottom: 1px solid #f1f5f9;
+    display: flex; align-items: flex-start; gap: 10px;
+}
+.checklist-item:last-child { border-bottom: none; }
+.cl-status-btn {
+    width: 22px; height: 22px; border-radius: 50%; border: 2px solid #e2e8f0;
+    background: #fff; cursor: pointer; flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; transition: all 0.2s;
+}
+.cl-status-btn.done { background: #22c55e; border-color: #22c55e; color: #fff; }
+.cl-status-btn.inprogress { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+.cl-task-info { flex: 1; min-width: 0; }
+.cl-task-name { font-size: 13.5px; color: #0f172a; font-weight: 500; }
+.cl-task-name.done-text { text-decoration: line-through; color: #94a3b8; }
+.cl-task-meta { font-size: 11.5px; color: #94a3b8; margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap; }
+.cl-mandatory-badge { font-size: 10.5px; background: #fef3c7; color: #92400e; border-radius: 4px; padding: 1px 6px; font-weight: 600; }
+.cl-loading { text-align: center; padding: 28px; color: #94a3b8; }
+.cl-error { padding: 16px; color: #ef4444; font-size: 13px; text-align: center; }
+
+/* Employee profile in detail drawer */
+.drawer-emp-card {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px; background: #f8fafc; border-radius: 10px;
+    border: 1px solid #f1f5f9;
+}
+.drawer-emp-av {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    display: flex; align-items: center; justify-content: center;
+    color: #475569; font-weight: 700; font-size: 20px; flex-shrink: 0; overflow: hidden;
+}
+.drawer-emp-av img { width: 100%; height: 100%; object-fit: cover; }
+.drawer-emp-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+.drawer-emp-code { font-size: 12px; color: #64748b; margin-top: 2px; }
+.drawer-emp-dept { font-size: 12px; color: #3b82f6; margin-top: 2px; }
+
+/* Loading skeleton */
+.skel { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: skelAnim 1.5s infinite; border-radius: 6px; height: 14px; margin-bottom: 8px; }
+@@keyframes skelAnim { 0%{background-position: 200% 0} 100%{background-position: -200% 0} }
+
+/* ─────────────────────────────────────────
+   CREATE DRAWER
+───────────────────────────────────────── */
+.form-label-ob { font-size: 12.5px; font-weight: 600; color: #475569; margin-bottom: 5px; display: block; }
+.form-label-ob .req { color: #ef4444; }
+.form-control-ob {
+    width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0;
+    border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; outline: none;
+    transition: all 0.2s;
+}
+.form-control-ob:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-control-ob.readonly-field { background: #f1f5f9; color: #64748b; cursor: default; }
+.form-group-ob { margin-bottom: 14px; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Employee search autocomplete */
+.emp-search-result {
+    position: absolute; top: 100%; left: 0; right: 0;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 9px; z-index: 200;
+    max-height: 220px; overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1); margin-top: 4px; display: none;
+}
+.emp-search-item {
+    padding: 9px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px; transition: background 0.15s; border-bottom: 1px solid #f8fafc;
+}
+.emp-search-item:last-child { border-bottom: none; }
+.emp-search-item:hover { background: #eff6ff; }
+.emp-search-av { width: 28px; height: 28px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 700; font-size: 11px; flex-shrink: 0; }
+.emp-search-name { font-weight: 600; color: #0f172a; }
+.emp-search-code { font-size: 11.5px; color: #64748b; }
+
+/* Checklist editor */
+.cl-editor-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 10px 14px; background: #fff; border-radius: 8px;
+    border: 1px solid #e2e8f0; margin-bottom: 8px;
+}
+.cl-editor-row .cl-row-handle { color: #cbd5e1; cursor: grab; font-size: 14px; padding-top: 6px; flex-shrink: 0; }
+.cl-editor-row .cl-row-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.cl-editor-row .cl-row-rm { color: #ef4444; background: none; border: none; cursor: pointer; padding: 4px; font-size: 14px; flex-shrink: 0; margin-top: 4px; }
+.cl-mandatory-check { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; cursor: pointer; }
+.cl-mandatory-check input[type=checkbox] { accent-color: #3b82f6; width: 15px; height: 15px; }
+
+/* Progress bar in detail drawer */
+.detail-prog-bar { height: 8px; background: #e2e8f0; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+.detail-prog-fill { height: 100%; border-radius: 99px; background: #3b82f6; transition: width 0.4s; }
+
+/* Toast */
+#ob-toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+.ob-toast {
+    background: #fff; border-radius: 10px; padding: 12px 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12); border-left: 4px solid;
+    display: flex; align-items: center; gap: 10px; min-width: 240px; max-width: 360px;
+    font-size: 13.5px; animation: slideInRight 0.3s ease;
+}
+.ob-toast.success { border-color: #22c55e; }
+.ob-toast.error   { border-color: #ef4444; }
+.ob-toast.info    { border-color: #3b82f6; }
+.ob-toast .ob-toast-icon.success { color: #22c55e; }
+.ob-toast .ob-toast-icon.error   { color: #ef4444; }
+.ob-toast .ob-toast-icon.info    { color: #3b82f6; }
+@@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+@@media (max-width: 900px) {
+    .ob-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@@media (max-width: 600px) {
+    .ob-stats-grid { grid-template-columns: 1fr; }
+    .ob-drawer { width: 100vw; }
+    .form-row-2 { grid-template-columns: 1fr; }
+}
+</style>
+
+<div id="ob-toast-container"></div>
+@* Token CSRF dùng chung cho tất cả AJAX request trong module này *@
+<form id="globalCsrfForm" style="display:none;">@Html.AntiForgeryToken()</form>
+
+<div class="ob-page">
+
+    @* ═══════════════════════════════════════════
+       PAGE HEADER
+    ═══════════════════════════════════════════ *@
+    <div class="ob-page-header">
+        <div>
+            <h1 class="ob-page-title">
+                <span class="ob-icon"><i class="fa-solid fa-handshake-angle"></i></span>
+                Hội nhập nhân viên
+            </h1>
+            <div class="ob-header-subtitle">
+                Quản lý và theo dõi quá trình hội nhập của nhân viên mới
+            </div>
+        </div>
+        <div class="ob-header-actions">
+            <button class="btn-ob-primary" id="btnOpenCreate" aria-label="Tạo hồ sơ hội nhập mới">
+                <i class="fa-solid fa-plus"></i> Tạo hồ sơ
+            </button>
+            <a href="@Url.Action("ExportExcel", "Onboarding", new { searchName = searchName, department = currentDept, status = currentStatus, month = currentMonth, year = currentYear })"
+               class="btn-ob-outline" aria-label="Xuất danh sách Excel">
+                <i class="fa-solid fa-file-excel"></i> Xuất Excel
+            </a>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════
+       STATISTICS
+    ═══════════════════════════════════════════ *@
+    <div class="ob-stats-grid">
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon blue"><i class="fa-solid fa-users"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Tổng nhân viên</div>
+                <div class="ob-stat-value">@statNew</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon amber"><i class="fa-solid fa-hourglass-start"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Chờ bắt đầu</div>
+                <div class="ob-stat-value">@statPending</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon indigo"><i class="fa-solid fa-spinner"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đang hội nhập</div>
+                <div class="ob-stat-value">@statInProgress</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Hoàn thành</div>
+                <div class="ob-stat-value">@statCompleted</div>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════
+       FILTER BAR
+    ═══════════════════════════════════════════ *@
+    <form method="get" asp-action="Index" id="filterForm">
+        <div class="ob-filter-bar">
+            <div class="ob-search-wrap">
+                <i class="fa-solid fa-magnifying-glass sicon"></i>
+                <input type="text" name="searchName" value="@searchName"
+                       class="ob-search-input" id="obSearchInput"
+                       placeholder="Tìm kiếm nhân viên, mã nhân viên..."
+                       autocomplete="off" aria-label="Tìm kiếm nhân viên" />
+            </div>
+
+            <select name="department" class="ob-filter-select" aria-label="Lọc theo phòng ban">
+                <option value="">-- Tất cả phòng ban --</option>
+                @foreach (var dept in departments)
+                {
+                    <option value="@dept" selected="@(dept == currentDept ? "selected" : null)">@dept</option>
+                }
+            </select>
+
+            <select name="status" class="ob-filter-select" aria-label="Lọc theo trạng thái">
+                <option value="">-- Tất cả trạng thái --</option>
+                <option value="PENDING"     selected="@("PENDING"     == currentStatus ? "selected" : null)">Chờ bắt đầu</option>
+                <option value="IN_PROGRESS" selected="@("IN_PROGRESS" == currentStatus ? "selected" : null)">Đang hội nhập</option>
+                <option value="COMPLETED"   selected="@("COMPLETED"   == currentStatus ? "selected" : null)">Hoàn thành</option>
+                <option value="CANCELLED"   selected="@("CANCELLED"   == currentStatus ? "selected" : null)">Đã hủy</option>
+            </select>
+
+            <select name="month" class="ob-filter-select" style="min-width:130px;" aria-label="Lọc theo tháng">
+                <option value="">-- Tất cả tháng --</option>
+                @for (int m = 1; m <= 12; m++)
+                {
+                    <option value="@m" selected="@(currentMonth == m ? "selected" : null)">Tháng @m</option>
+                }
+            </select>
+
+            <button type="submit" class="btn-ob-primary">
+                <i class="fa-solid fa-filter"></i> Lọc
+            </button>
+
+            @if (hasFilter)
+            {
+                <a href="@Url.Action("Index","Onboarding")" class="btn-ob-reset" aria-label="Đặt lại bộ lọc">
+                    <i class="fa-solid fa-xmark"></i> Đặt lại
+                </a>
+            }
+        </div>
+    </form>
+
+    @* ═══════════════════════════════════════════
+       TABLE CARD
+    ═══════════════════════════════════════════ *@
+    <div class="ob-table-card">
+        <div class="ob-table-header">
+            <div class="ob-table-title">
+                <i class="fa-solid fa-list" style="color:#3b82f6;"></i>
+                Danh sách hồ sơ hội nhập
+                <span class="count-chip">@(Model?.Count ?? 0) hồ sơ</span>
+            </div>
+        </div>
+
+        <div class="ob-table-wrap">
+            <table class="ob-table" id="obTable">
+                <thead>
+                    <tr>
+                        <th style="width:44px; text-align:center;">#</th>
+                        <th>Nhân viên</th>
+                        <th>Phòng ban</th>
+                        <th>Chức danh</th>
+                        <th>Ngày bắt đầu HN</th>
+                        <th>Dự kiến HT</th>
+                        <th>Người phụ trách</th>
+                        <th style="min-width:120px;">Tiến độ</th>
+                        <th>Trạng thái</th>
+                        <th style="width:110px; text-align:center;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="obTableBody">
+                    @if (Model != null && Model.Any())
+                    {
+                        int idx = 1;
+                        foreach (var item in Model)
+                        {
+                            int totalT = item.ChecklistTasks.Count;
+                            int doneT  = item.ChecklistTasks.Count(t => t.Status == "DONE");
+                            int prog   = totalT > 0 ? (int)Math.Round((double)doneT / totalT * 100) : 0;
+                            string barClass = prog >= 100 ? "c-green" : prog >= 50 ? "c-blue" : "c-amber";
+                            string empInitial = string.IsNullOrEmpty(item.Employee?.Name) ? "?" : item.Employee.Name.Substring(0, 1).ToUpper();
+
+                            <tr data-id="@item.Id" data-status="@item.Status">
+                                <td style="text-align:center; color:#64748b; font-weight:500;">@idx</td>
+                                <td>
+                                    <div class="emp-cell">
+                                        <div class="emp-av">
+                                            @if (!string.IsNullOrEmpty(item.Employee?.AvatarPath))
+                                            {
+                                                <img src="@item.Employee.AvatarPath" alt="Avatar @item.Employee.Name" />
+                                            }
+                                            else
+                                            {
+                                                @empInitial
+                                            }
+                                        </div>
+                                        <div>
+                                            <span class="emp-name">@(item.Employee?.Name ?? "---")</span>
+                                            <span class="emp-code">@(item.Employee?.EmployeeCode ?? "---")</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="background:#f1f5f9; color:#475569; padding:4px 10px; border-radius:6px; font-size:12px; font-weight:600;">
+                                        @(item.Employee?.Department ?? "---")
+                                    </span>
+                                </td>
+                                <td style="color:#475569; font-size:13px;">@(item.Employee?.JobTitle ?? "---")</td>
+                                <td style="color:#475569; font-size:13px; white-space:nowrap;">@item.StartDate.ToString("dd/MM/yyyy")</td>
+                                <td style="color:#64748b; font-size:13px; white-space:nowrap;">@(item.ExpectedEndDate?.ToString("dd/MM/yyyy") ?? "---")</td>
+                                <td style="color:#475569; font-size:13px;">@(item.AssignedToName ?? "---")</td>
+                                <td>
+                                    <div class="prog-wrap">
+                                        <div class="prog-label">
+                                            <span>@doneT / @totalT công việc</span>
+                                            <span style="font-weight:700; color:#0f172a;">@prog%</span>
+                                        </div>
+                                        <div class="prog-bar-bg">
+                                            <div class="prog-bar-fill @barClass" style="width:@prog%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="@item.StatusBadgeClass">@item.StatusLabel</span>
+                                </td>
+                                <td>
+                                    <div style="display:flex; gap:5px; justify-content:center;">
+                                        <button class="btn-icon-only view"
+                                                onclick="openDetailDrawer(@item.Id)"
+                                                title="Xem chi tiết"
+                                                aria-label="Xem chi tiết hội nhập của @(item.Employee?.Name ?? "nhân viên")">
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+
+                                        @if (item.Status == "PENDING")
+                                        {
+                                            <button class="btn-icon-only start"
+                                                    onclick="startOnboarding(@item.Id)"
+                                                    title="Bắt đầu hội nhập"
+                                                    aria-label="Bắt đầu hội nhập">
+                                                <i class="fa-solid fa-play"></i>
+                                            </button>
+                                        }
+
+                                        @if (item.Status == "IN_PROGRESS")
+                                        {
+                                            <button class="btn-icon-only complete"
+                                                    onclick="completeOnboarding(@item.Id)"
+                                                    title="Đánh dấu hoàn thành"
+                                                    aria-label="Đánh dấu hội nhập hoàn thành">
+                                                <i class="fa-solid fa-check"></i>
+                                            </button>
+                                        }
+
+                                        @if (item.Status != "COMPLETED" && item.Status != "CANCELLED")
+                                        {
+                                            <button class="btn-icon-only cancel"
+                                                    onclick="cancelOnboarding(@item.Id)"
+                                                    title="Hủy hồ sơ"
+                                                    aria-label="Hủy hồ sơ hội nhập">
+                                                <i class="fa-solid fa-ban"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                            idx++;
+                        }
+                    }
+                    else
+                    {
+                        <tr id="obEmptyRow">
+                            <td colspan="10">
+                                <div class="ob-empty">
+                                    <div class="ob-empty-icon"><i class="fa-solid fa-handshake-slash"></i></div>
+                                    <div class="ob-empty-title">
+                                        @if (hasFilter)
+                                        { <text>Không tìm thấy hồ sơ nào phù hợp</text> }
+                                        else
+                                        { <text>Chưa có hồ sơ hội nhập</text> }
+                                    </div>
+                                    <div class="ob-empty-sub">
+                                        @if (hasFilter)
+                                        { <text>Vui lòng thay đổi điều kiện lọc hoặc <a href="@Url.Action("Index","Onboarding")">đặt lại</a>.</text> }
+                                        else
+                                        { <text>Nhấn <strong>+ Tạo hồ sơ</strong> để bắt đầu quá trình hội nhập cho nhân viên mới.</text> }
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div><!-- /.ob-page -->
+
+
+@* ═══════════════════════════════════════════════════════════════
+   DETAIL DRAWER
+═══════════════════════════════════════════════════════════════ *@
+<div class="ob-drawer-overlay" id="detailOverlay" onclick="closeDetailDrawer()"></div>
+<div class="ob-drawer" id="detailDrawer" role="dialog" aria-label="Chi tiết hồ sơ hội nhập">
+    <div class="drawer-header">
+        <div class="drawer-title">
+            <i class="fa-solid fa-address-card" style="color:#3b82f6;"></i>
+            Chi tiết hồ sơ hội nhập
+        </div>
+        <button class="drawer-close" onclick="closeDetailDrawer()" aria-label="Đóng drawer">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <div class="drawer-body" id="detailDrawerBody">
+        <div class="cl-loading" id="detailLoading">
+            <div class="skel" style="width:60%; margin:0 auto 10px;"></div>
+            <div class="skel" style="width:40%; margin:0 auto 10px;"></div>
+            <div class="skel" style="width:80%; margin:0 auto;"></div>
+        </div>
+        <div id="detailContent" style="display:none;"></div>
+        <div id="detailError" class="cl-error" style="display:none;"></div>
+    </div>
+
+    <div class="drawer-footer" id="detailDrawerFooter">
+        <button class="btn-ob-outline" onclick="closeDetailDrawer()">Đóng</button>
+        <button class="btn-ob-primary" id="btnDrawerStart" style="display:none;" onclick="startOnboardingFromDrawer()">
+            <i class="fa-solid fa-play"></i> Bắt đầu
+        </button>
+        <button class="btn-ob-primary" id="btnDrawerComplete" style="display:none;" onclick="completeOnboardingFromDrawer()" style="background:#22c55e;">
+            <i class="fa-solid fa-check"></i> Hoàn thành
+        </button>
+    </div>
+</div>
+
+
+@* ═══════════════════════════════════════════════════════════════
+   CREATE DRAWER
+═══════════════════════════════════════════════════════════════ *@
+<div class="ob-drawer-overlay" id="createOverlay" onclick="closeCreateDrawer()"></div>
+<div class="ob-drawer" id="createDrawer" role="dialog" aria-label="Tạo hồ sơ hội nhập">
+    <div class="drawer-header">
+        <div class="drawer-title">
+            <i class="fa-solid fa-plus-circle" style="color:#3b82f6;"></i>
+            Tạo hồ sơ hội nhập
+        </div>
+        <button class="drawer-close" onclick="closeCreateDrawer()" aria-label="Đóng">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <div class="drawer-body">
+        <form id="createOnboardingForm" novalidate>
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="selectedEmpId" name="employeeId" value="" />
+
+            @* --- NHÂN VIÊN --- *@
+            <div class="detail-section">
+                <div class="detail-section-title"><i class="fa-solid fa-user"></i> Thông tin nhân viên</div>
+                <div style="padding:14px; display:flex; flex-direction:column; gap:10px;">
+
+                    <div class="form-group-ob" style="position:relative;">
+                        <label class="form-label-ob">Nhân viên <span class="req">*</span></label>
+                        <input type="text" id="empSearchInput" class="form-control-ob"
+                               placeholder="Nhập tên hoặc mã nhân viên để tìm kiếm..."
+                               autocomplete="off" required />
+                        <div class="emp-search-result" id="empSearchResult"></div>
+                    </div>
+
+                    <div class="form-row-2" id="empInfoPanel" style="display:none;">
+                        <div>
+                            <label class="form-label-ob">Mã nhân viên</label>
+                            <input type="text" id="infoEmpCode" class="form-control-ob readonly-field" readonly />
+                        </div>
+                        <div>
+                            <label class="form-label-ob">Phòng ban</label>
+                            <input type="text" id="infoEmpDept" class="form-control-ob readonly-field" readonly />
+                        </div>
+                        <div class="form-group-ob">
+                            <label class="form-label-ob">Chức danh</label>
+                            <input type="text" id="infoEmpJob" class="form-control-ob readonly-field" readonly />
+                        </div>
+                        <div>
+                            <label class="form-label-ob">Chức vụ</label>
+                            <input type="text" id="infoEmpPos" class="form-control-ob readonly-field" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* --- THÔNG TIN HỘI NHẬP --- *@
+            <div class="detail-section" style="margin-top:14px;">
+                <div class="detail-section-title"><i class="fa-solid fa-calendar-days"></i> Thông tin hội nhập</div>
+                <div style="padding:14px; display:flex; flex-direction:column; gap:10px;">
+
+                    <div class="form-row-2">
+                        <div>
+                            <label class="form-label-ob">Ngày bắt đầu HN <span class="req">*</span></label>
+                            <input type="date" name="startDate" id="formStartDate" class="form-control-ob" required
+                                   value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div>
+                            <label class="form-label-ob">Ngày dự kiến HT</label>
+                            <input type="date" name="expectedEndDate" id="formEndDate" class="form-control-ob" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label-ob">Người phụ trách <span class="req">*</span></label>
+                        <input type="text" name="assignedToName" id="formAssigned" class="form-control-ob"
+                               placeholder="Tên người phụ trách..." required />
+                    </div>
+
+                    <div>
+                        <label class="form-label-ob">Ghi chú</label>
+                        <textarea name="notes" id="formNotes" class="form-control-ob" rows="2"
+                                  placeholder="Ghi chú thêm (tùy chọn)..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            @* --- CHECKLIST --- *@
+            <div class="detail-section" style="margin-top:14px;">
+                <div class="detail-section-title"><i class="fa-solid fa-list-check"></i> Checklist hội nhập</div>
+                <div style="padding:14px;">
+                    <div id="clEditorList"></div>
+                    <button type="button" class="btn-ob-outline" onclick="addChecklistRow()" style="width:100%; justify-content:center;">
+                        <i class="fa-solid fa-plus"></i> Thêm công việc
+                    </button>
+                </div>
+            </div>
+
+            <div id="createFormError" class="cl-error" style="display:none; margin-top:10px;"></div>
+        </form>
+    </div>
+
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeCreateDrawer()">Hủy</button>
+        <button class="btn-ob-primary" id="btnSubmitCreate" onclick="submitCreate()">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu hồ sơ
+        </button>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+/* ================================================================
+   ONBOARDING MODULE — JavaScript
+   Pattern: AJAX → JSON API → Update DOM (không reload page)
+================================================================ */
+
+let _currentDetailId = null;
+
+// ────────────────────────────────────────────────────────────
+// TOAST NOTIFICATION
+// ────────────────────────────────────────────────────────────
+function showToast(message, type = 'success') {
+    const container = document.getElementById('ob-toast-container');
+    const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', info: 'fa-circle-info' };
+    const el = document.createElement('div');
+    el.className = `ob-toast ${type}`;
+    el.innerHTML = `
+        <i class="fa-solid ${icons[type] || icons.info} ob-toast-icon ${type}"></i>
+        <span>${message}</span>`;
+    container.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 350); }, 3000);
+}
+
+// ────────────────────────────────────────────────────────────
+// DETAIL DRAWER
+// ────────────────────────────────────────────────────────────
+function openDetailDrawer(id) {
+    _currentDetailId = id;
+    document.getElementById('detailOverlay').classList.add('open');
+    document.getElementById('detailDrawer').classList.add('open');
+    loadDetail(id);
+}
+
+function closeDetailDrawer() {
+    document.getElementById('detailOverlay').classList.remove('open');
+    document.getElementById('detailDrawer').classList.remove('open');
+    _currentDetailId = null;
+    document.getElementById('btnDrawerStart').style.display = 'none';
+    document.getElementById('btnDrawerComplete').style.display = 'none';
+}
+
+async function loadDetail(id) {
+    const loading = document.getElementById('detailLoading');
+    const content = document.getElementById('detailContent');
+    const error   = document.getElementById('detailError');
+
+    loading.style.display = 'block';
+    content.style.display = 'none';
+    error.style.display   = 'none';
+    document.getElementById('btnDrawerStart').style.display    = 'none';
+    document.getElementById('btnDrawerComplete').style.display = 'none';
+
+    try {
+        const res  = await fetch(`/Onboarding/Detail/${id}`);
+        if (!res.ok) throw new Error('Không thể tải thông tin hội nhập.');
+        const data = await res.json();
+
+        content.innerHTML = renderDetailContent(data);
+        loading.style.display = 'none';
+        content.style.display = 'block';
+
+        // Footer buttons theo trạng thái
+        if (data.status === 'PENDING') {
+            document.getElementById('btnDrawerStart').style.display = 'inline-flex';
+        } else if (data.status === 'IN_PROGRESS') {
+            const btnC = document.getElementById('btnDrawerComplete');
+            btnC.style.display = 'inline-flex';
+            btnC.style.background = '#22c55e';
+            if (data.mandatoryDone < data.mandatoryTotal) {
+                btnC.disabled = true;
+                btnC.title = `Còn ${data.mandatoryTotal - data.mandatoryDone} công việc bắt buộc chưa hoàn thành`;
+            } else {
+                btnC.disabled = false;
+            }
+        }
+    } catch (e) {
+        loading.style.display = 'none';
+        error.style.display   = 'block';
+        error.innerHTML = `
+            <i class="fa-solid fa-circle-exclamation" style="font-size:24px; display:block; margin-bottom:8px;"></i>
+            Không thể tải thông tin hội nhập.<br>
+            <button class="btn-ob-outline" style="margin-top:10px;" onclick="loadDetail(${id})">
+                <i class="fa-solid fa-rotate-right"></i> Thử lại
+            </button>`;
+    }
+}
+
+function renderDetailContent(d) {
+    const empInitial = d.employeeName ? d.employeeName.charAt(0).toUpperCase() : '?';
+    const avatarHtml = d.avatarPath
+        ? `<img src="${d.avatarPath}" alt="Avatar" />`
+        : empInitial;
+
+    const prog = d.progressPercent ?? 0;
+    const progColor = prog >= 100 ? '#22c55e' : prog >= 50 ? '#3b82f6' : '#f59e0b';
+
+    // Render checklist
+    let clHtml = '';
+    if (!d.checklistTasks || d.checklistTasks.length === 0) {
+        clHtml = `<div style="padding:16px; text-align:center; color:#94a3b8; font-size:13.5px;">
+            <i class="fa-regular fa-clipboard" style="font-size:28px; display:block; margin-bottom:8px;"></i>
+            Chưa có checklist hội nhập.
+        </div>`;
+    } else {
+        for (const t of d.checklistTasks) {
+            const isDone = t.status === 'DONE';
+            const isIP   = t.status === 'IN_PROGRESS';
+            const btnCls = isDone ? 'done' : isIP ? 'inprogress' : '';
+            const btnIcon= isDone ? '<i class="fa-solid fa-check"></i>' : isIP ? '<i class="fa-solid fa-ellipsis"></i>' : '';
+            const nameCls= isDone ? 'done-text' : '';
+            const meta   = [
+                t.isMandatory ? `<span class="cl-mandatory-badge">Bắt buộc</span>` : '',
+                t.assigneeName ? `<i class="fa-regular fa-user"></i> ${t.assigneeName}` : '',
+                t.deadline ? `<i class="fa-regular fa-calendar"></i> ${t.deadline}` : '',
+                t.category ? `<span style="background:#f1f5f9;color:#475569;padding:1px 6px;border-radius:4px;font-size:10.5px;">${t.category}</span>` : ''
+            ].filter(Boolean).join('');
+
+            clHtml += `
+            <div class="checklist-item">
+                <button class="cl-status-btn ${btnCls}"
+                    onclick="cycleTaskStatus(${t.id}, '${t.status}')"
+                    title="Bấm để đổi trạng thái"
+                    aria-label="Đổi trạng thái công việc: ${t.taskName}">${btnIcon}</button>
+                <div class="cl-task-info">
+                    <div class="cl-task-name ${nameCls}">${t.taskName}</div>
+                    ${meta ? `<div class="cl-task-meta">${meta}</div>` : ''}
+                </div>
+            </div>`;
+        }
+    }
+
+    // Contracts
+    let contractHtml = '';
+    if (d.contracts && d.contracts.length > 0) {
+        contractHtml = `
+        <div class="detail-section">
+            <div class="detail-section-title"><i class="fa-solid fa-file-contract"></i> Hợp đồng liên quan</div>
+            ${d.contracts.map(c => `
+            <div style="padding:10px 14px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-size:13.5px; font-weight:500; color:#0f172a;">${c.duration}</div>
+                    <div style="font-size:12px; color:#94a3b8; margin-top:2px;">${c.startDate} → ${c.endDate}</div>
+                </div>
+                <span style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600;">${c.status}</span>
+            </div>`).join('')}
+        </div>`;
+    }
+
+    return `
+    <div class="drawer-emp-card">
+        <div class="drawer-emp-av">${avatarHtml}</div>
+        <div>
+            <div class="drawer-emp-name">${d.employeeName}</div>
+            <div class="drawer-emp-code">${d.employeeCode}</div>
+            <div class="drawer-emp-dept">${d.department} · ${d.jobTitle}</div>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <div class="detail-section-title"><i class="fa-solid fa-chart-bar"></i> Tiến độ hội nhập</div>
+        <div style="padding:14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div>
+                    <span class="${getStatusBadgeClass(d.status)}">${d.statusLabel}</span>
+                </div>
+                <span style="font-size:16px; font-weight:800; color:${progColor};">${prog}%</span>
+            </div>
+            <div class="detail-prog-bar">
+                <div class="detail-prog-fill" style="width:${prog}%; background:${progColor};"></div>
+            </div>
+            <div style="font-size:12px; color:#94a3b8; margin-top:8px;">
+                ${d.doneTasks}/${d.totalTasks} công việc hoàn thành
+                ${d.mandatoryTotal > 0 ? ` · ${d.mandatoryDone}/${d.mandatoryTotal} bắt buộc` : ''}
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <div class="detail-section-title"><i class="fa-solid fa-circle-info"></i> Thông tin chung</div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="detail-label">Ngày bắt đầu HN</div>
+                <div class="detail-value">${d.startDate}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Dự kiến hoàn thành</div>
+                <div class="detail-value">${d.expectedEndDate || '---'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Hoàn thành thực tế</div>
+                <div class="detail-value">${d.actualEndDate || '---'}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Người phụ trách</div>
+                <div class="detail-value">${d.assignedToName}</div>
+            </div>
+            ${d.notes ? `<div class="detail-item full"><div class="detail-label">Ghi chú</div><div class="detail-value" style="white-space:pre-wrap;">${d.notes}</div></div>` : ''}
+            <div class="detail-item">
+                <div class="detail-label">Ngày tạo</div>
+                <div class="detail-value">${d.createdAt}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-section">
+        <div class="detail-section-title">
+            <i class="fa-solid fa-list-check"></i> Checklist
+            <span class="count-chip">${d.totalTasks} việc</span>
+        </div>
+        ${clHtml}
+    </div>
+
+    ${contractHtml}`;
+}
+
+function getStatusBadgeClass(status) {
+    const map = {
+        'PENDING':     'badge-ob-pending',
+        'IN_PROGRESS': 'badge-ob-inprogress',
+        'COMPLETED':   'badge-ob-completed',
+        'CANCELLED':   'badge-ob-cancelled'
+    };
+    return map[status] || 'badge-ob-pending';
+}
+
+// ────────────────────────────────────────────────────────────
+// CYCLE TASK STATUS (PENDING → IN_PROGRESS → DONE → PENDING)
+// ────────────────────────────────────────────────────────────
+async function cycleTaskStatus(taskId, currentStatus) {
+    const nextMap = { 'PENDING': 'IN_PROGRESS', 'IN_PROGRESS': 'DONE', 'DONE': 'PENDING' };
+    const next = nextMap[currentStatus] || 'PENDING';
+
+    try {
+        const token = document.querySelector('[name=__RequestVerificationToken]')?.value || '';
+        const res = await fetch('/Onboarding/UpdateTaskStatus', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+            body: `taskId=${taskId}&newStatus=${next}`
+        });
+        if (!res.ok) throw new Error();
+        // Reload detail without closing drawer
+        if (_currentDetailId) loadDetail(_currentDetailId);
+    } catch {
+        showToast('Không thể cập nhật trạng thái. Vui lòng thử lại.', 'error');
+    }
+}
+
+// ────────────────────────────────────────────────────────────
+// START / COMPLETE / CANCEL — TABLE ACTIONS
+// ────────────────────────────────────────────────────────────
+async function startOnboarding(id) {
+    if (!confirm('Bắt đầu quá trình hội nhập cho hồ sơ này?')) return;
+    await doAction(`/Onboarding/Start`, id, 'Đã bắt đầu hội nhập.');
+}
+
+async function completeOnboarding(id) {
+    if (!confirm('Đánh dấu hội nhập hoàn thành?')) return;
+    await doAction(`/Onboarding/Complete`, id, 'Đã hoàn thành hội nhập.');
+}
+
+async function cancelOnboarding(id) {
+    if (!confirm('Bạn chắc chắn muốn hủy hồ sơ này?')) return;
+    await doAction(`/Onboarding/Cancel`, id, 'Đã hủy hồ sơ hội nhập.');
+}
+
+async function startOnboardingFromDrawer() {
+    if (_currentDetailId) await startOnboarding(_currentDetailId);
+}
+
+async function completeOnboardingFromDrawer() {
+    if (_currentDetailId) await completeOnboarding(_currentDetailId);
+}
+
+async function doAction(url, id, successMsg) {
+    try {
+        const token = document.querySelector('[name=__RequestVerificationToken]')?.value || '';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': token },
+            body: `id=${id}`
+        });
+        const json = await res.json();
+        if (!res.ok) { showToast(json.message || 'Có lỗi xảy ra.', 'error'); return; }
+        showToast(successMsg, 'success');
+        setTimeout(() => location.reload(), 1200);
+    } catch {
+        showToast('Kết nối thất bại. Vui lòng thử lại.', 'error');
+    }
+}
+
+// ────────────────────────────────────────────────────────────
+// CREATE DRAWER
+// ────────────────────────────────────────────────────────────
+function openCreateDrawer() {
+    document.getElementById('createOverlay').classList.add('open');
+    document.getElementById('createDrawer').classList.add('open');
+    resetCreateForm();
+}
+
+function closeCreateDrawer() {
+    document.getElementById('createOverlay').classList.remove('open');
+    document.getElementById('createDrawer').classList.remove('open');
+}
+
+function resetCreateForm() {
+    document.getElementById('createOnboardingForm').reset();
+    document.getElementById('selectedEmpId').value = '';
+    document.getElementById('empSearchInput').value = '';
+    document.getElementById('empInfoPanel').style.display = 'none';
+    document.getElementById('clEditorList').innerHTML = '';
+    document.getElementById('createFormError').style.display = 'none';
+    document.getElementById('formStartDate').value = new Date().toISOString().split('T')[0];
+    addChecklistRow(); // Thêm 1 row mặc định
+}
+
+document.getElementById('btnOpenCreate').addEventListener('click', openCreateDrawer);
+
+// Employee search autocomplete
+let empSearchTimer = null;
+document.getElementById('empSearchInput').addEventListener('input', function () {
+    clearTimeout(empSearchTimer);
+    const q = this.value.trim();
+    if (q.length < 1) { closeEmpDropdown(); return; }
+    empSearchTimer = setTimeout(() => searchEmployees(q), 300);
+});
+
+async function searchEmployees(q) {
+    try {
+        const res = await fetch(`/Onboarding/GetEmployees?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        renderEmpDropdown(data);
+    } catch { closeEmpDropdown(); }
+}
+
+function renderEmpDropdown(items) {
+    const dd = document.getElementById('empSearchResult');
+    if (!items || items.length === 0) {
+        dd.innerHTML = '<div style="padding:12px; text-align:center; color:#94a3b8; font-size:13px;">Không tìm thấy nhân viên.</div>';
+        dd.style.display = 'block';
+        return;
+    }
+    dd.innerHTML = items.map(e => `
+        <div class="emp-search-item" onclick="selectEmployee(${e.id}, '${escapeJs(e.employeeCode)}', '${escapeJs(e.name)}', '${escapeJs(e.department)}', '${escapeJs(e.jobTitle)}', '${escapeJs(e.position)}')">
+            <div class="emp-search-av">${e.name ? e.name.charAt(0).toUpperCase() : '?'}</div>
+            <div>
+                <div class="emp-search-name">${e.name || '---'}</div>
+                <div class="emp-search-code">${e.employeeCode || ''} · ${e.department || ''}</div>
+            </div>
+        </div>`).join('');
+    dd.style.display = 'block';
+}
+
+function selectEmployee(id, code, name, dept, jobTitle, position) {
+    document.getElementById('selectedEmpId').value = id;
+    document.getElementById('empSearchInput').value = name;
+    document.getElementById('infoEmpCode').value = code;
+    document.getElementById('infoEmpDept').value = dept || '---';
+    document.getElementById('infoEmpJob').value  = jobTitle || '---';
+    document.getElementById('infoEmpPos').value  = position || '---';
+    document.getElementById('empInfoPanel').style.display = 'grid';
+    closeEmpDropdown();
+}
+
+function closeEmpDropdown() {
+    document.getElementById('empSearchResult').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.ob-search-wrap');
+    if (wrap && !wrap.contains(e.target)) closeEmpDropdown();
+});
+
+function escapeJs(str) {
+    return (str || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+}
+
+// ────────────────────────────────────────────────────────────
+// CHECKLIST EDITOR
+// ────────────────────────────────────────────────────────────
+let clRowCount = 0;
+
+function addChecklistRow(defaultName = '') {
+    const idx = clRowCount++;
+    const list = document.getElementById('clEditorList');
+    const div = document.createElement('div');
+    div.className = 'cl-editor-row';
+    div.id = `clRow_${idx}`;
+    div.innerHTML = `
+        <div class="cl-row-handle" aria-hidden="true"><i class="fa-solid fa-grip-vertical"></i></div>
+        <div class="cl-row-fields">
+            <input type="text" name="taskNames" placeholder="Tên công việc *" class="form-control-ob"
+                   value="${escapeJs(defaultName)}" required />
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <input type="text" name="taskAssignees" placeholder="Người phụ trách" class="form-control-ob" style="flex:1; min-width:120px;" />
+                <input type="date" name="taskDeadlines" class="form-control-ob" style="flex:1; min-width:130px;" />
+                <label class="cl-mandatory-check">
+                    <input type="checkbox" name="taskMandatory" checked />
+                    Bắt buộc
+                </label>
+            </div>
+        </div>
+        <button type="button" class="cl-row-rm" onclick="removeChecklistRow('clRow_${idx}')" aria-label="Xóa công việc">
+            <i class="fa-solid fa-trash-can"></i>
+        </button>`;
+    list.appendChild(div);
+}
+
+function removeChecklistRow(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+// ────────────────────────────────────────────────────────────
+// SUBMIT CREATE
+// ────────────────────────────────────────────────────────────
+async function submitCreate() {
+    const form = document.getElementById('createOnboardingForm');
+    const errEl = document.getElementById('createFormError');
+    errEl.style.display = 'none';
+
+    const empId = document.getElementById('selectedEmpId').value;
+    const startDate = document.getElementById('formStartDate').value;
+    const assignedTo = document.getElementById('formAssigned').value.trim();
+
+    // Validation
+    if (!empId) { showError(errEl, 'Vui lòng chọn nhân viên.'); return; }
+    if (!startDate) { showError(errEl, 'Vui lòng chọn ngày bắt đầu hội nhập.'); return; }
+    if (!assignedTo) { showError(errEl, 'Vui lòng nhập người phụ trách.'); return; }
+
+    const taskNames = [...form.querySelectorAll('[name=taskNames]')].map(i => i.value.trim());
+    if (taskNames.some(n => !n)) { showError(errEl, 'Tên công việc không được để trống.'); return; }
+
+    const btn = document.getElementById('btnSubmitCreate');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+    try {
+        const token = document.querySelector('[name=__RequestVerificationToken]').value;
+        const payload = {
+            employeeId: parseInt(empId),
+            startDate: startDate,
+            expectedEndDate: document.getElementById('formEndDate').value || null,
+            assignedToName: assignedTo,
+            notes: document.getElementById('formNotes').value || '',
+            checklistTasks: []
+        };
+
+        const mandatoryEls = form.querySelectorAll('[name=taskMandatory]');
+        const assigneeEls  = form.querySelectorAll('[name=taskAssignees]');
+        const deadlineEls  = form.querySelectorAll('[name=taskDeadlines]');
+
+        form.querySelectorAll('[name=taskNames]').forEach((el, i) => {
+            payload.checklistTasks.push({
+                taskName: el.value.trim(),
+                isMandatory: mandatoryEls[i]?.checked ? true : false,
+                assigneeName: assigneeEls[i]?.value || '',
+                deadline: deadlineEls[i]?.value || null,
+                category: ''
+            });
+        });
+
+        const res = await fetch('/Onboarding/Create', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token 
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const json = await res.json();
+        if (!res.ok) { showError(errEl, json.message || 'Có lỗi xảy ra.'); return; }
+
+        closeCreateDrawer();
+        showToast('Tạo hồ sơ hội nhập thành công!', 'success');
+        setTimeout(() => location.reload(), 1200);
+    } catch {
+        showError(errEl, 'Kết nối thất bại. Vui lòng thử lại.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu hồ sơ';
+    }
+}
+
+function showError(el, msg) {
+    el.style.display = 'block';
+    el.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> ${msg}`;
+}
+
+// ────────────────────────────────────────────────────────────
+// Keyboard: ESC đóng drawer
+// ────────────────────────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (document.getElementById('detailDrawer').classList.contains('open')) closeDetailDrawer();
+        if (document.getElementById('createDrawer').classList.contains('open'))  closeCreateDrawer();
+    }
+});
+</script>
+}

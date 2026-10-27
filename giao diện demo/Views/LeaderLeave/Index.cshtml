@@ -1,0 +1,110 @@
+@model IEnumerable<giao_dien_demo.Models.Leave>
+@{
+    ViewData["Title"] = "Quản lý Nghỉ phép (Lãnh đạo)";
+    var allowedDepts = ViewBag.AllowedDepts as List<string> ?? new List<string>();
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-plane-departure"></i></span>
+            Quản lý Nghỉ phép (Lãnh đạo)
+        </h1>
+        <div class="hrms-page-subtitle">Giám sát thông tin nghỉ phép của nhân sự trong phạm vi quản lý.</div>
+    </div>
+</div>
+
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" action="@Url.Action("Index", "LeaderLeave")" class="row g-3">
+            <div class="col-md-4">
+                <label class="hrms-form-label">Phòng ban</label>
+                <select name="department" class="hrms-form-select">
+                    <option value="">Tất cả phòng ban</option>
+                    @foreach (var dept in allowedDepts)
+                    {
+                        if (ViewBag.CurrentDept == dept)
+                        {
+                            <option value="@dept" selected>@dept</option>
+                        }
+                        else
+                        {
+                            <option value="@dept">@dept</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="hrms-form-label">Trạng thái</label>
+                <select name="status" class="hrms-form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Chờ duyệt" selected="@(ViewBag.CurrentStatus == "Chờ duyệt")">Chờ duyệt</option>
+                    <option value="Đã duyệt" selected="@(ViewBag.CurrentStatus == "Đã duyệt")">Đã duyệt</option>
+                    <option value="Từ chối" selected="@(ViewBag.CurrentStatus == "Từ chối")">Từ chối</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary flex-grow-1"><i class="fa-solid fa-filter me-1"></i> Lọc dữ liệu</button>
+                <a href="@Url.Action("Index", "LeaderLeave")" class="hrms-btn hrms-btn-ghost" title="Đặt lại bộ lọc"><i class="fa-solid fa-rotate-right"></i></a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-card">
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th>Nhân viên</th>
+                    <th>Loại nghỉ</th>
+                    <th>Từ ngày</th>
+                    <th>Đến ngày</th>
+                    <th>Lý do</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="6">
+                            <div class="hrms-empty-state py-5">
+                                <div class="hrms-empty-icon"><i class="fa-regular fa-folder-open"></i></div>
+                                <div class="hrms-empty-title">Không có dữ liệu nghỉ phép</div>
+                                <div class="hrms-empty-desc">Không có bản ghi nghỉ phép nào trong phạm vi quản lý của bạn.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold text-dark">@item.EmployeeName</td>
+                            <td>@item.LeaveType</td>
+                            <td>@(item.FromDate != default ? item.FromDate.ToString("dd/MM/yyyy") : "")</td>
+                            <td>@(item.ToDate != default ? item.ToDate.ToString("dd/MM/yyyy") : "")</td>
+                            <td>@item.Reason</td>
+                            <td>
+                                @if (item.Status == "Đã duyệt")
+                                {
+                                    <span class="hrms-badge hrms-badge-success">Đã duyệt</span>
+                                }
+                                else if (item.Status == "Chờ duyệt")
+                                {
+                                    <span class="hrms-badge hrms-badge-warning">Chờ duyệt</span>
+                                }
+                                else
+                                {
+                                    <span class="hrms-badge hrms-badge-danger">Từ chối</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

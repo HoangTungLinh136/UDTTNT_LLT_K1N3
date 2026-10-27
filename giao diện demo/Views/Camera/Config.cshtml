@@ -1,0 +1,62 @@
+@model giao_dien_demo.Models.CameraConfig
+
+@{
+    ViewData["Title"] = "Camera Configuration";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">IMOU Camera Configuration</h4>
+                </div>
+                <div class="card-body">
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+                    }
+
+                    <form asp-action="Config" method="post">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label">Camera Name</label>
+                            <input asp-for="Name" class="form-control" placeholder="e.g., Front Door Camera" required />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label asp-for="IPAddress" class="form-label">Camera IP Address</label>
+                            <input asp-for="IPAddress" class="form-control" placeholder="192.168.1.100" required />
+                            <span asp-validation-for="IPAddress" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="RtspUrl" class="form-label">RTSP URL</label>
+                            <input asp-for="RtspUrl" class="form-control" placeholder="rtsp://admin:PASSWORD@192.168.1.100:554/cam/realmonitor?channel=1&subtype=0" required />
+                            <small class="form-text text-muted">Use standard IMOU RTSP format.</small>
+                            <span asp-validation-for="RtspUrl" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Username" class="form-label">Username</label>
+                                <input asp-for="Username" class="form-control" placeholder="admin" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Password" class="form-label">Password</label>
+                                <input asp-for="Password" type="password" class="form-control" placeholder="Camera safety code" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label asp-for="IsActive" class="form-check-label">Enable Camera Monitoring</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Save Configuration</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

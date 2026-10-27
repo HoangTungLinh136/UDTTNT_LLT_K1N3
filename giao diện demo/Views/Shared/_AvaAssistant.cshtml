@@ -1,0 +1,36 @@
+@if (User?.Identity?.IsAuthenticated == true)
+{
+    var avaActor = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Authenticated";
+    <div id="ava-assistant" class="ava-assistant d-print-none" data-ava-actor="@avaActor">
+        <button id="ava-trigger" class="ava-trigger" type="button" aria-label="Mở trợ lý AVA. Giữ và kéo để di chuyển" aria-controls="ava-drawer" aria-expanded="false" title="Bấm để mở AVA · Giữ và kéo để di chuyển">
+            <i class="fa-solid fa-robot" aria-hidden="true"></i>
+        </button>
+        <aside id="ava-drawer" class="ava-drawer" aria-hidden="true" aria-label="AVA - Trợ lý AI">
+            <header class="ava-drawer-header">
+                <div class="ava-drawer-title"><i class="fa-solid fa-robot" aria-hidden="true"></i><span>AVA - Trợ lý AI</span></div>
+                <div class="ava-drawer-actions">
+                    <button id="ava-new" type="button" class="ava-icon-button" title="Cuộc trò chuyện mới" aria-label="Cuộc trò chuyện mới"><i class="fa-solid fa-rotate-right" aria-hidden="true"></i></button>
+                    <button id="ava-close" type="button" class="ava-icon-button" title="Đóng AVA" aria-label="Đóng AVA"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                </div>
+            </header>
+            <div id="ava-messages" class="ava-messages" role="log" aria-live="polite">
+                <div class="ava-empty-state">Chào bạn! Tôi là AVA. Bạn cần hỗ trợ gì về HRMS hôm nay?</div>
+            </div>
+            <div id="ava-error" class="ava-error" hidden></div>
+            <div class="ava-upload-row"><div id="ava-upload-status" class="ava-upload-status" aria-live="polite" hidden></div><button id="ava-cancel-request" type="button" hidden>Hủy</button></div>
+            <div id="ava-attachments" class="ava-attachments" aria-label="Tệp đính kèm"></div>
+            <form id="ava-composer" class="ava-composer" autocomplete="off">
+                @Html.AntiForgeryToken()
+                <input id="ava-file-input" type="file" hidden multiple accept="image/png,image/jpeg,image/webp,image/bmp,audio/wav,audio/mpeg,audio/mp4,audio/ogg,audio/webm,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain,text/csv,application/json" />
+                <button id="ava-attach" type="button" class="ava-icon-button ava-tool-button" aria-label="Đính kèm tệp" title="Đính kèm tệp"><i class="fa-solid fa-paperclip" aria-hidden="true"></i></button>
+                <button id="ava-mic" type="button" class="ava-icon-button ava-tool-button" aria-label="Ghi âm câu hỏi" title="Ghi âm câu hỏi"><i class="fa-solid fa-microphone" aria-hidden="true"></i></button>
+                <button id="ava-stop-recording" type="button" class="ava-icon-button ava-tool-button" aria-label="Dừng và nhận dạng" title="Dừng và nhận dạng" hidden><i class="fa-solid fa-stop" aria-hidden="true"></i></button>
+                <button id="ava-cancel-recording" type="button" class="ava-icon-button ava-tool-button" aria-label="Hủy ghi âm" title="Hủy ghi âm" hidden><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+                <label class="visually-hidden" for="ava-input">Câu hỏi cho AVA</label>
+                <textarea id="ava-input" rows="1" maxlength="8000" placeholder="Hỏi AVA..." aria-label="Câu hỏi cho AVA"></textarea>
+                <button id="ava-send" type="submit" class="ava-send" aria-label="Gửi câu hỏi"><i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>
+            </form>
+        </aside>
+    </div>
+    <script src="~/js/ava-assistant.js" asp-append-version="true"></script>
+}

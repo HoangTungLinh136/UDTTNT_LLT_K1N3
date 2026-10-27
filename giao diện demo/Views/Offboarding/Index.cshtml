@@ -1,0 +1,848 @@
+@model List<giao_dien_demo.Models.OffboardingRecord>
+@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Nghỉ việc";
+    var role = Context.Session.GetString("Role") ?? "";
+
+    var departments = ViewBag.Departments as List<string> ?? new List<string>();
+    string searchName   = ViewBag.CurrentSearch as string ?? "";
+    string currentDept  = ViewBag.CurrentDept   as string ?? "";
+    string currentStatus= ViewBag.CurrentStatus as string ?? "";
+    string currentLastWorkingDate = ViewBag.CurrentLastWorkingDate as string ?? "";
+
+    int statProcessing        = ViewBag.StatProcessing      ?? 0;
+    int statHandoverPending   = ViewBag.StatHandoverPending ?? 0;
+    int statSettlementPending = ViewBag.StatSettlementPending ?? 0;
+    int statCompleted         = ViewBag.StatCompleted     ?? 0;
+
+    bool hasFilter = !string.IsNullOrWhiteSpace(searchName) ||
+                     !string.IsNullOrWhiteSpace(currentDept) ||
+                     !string.IsNullOrWhiteSpace(currentStatus) ||
+                     !string.IsNullOrWhiteSpace(currentLastWorkingDate);
+                     
+    var tasksDict = ViewBag.TasksDict as Dictionary<int, dynamic> ?? new Dictionary<int, dynamic>();
+}
+
+<style>
+/* --- PAGE WRAPPER --- */
+.ob-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* --- PAGE HEADER --- */
+.ob-page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.ob-page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 10px; }
+.ob-page-title .ob-icon { width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 17px; flex-shrink: 0; }
+.ob-header-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+.ob-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* --- STATISTICS CARDS --- */
+.ob-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.ob-stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.ob-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ob-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+.ob-stat-icon.indigo { background: #eef2ff; color: #6366f1; }
+.ob-stat-icon.red    { background: #fef2f2; color: #ef4444; }
+.ob-stat-icon.green  { background: #ecfdf5; color: #059669; }
+.ob-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.ob-stat-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+.ob-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+/* --- TOOLBAR --- */
+.ob-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ob-filter-bar { background: #fff; border-radius: 12px; padding: 14px 18px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ob-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 340px; }
+.ob-search-wrap .sicon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+.ob-search-input { width: 100%; padding: 9px 12px 9px 34px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; outline: none; transition: all 0.2s; }
+.ob-search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.ob-filter-select, .ob-filter-date { padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; min-width: 140px; outline: none; }
+.ob-filter-select:focus, .ob-filter-date:focus { border-color: #3b82f6; }
+
+/* --- BUTTONS --- */
+.btn-ob-primary { background: #3b82f6; color: #fff; border: none; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: background 0.2s; }
+.btn-ob-primary:hover { background: #2563eb; color: #fff; }
+.btn-ob-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-outline:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.btn-ob-reset { background: #fff; color: #64748b; border: 1px solid #e2e8f0; padding: 9px 14px; border-radius: 9px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-reset:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+/* --- TABLE CARD --- */
+.ob-table-card { background: #fff; border-radius: 14px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-table-header { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.ob-table-title { font-size: 14px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.count-chip { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; border-radius: 20px; padding: 2px 9px; }
+.ob-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ob-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; padding: 11px 14px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.ob-table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+.ob-table tbody tr:hover td { background: #f8fafc; }
+
+/* --- EMPLOYEE CELL --- */
+.emp-cell { display: flex; align-items: center; gap: 10px; }
+.emp-av { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, #e2e8f0, #cbd5e1); display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 700; font-size: 14px; overflow: hidden; }
+.emp-av img { width: 100%; height: 100%; object-fit: cover; }
+.emp-name { font-weight: 600; color: #0f172a; font-size: 13.5px; display: block; }
+.emp-code { font-size: 11.5px; color: #64748b; display: block; margin-top: 1px; }
+
+/* --- BADGES --- */
+.badge-status { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; display: inline-block; }
+.badge-draft { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.badge-pending { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.badge-approved { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.badge-rejected { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+.badge-cancelled { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; }
+
+.badge-off-proc { background: #eff6ff; color: #1e3a8a; }
+.badge-off-hand { background: #fef3c7; color: #92400e; }
+.badge-off-sett { background: #f3e8ff; color: #6b21a8; }
+.badge-off-comp { background: #ecfdf5; color: #064e3b; }
+
+.progress-text { font-size: 12px; font-weight: 600; color: #3b82f6; }
+.progress-text.done { color: #10b981; }
+
+/* --- DRAWER OVERLAY --- */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); }
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer-panel { position: fixed; top: 0; right: -700px; width: 100%; max-width: 600px; height: 100%; background: #fff; z-index: 9999; box-shadow: -4px 0 24px rgba(0,0,0,0.1); transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+.drawer-panel.open { right: 0; }
+.drawer-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+.drawer-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px; }
+.drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff; color: #64748b; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.drawer-close:hover { background: #f1f5f9; color: #0f172a; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; justify-content: flex-end; gap: 12px; }
+
+/* --- FORM STYLES --- */
+.form-section { background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 24px; }
+.form-section-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.form-group label span.req { color: #ef4444; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: #334155; background: #fff; transition: all 0.2s; }
+.form-control:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-control[readonly] { background: #f1f5f9; color: #64748b; cursor: not-allowed; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Dropdown Search Box */
+.employee-search-container { position: relative; }
+.employee-dropdown { position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10000; display: none; margin-top: 4px; }
+.employee-dropdown.show { display: block; }
+.emp-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+.emp-item:hover { background: #f8fafc; }
+.emp-item-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; overflow: hidden; }
+.emp-item-info { display: flex; flex-direction: column; }
+.emp-item-name { font-size: 14px; font-weight: 600; color: #0f172a; }
+.emp-item-code { font-size: 12px; color: #64748b; }
+
+/* History Timeline */
+.timeline { position: relative; padding-left: 20px; margin-top: 10px; border-left: 2px solid #e2e8f0; }
+.timeline-item { position: relative; margin-bottom: 16px; padding-left: 14px; }
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-dot { position: absolute; left: -25px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; border: 2px solid #fff; }
+.timeline-time { font-size: 11.5px; color: #64748b; margin-bottom: 2px; }
+.timeline-content { background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.timeline-content strong { color: #0f172a; }
+.timeline-content p { margin: 4px 0 0; font-size: 13px; color: #475569; }
+
+/* Compare Grid */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.compare-box { background: #fff; padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.compare-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+.compare-val { font-size: 14px; color: #0f172a; margin-bottom: 4px; font-weight: 500; }
+.compare-val span { color: #64748b; width: 100px; display: inline-block; font-size: 12.5px; font-weight: 400; }
+
+/* Checklist Item */
+.chk-item { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; }
+.chk-status-btn { border: 1px solid #cbd5e1; background: #fff; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; transition: all 0.2s; }
+.chk-status-btn.done { background: #10b981; border-color: #10b981; color: #fff; }
+.chk-info { flex: 1; }
+.chk-title { font-size: 14px; font-weight: 600; color: #0f172a; margin-bottom: 4px; }
+.chk-meta { font-size: 12px; color: #64748b; display: flex; gap: 12px; }
+.chk-req { font-size: 11px; font-weight: 700; background: #fef2f2; color: #ef4444; padding: 2px 6px; border-radius: 4px; }
+</style>
+
+<div class="ob-page">
+    
+    <!-- HEADER -->
+    <div class="ob-page-header">
+        <div>
+            <h1 class="ob-page-title">
+                <div class="ob-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                Quản lý Nghỉ việc
+            </h1>
+            <div class="ob-header-subtitle">Theo dõi bàn giao, chốt công và quyết toán khi nhân viên nghỉ việc.</div>
+        </div>
+        <div class="ob-header-actions">
+            <button class="btn-ob-outline"><i class="fas fa-file-excel"></i> Xuất Excel</button>
+            <button class="btn-ob-primary" onclick="openCreateDrawer()"><i class="fas fa-plus"></i> Tạo nghỉ việc</button>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="ob-stats-grid">
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon blue"><i class="fas fa-spinner"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đang xử lý</div>
+                <div class="ob-stat-value">@statProcessing</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon amber"><i class="fas fa-box"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Chờ bàn giao</div>
+                <div class="ob-stat-value">@statHandoverPending</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon indigo"><i class="fas fa-file-invoice-dollar"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Chờ quyết toán</div>
+                <div class="ob-stat-value">@statSettlementPending</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đã nghỉ</div>
+                <div class="ob-stat-value">@statCompleted</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <form method="get" action="@Url.Action("Index", "Offboarding")" class="ob-filter-bar">
+        <div class="ob-search-wrap">
+            <i class="fas fa-search sicon"></i>
+            <input type="text" name="searchName" value="@searchName" class="ob-search-input" placeholder="Tìm theo Mã NV, Tên NV..." />
+        </div>
+        <select name="department" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Tất cả phòng ban --</option>
+            @foreach(var dp in departments)
+            {
+                if(currentDept == dp) { <option value="@dp" selected>@dp</option> }
+                else { <option value="@dp">@dp</option> }
+            }
+        </select>
+        <select name="status" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Tất cả trạng thái --</option>
+            <!option value="PROCESSING" @(currentStatus == "PROCESSING" ? "selected" : "")>Đang xử lý</!option>
+            <!option value="HANDOVER_PENDING" @(currentStatus == "HANDOVER_PENDING" ? "selected" : "")>Chờ bàn giao</!option>
+            <!option value="SETTLEMENT_PENDING" @(currentStatus == "SETTLEMENT_PENDING" ? "selected" : "")>Chờ quyết toán</!option>
+            <!option value="COMPLETED" @(currentStatus == "COMPLETED" ? "selected" : "")>Đã nghỉ</!option>
+        </select>
+        <input type="date" name="lastWorkingDate" class="ob-filter-date" value="@currentLastWorkingDate" title="Ngày làm việc cuối cùng" onchange="this.form.submit()" />
+        
+        <button type="submit" class="btn-ob-primary" style="padding: 9px 12px;"><i class="fas fa-filter"></i> Lọc</button>
+        @if(hasFilter)
+        {
+            <a href="@Url.Action("Index", "Offboarding")" class="btn-ob-reset"><i class="fas fa-times"></i> Xóa lọc</a>
+        }
+    </form>
+
+    <!-- TABLE -->
+    <div class="ob-table-card">
+        <div class="ob-table-header">
+            <div class="ob-table-title">
+                <i class="fas fa-list-ul" style="color:#64748b"></i>
+                Danh sách hồ sơ nghỉ việc
+                <span class="count-chip">@Model.Count</span>
+            </div>
+        </div>
+        <div class="ob-table-wrap">
+            <table class="ob-table">
+                <thead>
+                    <tr>
+                        <th>Nhân viên</th>
+                        <th>Phòng ban</th>
+                        <th>Ngày làm cuối</th>
+                        <th>Loại nghỉ</th>
+                        <th>Bàn giao</th>
+                        <th>Chốt công</th>
+                        <th>Trạng thái hồ sơ</th>
+                        <th style="text-align:center; width:80px">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if(Model.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="8" style="text-align:center; padding: 30px; color: #94a3b8;">
+                                <i class="fas fa-inbox fa-3x" style="margin-bottom:10px; color:#cbd5e1;"></i><br/>
+                                Chưa có hồ sơ nghỉ việc nào.
+                            </td>
+                        </tr>
+                    }
+                    @foreach(var item in Model)
+                    {
+                        int reqTotal = tasksDict.ContainsKey(item.Id) ? tasksDict[item.Id].Total : 0;
+                        int reqCompleted = tasksDict.ContainsKey(item.Id) ? tasksDict[item.Id].Completed : 0;
+                        bool isHandoverDone = reqTotal > 0 && reqCompleted == reqTotal;
+
+                        <tr>
+                            <td>
+                                <div class="emp-cell">
+                                    <div class="emp-av">
+                                        @if(!string.IsNullOrEmpty(item.Employee?.AvatarPath))
+                                        {
+                                            <img src="@item.Employee.AvatarPath" alt="Avatar"/>
+                                        }
+                                        else
+                                        {
+                                            <span>@(string.IsNullOrWhiteSpace(item.EmployeeNameSnapshot) ? "?" : item.EmployeeNameSnapshot.Substring(0,1).ToUpper())</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <span class="emp-name">@item.EmployeeNameSnapshot</span>
+                                        <span class="emp-code">@item.EmployeeCodeSnapshot</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>@item.DepartmentSnapshot</td>
+                            <td><span style="color:#0f172a; font-weight:500;">@item.LastWorkingDate.ToString("dd/MM/yyyy")</span></td>
+                            <td>@item.ExitType</td>
+                            <td>
+                                @if(reqTotal > 0)
+                                {
+                                    <span class="progress-text @(isHandoverDone ? "done" : "")">@reqCompleted/@reqTotal hoàn thành</span>
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8; font-size:12px;">Không có</span>
+                                }
+                            </td>
+                            <td>
+                                @if(item.AttendanceClosingStatus == "COMPLETED") { <span style="color:#10b981; font-weight:500; font-size:12px;"><i class="fas fa-check"></i> Đã chốt</span> }
+                                else { <span style="color:#64748b; font-size:12px;">Chưa chốt</span> }
+                            </td>
+                            <td>
+                                @if(item.ApprovalStatus == "DRAFT") { <span class="badge-status badge-draft">Bản nháp</span> }
+                                else if(item.ApprovalStatus == "PENDING_APPROVAL") { <span class="badge-status badge-pending">Chờ duyệt</span> }
+                                else if(item.ApprovalStatus == "APPROVED") { 
+                                    @if(item.OffboardingStatus == "PROCESSING") { <span class="badge-status badge-off-proc">Đang xử lý</span> }
+                                    else if(item.OffboardingStatus == "HANDOVER_PENDING") { <span class="badge-status badge-off-hand">Chờ bàn giao</span> }
+                                    else if(item.OffboardingStatus == "SETTLEMENT_PENDING") { <span class="badge-status badge-off-sett">Chờ quyết toán</span> }
+                                    else if(item.OffboardingStatus == "COMPLETED") { <span class="badge-status badge-off-comp">Đã nghỉ</span> }
+                                }
+                                else if(item.ApprovalStatus == "REJECTED") { <span class="badge-status badge-rejected">Từ chối</span> }
+                                else { <span class="badge-status badge-cancelled">Đã hủy</span> }
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="btn-ob-outline" style="padding: 5px 10px; font-size: 12px;" onclick="viewDetail(@item.Id)">
+                                    <i class="fas fa-eye"></i> Xem
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- DRAWER TẠO MỚI HỒ SƠ -->
+<div class="drawer-overlay" id="createDrawerOverlay" onclick="closeCreateDrawer()"></div>
+<div class="drawer-panel" id="createDrawerPanel">
+    <div class="drawer-header">
+        <h2 class="drawer-title"><i class="fas fa-plus-circle" style="color:#3b82f6"></i> Tạo hồ sơ nghỉ việc</h2>
+        <button class="drawer-close" onclick="closeCreateDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="createForm">
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-user-circle"></i> 1. THÔNG TIN NHÂN VIÊN</div>
+                <div class="form-group employee-search-container">
+                    <label>Nhân viên <span class="req">*</span></label>
+                    <div style="position: relative;">
+                        <input type="text" class="form-control" id="empSearchInput" placeholder="Nhập mã hoặc tên NV để tìm..." autocomplete="off" />
+                        <i class="fas fa-search" style="position:absolute; right:12px; top:12px; color:#94a3b8;"></i>
+                    </div>
+                    <div class="employee-dropdown" id="empDropdown"></div>
+                    <input type="hidden" id="c_EmployeeId" name="EmployeeId" required />
+                </div>
+                <div class="form-row" id="empInfoSection" style="display:none;">
+                    <div class="form-group">
+                        <label>Mã NV</label>
+                        <input type="text" class="form-control" id="c_EmpCode" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label>Phòng ban</label>
+                        <input type="text" class="form-control" id="c_EmpDept" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label>Chức danh</label>
+                        <input type="text" class="form-control" id="c_EmpJob" readonly />
+                    </div>
+                    <div class="form-group">
+                        <label>Trạng thái hiện tại</label>
+                        <input type="text" class="form-control" id="c_EmpPos" readonly />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-briefcase"></i> 2. THÔNG TIN NGHỈ VIỆC</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loại nghỉ <span class="req">*</span></label>
+                        <select class="form-control" name="ExitType" required>
+                            <option value="Tự nguyện">Tự nguyện</option>
+                            <option value="Hết hợp đồng">Hết hợp đồng</option>
+                            <option value="Chấm dứt HĐ">Chấm dứt Hợp đồng</option>
+                            <option value="Lý do sức khỏe">Lý do sức khỏe</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày báo trước</label>
+                        <input type="date" class="form-control" name="NoticeDate" />
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ngày làm cuối cùng <span class="req">*</span></label>
+                        <input type="date" class="form-control" name="LastWorkingDate" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Ngày hiệu lực (Nghỉ chính thức) <span class="req">*</span></label>
+                        <input type="date" class="form-control" name="EffectiveDate" required />
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Lý do nghỉ việc <span class="req">*</span></label>
+                    <textarea class="form-control" name="Reason" rows="3" required placeholder="Trình bày rõ lý do..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Ghi chú thêm (Tùy chọn)</label>
+                    <textarea class="form-control" name="Notes" rows="2"></textarea>
+                </div>
+            </div>
+            
+            <p style="font-size:13px; color:#64748b; margin-top:10px;"><i class="fas fa-info-circle"></i> Checklist bàn giao cơ bản sẽ được hệ thống tự động khởi tạo sau khi Lưu nháp hoặc Trình duyệt.</p>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button type="button" class="btn-ob-outline" onclick="closeCreateDrawer()">Hủy bỏ</button>
+        <button type="button" class="btn-ob-outline" onclick="submitCreate('DRAFT')"><i class="fas fa-save"></i> Lưu nháp</button>
+        <button type="button" class="btn-ob-primary" onclick="submitCreate('SUBMIT')"><i class="fas fa-paper-plane"></i> Trình duyệt</button>
+    </div>
+</div>
+
+<!-- DRAWER CHI TIẾT -->
+<div class="drawer-overlay" id="detailDrawerOverlay" onclick="closeDetailDrawer()"></div>
+<div class="drawer-panel" id="detailDrawerPanel">
+    <div class="drawer-header">
+        <h2 class="drawer-title"><i class="fas fa-file-contract" style="color:#6366f1"></i> Chi tiết Nghỉ việc</h2>
+        <button class="drawer-close" onclick="closeDetailDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" id="detailBody" style="display:none;">
+        <!-- Render from JS -->
+    </div>
+    <div class="drawer-footer" id="detailFooter">
+        <!-- Render from JS -->
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // CREATE DRAWER
+    function openCreateDrawer() {
+        document.getElementById('createDrawerOverlay').classList.add('open');
+        document.getElementById('createDrawerPanel').classList.add('open');
+        document.getElementById('createForm').reset();
+        document.getElementById('empInfoSection').style.display = 'none';
+        document.getElementById('c_EmployeeId').value = '';
+    }
+    function closeCreateDrawer() {
+        document.getElementById('createDrawerOverlay').classList.remove('open');
+        document.getElementById('createDrawerPanel').classList.remove('open');
+        document.getElementById('empDropdown').classList.remove('show');
+    }
+
+    // EMPLOYEE SEARCH
+    let searchTimeout;
+    const searchInput = document.getElementById('empSearchInput');
+    const dropdown = document.getElementById('empDropdown');
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        if (query.length < 2) {
+            dropdown.classList.remove('show');
+            return;
+        }
+        searchTimeout = setTimeout(() => {
+            fetch(`/Offboarding/SearchEmployee?query=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(data => {
+                    dropdown.innerHTML = '';
+                    if (data.length === 0) {
+                        dropdown.innerHTML = '<div style="padding:10px 14px; color:#64748b; font-size:13px;">Không tìm thấy nhân viên.</div>';
+                    } else {
+                        data.forEach(emp => {
+                            const item = document.createElement('div');
+                            item.className = 'emp-item';
+                            item.innerHTML = `
+                                <div class="emp-item-avatar">${emp.name.charAt(0).toUpperCase()}</div>
+                                <div class="emp-item-info">
+                                    <span class="emp-item-name">${emp.name}</span>
+                                    <span class="emp-item-code">${emp.employeeCode} - ${emp.department}</span>
+                                </div>
+                            `;
+                            item.onclick = () => selectEmployee(emp);
+                            dropdown.appendChild(item);
+                        });
+                    }
+                    dropdown.classList.add('show');
+                });
+        }, 300);
+    });
+
+    function selectEmployee(emp) {
+        document.getElementById('c_EmployeeId').value = emp.id;
+        searchInput.value = emp.name;
+        dropdown.classList.remove('show');
+        
+        document.getElementById('empInfoSection').style.display = 'grid';
+        document.getElementById('c_EmpCode').value = emp.employeeCode;
+        document.getElementById('c_EmpDept').value = emp.department;
+        document.getElementById('c_EmpJob').value = emp.jobTitle || '---';
+        document.getElementById('c_EmpPos').value = emp.position || '---';
+    }
+
+    // Hide dropdown on click outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    function submitCreate(actionType) {
+        const form = document.getElementById('createForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        if (!document.getElementById('c_EmployeeId').value) {
+            alert("Vui lòng chọn Nhân viên.");
+            return;
+        }
+
+        const formData = new FormData(form);
+        formData.append('actionType', actionType);
+
+        fetch('/Offboarding/Create', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                alert(res.message || 'Có lỗi xảy ra.');
+            }
+        }).catch(err => {
+            alert('Lỗi kết nối.');
+            console.error(err);
+        });
+    }
+
+    // DETAIL DRAWER
+    function openDetailDrawer() {
+        document.getElementById('detailDrawerOverlay').classList.add('open');
+        document.getElementById('detailDrawerPanel').classList.add('open');
+    }
+    function closeDetailDrawer() {
+        document.getElementById('detailDrawerOverlay').classList.remove('open');
+        document.getElementById('detailDrawerPanel').classList.remove('open');
+    }
+
+    function viewDetail(id) {
+        openDetailDrawer();
+        document.getElementById('detailBody').innerHTML = '<div style="text-align:center; padding: 40px; color:#94a3b8;"><i class="fas fa-spinner fa-spin fa-2x"></i><br/>Đang tải...</div>';
+        document.getElementById('detailBody').style.display = 'block';
+        document.getElementById('detailFooter').innerHTML = '';
+
+        fetch(`/Offboarding/Detail?id=${id}`)
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success) {
+                    document.getElementById('detailBody').innerHTML = '<div style="color:#ef4444; padding:20px;">Lỗi tải dữ liệu.</div>';
+                    return;
+                }
+                renderDetail(res.data, res.leaveBalance);
+            }).catch(e => {
+                document.getElementById('detailBody').innerHTML = '<div style="color:#ef4444; padding:20px;">Lỗi kết nối.</div>';
+            });
+    }
+
+    function renderDetail(data, leaveBalance) {
+        const formatDate = (ds) => {
+            if (!ds) return '---';
+            const d = new Date(ds);
+            return d.toLocaleDateString('vi-VN');
+        };
+        const formatDateTime = (ds) => {
+            if (!ds) return '---';
+            const d = new Date(ds);
+            return d.toLocaleDateString('vi-VN') + ' ' + d.toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'});
+        };
+
+        const renderBadge = (status) => {
+            switch(status) {
+                case 'DRAFT': return `<span class="badge-status badge-draft">Bản nháp</span>`;
+                case 'PENDING_APPROVAL': return `<span class="badge-status badge-pending">Chờ duyệt</span>`;
+                case 'APPROVED': return `<span class="badge-status badge-approved">Đã duyệt</span>`;
+                case 'REJECTED': return `<span class="badge-status badge-rejected">Từ chối</span>`;
+                case 'CANCELLED': return `<span class="badge-status badge-cancelled">Đã hủy</span>`;
+                default: return `<span class="badge-status badge-draft">${status}</span>`;
+            }
+        };
+
+        const renderOffBadge = (status) => {
+            switch(status) {
+                case 'PROCESSING': return `<span class="badge-status badge-off-proc">Đang xử lý</span>`;
+                case 'HANDOVER_PENDING': return `<span class="badge-status badge-off-hand">Chờ bàn giao</span>`;
+                case 'SETTLEMENT_PENDING': return `<span class="badge-status badge-off-sett">Chờ quyết toán</span>`;
+                case 'COMPLETED': return `<span class="badge-status badge-off-comp">Đã nghỉ</span>`;
+                default: return '';
+            }
+        };
+
+        let checklistHtml = '';
+        let reqTotal = 0, reqCompleted = 0;
+
+        if (data.checklistTasks && data.checklistTasks.length > 0) {
+            data.checklistTasks.forEach(task => {
+                if (task.isMandatory) reqTotal++;
+                if (task.isMandatory && (task.status === 'DONE' || task.status === 'SKIPPED')) reqCompleted++;
+                
+                const isDone = task.status === 'DONE' || task.status === 'SKIPPED';
+                checklistHtml += `
+                    <div class="chk-item">
+                        <div class="chk-status-btn ${isDone ? 'done' : ''}" 
+                             ${!isDone && data.approvalStatus === 'APPROVED' ? `onclick="completeTask(${task.id}, '${data.offboardingStatus}')"` : ''}>
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="chk-info">
+                            <div class="chk-title">${task.taskName}</div>
+                            <div class="chk-meta">
+                                ${task.isMandatory ? '<span class="chk-req">Bắt buộc</span>' : '<span style="color:#94a3b8">Tùy chọn</span>'}
+                                <span><i class="fas fa-folder"></i> ${task.category || 'Chung'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            checklistHtml = '<div style="color:#64748b; font-size:13px;">Chưa có checklist bàn giao.</div>';
+        }
+
+        let historyHtml = '';
+        if (data.histories && data.histories.length > 0) {
+            data.histories.forEach(h => {
+                historyHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-time">${formatDateTime(h.timestamp)} - <strong>${h.actor}</strong></div>
+                        <div class="timeline-content">
+                            <strong>${h.action}</strong>
+                            <p>${h.details || ''}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        const html = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+                <div class="emp-cell">
+                    <div class="emp-av" style="width:48px; height:48px; font-size:18px;">
+                        ${data.employee && data.employee.avatarPath ? `<img src="${data.employee.avatarPath}"/>` : `<span>${data.employeeNameSnapshot.charAt(0)}</span>`}
+                    </div>
+                    <div>
+                        <span class="emp-name" style="font-size:16px;">${data.employeeNameSnapshot}</span>
+                        <span class="emp-code" style="font-size:13px;">${data.employeeCodeSnapshot} - ${data.departmentSnapshot}</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    ${renderBadge(data.approvalStatus)}
+                    <div style="margin-top:6px">${renderOffBadge(data.offboardingStatus)}</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-info-circle"></i> THÔNG TIN NGHỈ VIỆC</div>
+                <div class="compare-grid">
+                    <div class="compare-box">
+                        <div class="compare-title">Loại nghỉ</div>
+                        <div class="compare-val">${data.exitType || '---'}</div>
+                    </div>
+                    <div class="compare-box">
+                        <div class="compare-title">Ngày báo trước</div>
+                        <div class="compare-val">${formatDate(data.noticeDate)}</div>
+                    </div>
+                    <div class="compare-box">
+                        <div class="compare-title">Làm việc cuối cùng</div>
+                        <div class="compare-val">${formatDate(data.lastWorkingDate)}</div>
+                    </div>
+                    <div class="compare-box">
+                        <div class="compare-title">Ngày hiệu lực</div>
+                        <div class="compare-val">${formatDate(data.effectiveDate)}</div>
+                    </div>
+                </div>
+                <div style="padding:12px; background:#fff; border:1px solid #e2e8f0; border-radius:8px;">
+                    <strong>Lý do:</strong> <span style="color:#475569;">${data.reason || '---'}</span>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title" style="display:flex; justify-content:space-between;">
+                    <span><i class="fas fa-tasks"></i> TIẾN ĐỘ BÀN GIAO</span>
+                    <span style="font-size:12px; color:#3b82f6; text-transform:none;">${reqCompleted}/${reqTotal} bắt buộc đã xong</span>
+                </div>
+                ${checklistHtml}
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-file-invoice-dollar"></i> CHỐT CÔNG & QUYẾT TOÁN</div>
+                <div class="compare-grid">
+                    <div class="compare-box" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div class="compare-title">Chốt phép năm</div>
+                            <div class="compare-val">Còn ${leaveBalance} ngày</div>
+                        </div>
+                        ${data.leaveClosingStatus === 'COMPLETED' ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:20px;"></i>' : (data.approvalStatus === 'APPROVED' ? `<button class="btn-ob-outline" style="padding:4px 8px; font-size:11px;" onclick="closeLeave(${data.id})">Chốt ngay</button>` : '<i class="fas fa-clock" style="color:#94a3b8; font-size:20px;"></i>')}
+                    </div>
+                    <div class="compare-box" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div class="compare-title">Chốt công</div>
+                            <div class="compare-val">Đến ${formatDate(data.lastWorkingDate)}</div>
+                        </div>
+                        ${data.attendanceClosingStatus === 'COMPLETED' ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:20px;"></i>' : (data.approvalStatus === 'APPROVED' ? `<button class="btn-ob-primary" style="padding:4px 8px; font-size:11px;" onclick="closeAttendance(${data.id})">Chốt công</button>` : '<i class="fas fa-clock" style="color:#94a3b8; font-size:20px;"></i>')}
+                    </div>
+                    <div class="compare-box" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div class="compare-title">Chuyển quyết toán</div>
+                            <div class="compare-val">${data.settlementStatus === 'COMPLETED' ? 'Đã hoàn tất' : 'Chưa chuyển'}</div>
+                        </div>
+                        ${data.settlementStatus === 'COMPLETED' ? '<i class="fas fa-check-circle" style="color:#10b981; font-size:20px;"></i>' : (data.attendanceClosingStatus === 'COMPLETED' ? `<button class="btn-ob-primary" style="padding:4px 8px; font-size:11px;" onclick="sendSettlement(${data.id})">Chuyển Kế toán</button>` : '<i class="fas fa-clock" style="color:#94a3b8; font-size:20px;"></i>')}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-history"></i> LỊCH SỬ THAO TÁC</div>
+                <div class="timeline">
+                    ${historyHtml}
+                </div>
+            </div>
+        `;
+        document.getElementById('detailBody').innerHTML = html;
+
+        // Render Footer Actions based on status and role
+        let footerHtml = '';
+        if (data.approvalStatus === 'DRAFT') {
+            footerHtml += `<button class="btn-ob-primary" onclick="updateStatus(${data.id}, 'SUBMIT')"><i class="fas fa-paper-plane"></i> Trình duyệt</button>`;
+        }
+        else if (data.approvalStatus === 'PENDING_APPROVAL') { 
+            footerHtml += `
+                <button class="btn-ob-reset" onclick="rejectRecord(${data.id})"><i class="fas fa-times"></i> Từ chối</button>
+                <button class="btn-ob-primary" onclick="updateStatus(${data.id}, 'APPROVE')" style="background:#10b981;"><i class="fas fa-check"></i> Phê duyệt</button>
+            `;
+        }
+        else if (data.approvalStatus === 'APPROVED' && data.offboardingStatus !== 'COMPLETED') {
+            let canComplete = true;
+            let tooltip = '';
+            if (reqTotal > 0 && reqCompleted < reqTotal) {
+                canComplete = false;
+                tooltip = 'Chưa hoàn thành Checklist bắt buộc';
+            } else if (data.attendanceClosingStatus !== 'COMPLETED') {
+                canComplete = false;
+                tooltip = 'Chưa chốt công';
+            }
+            
+            if (canComplete) {
+                footerHtml += `<button class="btn-ob-primary" onclick="completeOffboarding(${data.id})" style="background:#059669;"><i class="fas fa-flag-checkered"></i> Hoàn tất Nghỉ việc</button>`;
+            } else {
+                footerHtml += `<button class="btn-ob-primary" style="background:#94a3b8; cursor:not-allowed;" title="${tooltip}"><i class="fas fa-flag-checkered"></i> Hoàn tất Nghỉ việc</button>`;
+                footerHtml += `<div style="color:#ef4444; font-size:12px; display:flex; align-items:center; margin-right:10px;">* ${tooltip}</div>`;
+            }
+        }
+        
+        if (data.approvalStatus !== 'CANCELLED' && data.offboardingStatus !== 'COMPLETED') {
+            footerHtml = `<button class="btn-ob-outline" style="margin-right:auto; color:#ef4444;" onclick="cancelRecord(${data.id})"><i class="fas fa-ban"></i> Hủy hồ sơ</button>` + footerHtml;
+        }
+
+        document.getElementById('detailFooter').innerHTML = footerHtml;
+    }
+
+    // --- ACTIONS ---
+    function updateStatus(id, action) {
+        if (!confirm('Bạn có chắc chắn thực hiện thao tác này?')) return;
+        let url = '';
+        if (action === 'SUBMIT') url = '/Offboarding/Update?actionType=SUBMIT'; // Needs full form logic usually, simplified here
+        if (action === 'APPROVE') url = `/Offboarding/Approve?id=${id}`;
+        
+        if (action === 'SUBMIT') {
+            alert('Vui lòng sử dụng tính năng Trình duyệt ở chế độ sửa hồ sơ (Phát triển thêm).');
+            return;
+        }
+
+        fetch(url, { method: 'POST' }).then(r=>r.json()).then(res=>{
+            if(res.success) viewDetail(id);
+            else alert(res.message);
+        });
+    }
+
+    function rejectRecord(id) {
+        const reason = prompt("Nhập lý do từ chối:");
+        if (!reason) return;
+        fetch(`/Offboarding/Reject?id=${id}&reason=${encodeURIComponent(reason)}`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { if(res.success) location.reload(); else alert(res.message); });
+    }
+
+    function cancelRecord(id) {
+        const reason = prompt("Nhập lý do hủy:");
+        if (!reason) return;
+        fetch(`/Offboarding/Cancel?id=${id}&reason=${encodeURIComponent(reason)}`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { if(res.success) location.reload(); else alert(res.message); });
+    }
+
+    function completeTask(taskId, offStatus) {
+        if (offStatus === 'COMPLETED') return;
+        if (!confirm('Đánh dấu công việc này đã hoàn thành?')) return;
+        fetch(`/Offboarding/UpdateChecklistStatus?taskId=${taskId}&status=DONE`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { 
+                if(res.success) {
+                    const id = document.querySelector('.btn-ob-outline[onclick^="cancelRecord"]').getAttribute('onclick').match(/\d+/)[0];
+                    viewDetail(id);
+                } else alert(res.message); 
+            });
+    }
+
+    function closeAttendance(id) {
+        if (!confirm('Bạn xác nhận chốt công đến ngày làm việc cuối cùng? Dữ liệu chấm công sau ngày này (nếu có) sẽ không được tính lương.')) return;
+        fetch(`/Offboarding/CloseAttendance?id=${id}`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { if(res.success) viewDetail(id); else alert(res.message); });
+    }
+
+    function closeLeave(id) {
+        if (!confirm('Xác nhận chốt số dư ngày phép?')) return;
+        fetch(`/Offboarding/CloseLeave?id=${id}`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { if(res.success) viewDetail(id); else alert(res.message); });
+    }
+
+    function sendSettlement(id) {
+        if (!confirm('Chuyển dữ liệu quyết toán sang Kế toán/C&B?')) return;
+        fetch(`/Offboarding/SendSettlement?id=${id}`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { if(res.success) viewDetail(id); else alert(res.message); });
+    }
+
+    function completeOffboarding(id) {
+        if (!confirm('Hoàn tất toàn bộ quy trình nghỉ việc? Nhân sự này sẽ chính thức Đã nghỉ vào Ngày hiệu lực.')) return;
+        fetch(`/Offboarding/Complete?id=${id}`, { method: 'POST' })
+            .then(r=>r.json()).then(res => { if(res.success) location.reload(); else alert(res.message); });
+    }
+
+</script>
+}

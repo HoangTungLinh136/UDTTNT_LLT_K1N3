@@ -1,0 +1,192 @@
+@model giao_dien_demo.Models.LeaderReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo - Ban lãnh đạo";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-chart-line"></i></span>
+            Trung tâm Báo cáo (Lãnh đạo)
+        </h1>
+        <div class="hrms-page-subtitle">Xem và tải các báo cáo tổng hợp về nhân sự, chấm công, nghỉ phép, lương và chi phí.</div>
+    </div>
+</div>
+
+<!-- BỘ LỌC CHUNG -->
+<div class="card mb-4" style="border: 1px solid var(--hrms-border-light); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div class="card-body p-3">
+        <form method="get" id="filterForm" class="row gx-3 gy-2 align-items-center">
+            <input type="hidden" name="reportType" value="@Model.ReportType" />
+            <input type="hidden" name="page" value="1" />
+            
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Kỳ phân tích (Từ ngày)</label>
+                <input type="date" name="from" class="form-control form-control-sm" style="width: 130px;" value="@Model.From.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Đến ngày</label>
+                <input type="date" name="to" class="form-control form-control-sm" style="width: 130px;" value="@Model.To.ToString("yyyy-MM-dd")" />
+            </div>
+            
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Phòng ban</label>
+                <select name="department" class="form-select form-select-sm" style="width: 200px;">
+                    <option value="">-- Tất cả đơn vị --</option>
+                    @if (Model.ScopeDepartments != null)
+                    {
+                        foreach (var dept in Model.ScopeDepartments)
+                        {
+                            var isSelected = Model.SelectedDepartment == dept;
+                            @if (isSelected) {
+                                <option value="@dept" selected>@dept</option>
+                            } else {
+                                <option value="@dept">@dept</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-auto">
+                <label class="form-label" style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Tìm kiếm</label>
+                <input type="text" name="search" class="form-control form-control-sm" placeholder="Mã NV, Họ tên..." style="width: 180px;" value="@Model.Search" />
+            </div>
+            
+            <div class="col-auto ms-auto d-flex align-items-end gap-2 mt-4">
+                <button type="submit" class="btn btn-sm btn-primary"><i class="fa-solid fa-filter me-1"></i> Lọc</button>
+                <a href="@Url.Action("Index", new { reportType = Model.ReportType })" class="btn btn-sm btn-light" style="border: 1px solid #cbd5e1;"><i class="fa-solid fa-rotate-right me-1"></i> Làm mới</a>
+                <a href="@Url.Action("Export", new { reportType = Model.ReportType, department = Model.SelectedDepartment, search = Model.Search, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="btn btn-sm btn-success"><i class="fa-solid fa-file-excel me-1"></i> Xuất CSV</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="hrms-nav-grid mb-4">
+    <a href="@Url.Action("Index", new { reportType = "workforce", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "workforce" ? "active" : "")">
+        <i class="fa-solid fa-users nav-icon"></i>
+        <span class="nav-title">Báo cáo nhân sự</span>
+    </a>
+    <a href="@Url.Action("Index", new { reportType = "attendance", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "attendance" ? "active" : "")">
+        <i class="fa-solid fa-clock nav-icon"></i>
+        <span class="nav-title">Báo cáo chấm công</span>
+    </a>
+    <a href="@Url.Action("Index", new { reportType = "leave", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "leave" ? "active" : "")">
+        <i class="fa-solid fa-umbrella-beach nav-icon"></i>
+        <span class="nav-title">Báo cáo nghỉ phép</span>
+    </a>
+    <a href="@Url.Action("Index", new { reportType = "payroll", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "payroll" ? "active" : "")">
+        <i class="fa-solid fa-file-invoice-dollar nav-icon"></i>
+        <span class="nav-title">Báo cáo lương</span>
+    </a>
+    <a href="@Url.Action("Index", new { reportType = "kpi", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "kpi" ? "active" : "")">
+        <i class="fa-solid fa-chart-column nav-icon"></i>
+        <span class="nav-title">Báo cáo KPI</span>
+    </a>
+    <a href="@Url.Action("Index", new { reportType = "movement", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "movement" ? "active" : "")">
+        <i class="fa-solid fa-person-walking-arrow-right nav-icon"></i>
+        <span class="nav-title">Báo cáo biến động</span>
+    </a>
+    <a href="@Url.Action("Index", new { reportType = "personnel_cost", department = Model.SelectedDepartment, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd") })" class="hrms-nav-card @(Model.ReportType == "personnel_cost" ? "active" : "")">
+        <i class="fa-solid fa-coins nav-icon"></i>
+        <span class="nav-title">Báo cáo chi phí</span>
+    </a>
+</div>
+
+<div class="card" style="border: 1px solid var(--hrms-border-light); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div class="card-header bg-white border-bottom d-flex align-items-center" style="border-radius: 12px 12px 0 0; padding: 16px 20px;">
+        <h6 class="mb-0 fw-semibold" style="color: #1e293b;"><i class="fa-solid fa-list me-2 text-primary"></i> Chi tiết Báo cáo (@Model.TotalRows kết quả)</h6>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 hrms-table">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">Mã NV</th>
+                        <th style="width: 200px;">Họ tên</th>
+                        <th style="width: 150px;">Phòng ban</th>
+                        <th style="width: 120px;">Ngày / Kỳ</th>
+                        <th style="width: 180px;">Chỉ tiêu (Metric)</th>
+                        <th style="width: 150px;">Trạng thái</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rows == null || !Model.Rows.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="fa-solid fa-box-open fa-2x mb-3 text-black-50 d-block"></i>
+                                Không có dữ liệu trong phạm vi bộ lọc.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td class="fw-medium text-primary">@row.EmployeeCode</td>
+                                <td class="fw-medium">@row.EmployeeName</td>
+                                <td><span class="badge bg-light text-dark border">@row.Department</span></td>
+                                <td>@(row.Date?.ToString("dd/MM/yyyy") ?? "-")</td>
+                                <td>@row.Metric</td>
+                                <td>
+                                    @if(row.Status == "Active" || row.Status == "Đúng giờ" || row.Status == "Đã duyệt" || row.Status == "Đã tính" || row.Status == "APPROVED")
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">@row.Status</span>
+                                    }
+                                    else if(row.Status == "Đi muộn" || row.Status == "Nghỉ việc" || row.Status == "Resigned" || row.Status == "REJECTED")
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">@row.Status</span>
+                                    }
+                                    else if(string.IsNullOrEmpty(row.Status))
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">@row.Status</span>
+                                    }
+                                </td>
+                                <td>@row.Detail</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    @if (Model.TotalRows > Model.PageSize)
+    {
+        var totalPages = (int)Math.Ceiling((double)Model.TotalRows / Model.PageSize);
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center" style="border-radius: 0 0 12px 12px; padding: 12px 20px;">
+            <span class="text-muted" style="font-size: 13px;">Hiển thị trang @Model.Page / @totalPages</span>
+            <ul class="pagination pagination-sm mb-0">
+                @if (Model.Page > 1)
+                {
+                    <li class="page-item"><a class="page-link" href="@Url.Action("Index", new { reportType = Model.ReportType, department = Model.SelectedDepartment, search = Model.Search, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd"), page = Model.Page - 1 })">Trước</a></li>
+                }
+                @for (int i = 1; i <= totalPages; i++)
+                {
+                    if (i == 1 || i == totalPages || (i >= Model.Page - 2 && i <= Model.Page + 2))
+                    {
+                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Index", new { reportType = Model.ReportType, department = Model.SelectedDepartment, search = Model.Search, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd"), page = i })">@i</a>
+                        </li>
+                    }
+                    else if (i == 2 || i == totalPages - 1)
+                    {
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    }
+                }
+                @if (Model.Page < totalPages)
+                {
+                    <li class="page-item"><a class="page-link" href="@Url.Action("Index", new { reportType = Model.ReportType, department = Model.SelectedDepartment, search = Model.Search, from = Model.From.ToString("yyyy-MM-dd"), to = Model.To.ToString("yyyy-MM-dd"), page = Model.Page + 1 })">Sau</a></li>
+                }
+            </ul>
+        </div>
+    }
+</div>

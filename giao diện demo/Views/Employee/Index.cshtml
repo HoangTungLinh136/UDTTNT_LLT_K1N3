@@ -1,170 +1,186 @@
-﻿@model List<giao_dien_demo.Models.Employee>
+@model List<giao_dien_demo.Models.Employee>
 
 @{
-    ViewData["Title"] = "👥 Quản lý nhân viên";
-    // Lấy danh sách phòng ban từ Controller truyền qua
+    ViewData["Title"] = "Quản lý nhân viên";
     var departments = ViewBag.Departments as List<string> ?? new List<string>();
+    string searchName = ViewBag.CurrentSearch as string ?? "";
+    string currentDept = ViewBag.CurrentDept as string ?? "";
+    string currentStatus = Context.Request.Query["status"].ToString() ?? "Active";
 }
 
 <style>
-    .table th, .table td { text-align: center !important; vertical-align: middle !important; }
-    .salary-text { color: #2ecc71; font-weight: bold; }
-    .position-badge {
-        padding: 5px 12px; border-radius: 15px; font-size: 11px;
-        font-weight: bold; background: #eef2f7; color: #34495e; border: 1px solid #d1d9e6;
-    }
-    .profile-badge {
-        padding: 5px 12px; border-radius: 15px; font-size: 11px;
-        font-weight: bold; background: #e0f7fa; color: #00838f; border: 1px solid #b2ebf2;
-        cursor: pointer; transition: 0.3s; text-decoration: none; display: inline-block;
-    }
-    .profile-badge:hover { background: #00acc1; color: white; }
-    .row-removed { transform: translateX(50px); opacity: 0; transition: all 0.5s ease; }
-    .card { border-radius: 12px; transition: all 0.3s; }
-    .filter-card { background: #f8f9fa; border: 1px solid #e3e6f0; }
+/* Module Nhân viên — Domain-specific enhancements */
+.table-employee tbody tr.row-removed { transform: translateX(50px); opacity: 0; transition: all 0.5s ease; }
+.emp-name-cell { display: flex; align-items: center; gap: 12px; }
+.emp-avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 700; font-size: 14px; flex-shrink: 0;
+}
+.emp-info-wrap { display: flex; flex-direction: column; }
+.emp-name { font-weight: 700; color: #0f172a; font-size: 13.5px; text-decoration: none; }
+.emp-name:hover { color: var(--color-primary, #2563eb); text-decoration: underline; }
+.emp-id { font-size: 11.5px; color: #64748b; margin-top: 2px; }
+.money-cell { font-variant-numeric: tabular-nums; font-weight: 600; color: #0f172a; }
+.btn-action-group { display: flex; gap: 4px; align-items: center; justify-content: center; }
 </style>
 
-<div class="container-fluid mt-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <a asp-controller="HR" asp-action="Index" class="btn btn-outline-secondary btn-sm">⬅ Quay về Dashboard HR</a>
+<div>
+    @* ============= PAGE HEADER ============= *@
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fas fa-users"></i></span>
+                Quản lý nhân viên
+            </h1>
+            <p class="hrms-page-subtitle">Quản lý thông tin, phòng ban và chức vụ của nhân sự hệ thống</p>
         </div>
-        <h2 class="fw-bold m-0 text-dark">👥 Danh sách hồ sơ nhân sự hệ thống</h2>
-        <div style="width: 150px;"></div>
+        <div class="hrms-page-header-actions">
+            <a href="/Employee/Create" class="hrms-btn hrms-btn-primary">
+                <i class="fas fa-plus me-1"></i> Thêm nhân viên
+            </a>
+        </div>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4 filter-card">
-        <div class="card-body">
-            <form asp-action="Index" method="get" class="row g-3">
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="fas fa-search text-muted"></i>
-                        </span>
-                        @* 🔥 ĐÃ CẬP NHẬT: Placeholder thông báo tìm được cả Tên và Mã *@
-                        <input type="text" name="searchName" class="form-control border-start-0" 
-                               placeholder="Tìm tên hoặc mã nhân viên (VD: NV001)..." value="@ViewBag.CurrentSearch">
-                    </div>
-                </div>
-                
-                <div class="col-md-4">
-                    <select name="department" class="form-select">
-                        <option value="">-- Tất cả phòng ban --</option>
-                        @foreach (var dept in departments)
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success mb-3" role="alert"><i class="fas fa-check-circle me-2"></i>@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger mb-3" role="alert"><i class="fas fa-exclamation-circle me-2"></i>@TempData["Error"]</div>
+    }
+
+    @* ============= SEARCH / FILTER ============= *@
+    <div class="hrms-filter-bar mb-4">
+        <form method="get" asp-action="Index" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;">
+            <div class="hrms-search-input-wrap" style="flex:1;min-width:250px;max-width:360px;">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" name="searchName" value="@searchName" placeholder="Tên hoặc mã nhân viên (VD: NV001)..." class="hrms-search-input" autocomplete="off" />
+            </div>
+            
+            <select name="department" class="hrms-filter-select" style="min-width:200px;">
+                <option value="">-- Tất cả phòng ban --</option>
+                @foreach (var dept in departments)
+                {
+                    <option value="@dept" selected="@(dept == currentDept ? "selected" : null)">@dept</option>
+                }
+            </select>
+            
+            <select name="status" class="hrms-filter-select" style="min-width:180px;">
+                <option value="All" selected="@(currentStatus == "All" ? "selected" : null)">-- Tất cả trạng thái --</option>
+                <option value="Active" selected="@(currentStatus == "Active" ? "selected" : null)">Đang làm việc</option>
+                <option value="OnLeave" selected="@(currentStatus == "OnLeave" ? "selected" : null)">Nghỉ phép</option>
+                <option value="Terminated" selected="@(currentStatus == "Terminated" ? "selected" : null)">Đã nghỉ việc</option>
+            </select>
+
+            <button type="submit" class="hrms-btn hrms-btn-primary">
+                Lọc dữ liệu
+            </button>
+            @if (!string.IsNullOrWhiteSpace(searchName) || !string.IsNullOrWhiteSpace(currentDept))
+            {
+                <a href="/Employee/Index" class="hrms-btn hrms-btn-secondary">
+                    Xóa lọc
+                </a>
+            }
+        </form>
+    </div>
+
+    @* ============= TABLE CARD ============= *@
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center">
+            <h3 class="hrms-card-title d-flex align-items-center gap-2">
+                <i class="fas fa-list text-primary"></i>
+                Danh sách nhân sự
+                <span class="hrms-badge hrms-badge-info">@(Model?.Count ?? 0) nhân viên</span>
+            </h3>
+        </div>
+
+        <div class="hrms-card-body p-0">
+            <div class="hrms-table-wrap">
+                <table class="hrms-table" id="employeeTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">STT</th>
+                            <th style="text-align: left;">Thông tin nhân viên</th>
+                            <th style="text-align: left;">Phòng ban</th>
+                            <th style="text-align: left;">Chức vụ</th>
+                            <th style="text-align: left;">Trình độ</th>
+                            <th style="text-align: center;">Trạng thái</th>
+                            <th style="text-align: right;" class="col-money">Mức lương CB</th>
+                            <th style="width: 130px; text-align: center;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeTableBody">
+                        @if (Model != null && Model.Any())
                         {
-                            <option value="@dept" selected="@(dept == ViewBag.CurrentDept ? "selected" : null)">
-                                @dept
-                            </option>
+                            int stt = 1;
+                            foreach (var item in Model)
+                            {
+                                <tr id="row-@item.Id">
+                                    <td class="stt-cell text-center text-muted fw-medium">@stt</td>
+                                    <td>
+                                        <div class="emp-name-cell">
+                                            <div class="emp-avatar">
+                                                @(string.IsNullOrEmpty(item.Name) ? "?" : item.Name.Substring(0, 1).ToUpper())
+                                            </div>
+                                            <div class="emp-info-wrap">
+                                                <a asp-action="Details" asp-route-id="@item.Id" class="emp-name">@item.Name</a>
+                                                <div class="emp-id">@(string.IsNullOrWhiteSpace(item.EmployeeCode) ? "Chưa được cấp mã" : item.EmployeeCode)</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td><span class="hrms-badge hrms-badge-neutral">@(string.IsNullOrEmpty(item.Department) ? "---" : item.Department)</span></td>
+                                    <td><span class="hrms-badge hrms-badge-info">@(string.IsNullOrEmpty(item.Position) ? "---" : item.Position)</span></td>
+                                    <td><span class="hrms-badge hrms-badge-purple">@(string.IsNullOrEmpty(item.AcademicLevel) ? "---" : item.AcademicLevel)</span></td>
+                                    <td style="text-align: center;">
+                                        @if(item.Status == "Active") { <span class="hrms-badge hrms-badge-success">Đang làm việc</span> }
+                                        else if(item.Status == "Terminated") { <span class="hrms-badge hrms-badge-danger">Đã nghỉ việc</span> }
+                                        else if(item.Status == "OnLeave") { <span class="hrms-badge hrms-badge-warning">Nghỉ phép</span> }
+                                        else { <span class="hrms-badge hrms-badge-neutral">@item.Status</span> }
+                                    </td>
+                                    <td style="text-align: right;" class="col-money">
+                                        <div class="money-cell">@item.Salary.ToString("N0") ₫</div>
+                                    </td>
+                                    <td>
+                                        <div class="btn-action-group">
+                                            <a asp-action="Details" asp-route-id="@item.Id" class="hrms-btn hrms-btn-xs hrms-btn-ghost" title="Xem chi tiết">
+                                                <i class="fas fa-eye text-primary"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@item.Id" class="hrms-btn hrms-btn-xs hrms-btn-ghost" title="Chỉnh sửa">
+                                                <i class="fas fa-edit text-warning"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                stt++;
+                            }
                         }
-                    </select>
-                </div>
-
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-filter me-1"></i> Lọc dữ liệu
-                    </button>
-                    <a href="/Employee/Index" class="btn btn-outline-secondary w-100">
-                        <i class="fas fa-redo"></i> Reset
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <table class="table table-bordered table-hover mb-0" style="border-radius: 12px; overflow: hidden;">
-                <thead style="background:#4A90E2; color:white;">
-                    <tr>
-                        <th style="width:70px;">STT</th>
-                        <th>Mã NV</th> 
-                        <th>Họ và Tên</th>
-                        <th>Phòng ban</th>
-                        <th>Chức vụ</th>
-                        <th>Hồ sơ</th> 
-                        <th>Trạng thái</th>
-                        <th>Mức lương</th>
-                        <th style="width:180px;">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody id="employeeTableBody">
-                    @if (Model != null && Model.Any())
-                    {
-                        int stt = 1;
-                        foreach (var item in Model)
+                        else
                         {
-                            <tr id="row-@item.Id">
-                                <td class="stt-cell">@stt</td>
-                                
-                                <td>
-                                    <span class="badge @(string.IsNullOrEmpty(item.EmployeeCode) ? "bg-info" : "bg-secondary")" style="font-size: 12px; min-width: 60px;">
-                                        @(string.IsNullOrEmpty(item.EmployeeCode) ? "NV-MỚI" : item.EmployeeCode)
-                                    </span>
-                                </td>
-                                
-                                <td class="text-start ps-4"><strong>👤 @item.Name</strong></td>
-                                <td>@item.Department</td>
-                                
-                                <td class="text-primary fw-bold">
-                                    @(string.IsNullOrEmpty(item.JobTitle) ? "Chưa cập nhật" : item.JobTitle)
-                                </td>
-
-                                <td>
-                                    <a asp-action="Details" asp-route-id="@item.Id" class="profile-badge">
-                                        <i class="fas fa-eye me-1"></i> Xem hồ sơ
-                                    </a>
-                                </td>
-
-                                <td><span class="position-badge">@item.Position</span></td>
-                                
-                                <td>
-                                    <div class="salary-text" style="font-size: 15px;">
-                                        @item.Salary.ToString("N0") VNĐ
-                                    </div>
-                                    <div class="text-muted" style="font-size: 11px;">
-                                        (≈ @item.HourlyRate.ToString("N0") VNĐ/giờ)
-                                    </div>
-                                </td>
-
-                                <td>
-                                    <div class="btn-group">
-                                        <a asp-controller="Employee" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit"></i> Sửa
-                                        </a>
-                                        <button onclick="deleteEmployee(@item.Id)" class="btn btn-sm btn-outline-danger ms-2">
-                                            <i class="fas fa-trash-alt"></i> Xóa
-                                        </button>
+                            <tr id="emptyRow">
+                                <td colspan="8">
+                                    <div class="hrms-empty-state py-5 text-center">
+                                        <div class="hrms-empty-state-icon mb-2"><i class="fas fa-user-slash fa-2x text-muted"></i></div>
+                                        <div class="hrms-empty-state-title fw-bold">Không tìm thấy dữ liệu</div>
+                                        <div class="hrms-empty-state-text text-muted small">Vui lòng kiểm tra lại từ khóa hoặc phân loại phòng ban.</div>
                                     </div>
                                 </td>
                             </tr>
-                            stt++;
                         }
-                    }
-                    else
-                    {
-                        <tr id="emptyRow">
-                            <td colspan="9" class="text-center text-muted" style="padding: 60px;">
-                                <div class="mb-3" style="font-size: 40px;">📂</div>
-                                <h5 class="fw-bold">Không tìm thấy dữ liệu nhân sự</h5>
-                                <i>Vui lòng kiểm tra lại từ khóa hoặc mã nhân viên.</i>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
 
+<form id="employeeCsrf" hidden>@Html.AntiForgeryToken()</form>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/dashboardHub")
-            .withAutomaticReconnect()
-            .build();
+        const connection = window.HRMSSignalRConnection;
 
         connection.on("ContractApproved", function (employeeName) {
             Swal.fire({
@@ -175,12 +191,6 @@
             setTimeout(() => { location.reload(); }, 1500);
         });
 
-        async function startConnection() {
-            try { await connection.start(); } 
-            catch (err) { setTimeout(startConnection, 5000); }
-        }
-        startConnection();
-
         function updateSTT() {
             const rows = document.querySelectorAll("#employeeTableBody tr:not(#emptyRow)");
             rows.forEach((row, index) => {
@@ -188,32 +198,9 @@
                 if (sttCell) sttCell.innerText = index + 1;
             });
             if (rows.length === 0) {
-                document.getElementById("employeeTableBody").innerHTML = '<tr id="emptyRow"><td colspan="9" class="text-center text-muted" style="padding: 60px;"><i>Danh sách hiện đang trống.</i></td></tr>';
+                document.getElementById("employeeTableBody").innerHTML = '<tr id="emptyRow"><td colspan="8"><div class="hrms-empty-state py-5 text-center"><div class="hrms-empty-state-icon mb-2"><i class="fas fa-user-slash fa-2x text-muted"></i></div><div class="hrms-empty-state-title fw-bold">Danh sách hiện đang trống</div></div></td></tr>';
             }
         }
 
-        function deleteEmployee(id) {
-            Swal.fire({
-                title: 'Xác nhận xóa?',
-                text: 'Dữ liệu hồ sơ sẽ bị xóa vĩnh viễn!',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'Đồng ý xóa'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.post('/Employee/Delete', { id: id }, function() {
-                        let row = document.getElementById("row-" + id);
-                        if (row) {
-                            row.classList.add("row-removed");
-                            setTimeout(() => {
-                                row.remove();
-                                updateSTT();
-                            }, 500);
-                        }
-                    });
-                }
-            });
-        }
     </script>
 }

@@ -1,165 +1,55 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SignalR;
-using giao_dien_demo.Hubs;
+using giao_dien_demo.Authorization;
+using giao_dien_demo.Data;
 using giao_dien_demo.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.IO;
-using System.Threading.Tasks;
-using System;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Text;
 
-namespace giao_dien_demo.Controllers
+namespace giao_dien_demo.Controllers;
+
+[Authorize(Policy = AppPolicies.HROnly)]
+public class ReportController : Controller
 {
-    public class ReportController : Controller
+    private readonly ApplicationDbContext _context;
+    public ReportController(ApplicationDbContext context) => _context = context;
+
+    public async Task<IActionResult> Index(string? search, string? department, DateTime? from, DateTime? to, int page = 1)
     {
-        // 🟢 1. Danh sách báo cáo nhân sự dạng bảng (Tính năng CŨ - GIỮ NGUYÊN)
-        public static List<Report> list = new List<Report>();
+        page = Math.Max(1, page); const int pageSize = 50;
+        var data = await BuildRows(search, department, from, to, page, pageSize);
+        ViewBag.Search = search; ViewBag.Department = department; ViewBag.From = from; ViewBag.To = to;
+        ViewBag.Page = page; ViewBag.PageSize = pageSize; ViewBag.Total = data.Total;
+        ViewBag.Departments = await _context.Employees.Where(e => e.Department != null).Select(e => e.Department!).Distinct().OrderBy(x => x).ToListAsync();
+        return View(data.Rows);
+    }
 
-        // 🟢 2. Danh sách lưu thông tin File Upload (Tính năng MỚI)
-        public static List<ReportFile> reportFileList = new List<ReportFile>();
+    [HttpGet]
+    public async Task<IActionResult> Export(string? search, string? department, DateTime? from, DateTime? to)
+    {
+        var data = await BuildRows(search, department, from, to, 1, int.MaxValue);
+        var sb = new StringBuilder("Mã NV,Họ tên,Phòng ban,Khen thưởng,Chuyên cần,Nghỉ phép,KPI\r\n");
+        foreach (var row in data.Rows) sb.AppendLine(string.Join(',', Csv(row.EmployeeCode), Csv(row.EmployeeName), Csv(row.Department), Csv(row.Reward), Csv(row.DiligenceBonus), row.LeaveDays, Csv(row.TaskStatus)));
+        return File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray(), "text/csv; charset=utf-8", $"BaoCaoNhanSu_{DateTime.Now:yyyyMMdd_HHmm}.csv");
+    }
 
-        // Khai báo môi trường và Hub để xử lý File & SignalR
-        private readonly IWebHostEnvironment _env;
-        private readonly IHubContext<DashboardHub> _hubContext;
+    private static string Csv(string? value) => $"\"{(value ?? string.Empty).Replace("\"", "\"\"")}\"";
 
-        // Constructor đã được tiêm thêm Dependency
-        public ReportController(IWebHostEnvironment env, IHubContext<DashboardHub> hubContext)
-        {
-            _env = env;
-            _hubContext = hubContext;
-        }
-
-        private bool IsHR() => HttpContext.Session.GetString("Role") == "HR";
-
-        // ===== TRANG CHỦ BÁO CÁO (GIỮ NGUYÊN) =====
-        public IActionResult Index()
-        {
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("User")))
-                return RedirectToAction("Login", "Account");
-
-            // Truyền thêm danh sách File đã Up sang View (để Leader hoặc HR có thể xem danh sách file)
-            ViewBag.ReportFiles = reportFileList.OrderByDescending(f => f.UploadedDate).ToList();
-
-            // Sắp xếp ID mới nhất lên đầu để dễ theo dõi (Giữ nguyên)
-            return View(list.OrderByDescending(x => x.Id).ToList());
-        }
-
-        // ===== TRANG XUẤT BÁO CÁO (XEM TRƯỚC BẢN IN & DUYỆT FILE) =====
-        public IActionResult Export()
-        {
-            if (string.IsNullOrEmpty(HttpContext.Session.GetString("User")))
-                return RedirectToAction("Login", "Account");
-
-            // 🔥 ĐÃ CẬP NHẬT: Truyền danh sách file HR đã up sang để sếp chọn đọc
-            ViewBag.UploadedFiles = reportFileList.OrderByDescending(f => f.UploadedDate).ToList();
-
-            // Lấy toàn bộ dữ liệu báo cáo để hiển thị lên tờ trình A4 (Mặc định)
-            return View(list.OrderBy(x => x.Id).ToList());
-        }
-
-        // ===== TRANG SỬA BÁO CÁO (Chỉ HR mới vào được) (GIỮ NGUYÊN) =====
-        public IActionResult Edit(int id)
-        {
-            if (!IsHR()) return RedirectToAction("Index");
-
-            var item = list.FirstOrDefault(x => x.Id == id);
-            if (item == null) return NotFound();
-
-            return View(item);
-        }
-
-        [HttpPost]
-        public IActionResult Edit(Report report)
-        {
-            if (!IsHR()) return Forbid();
-
-            var item = list.FirstOrDefault(x => x.Id == report.Id);
-            if (item != null)
-            {
-                item.HolidayBonus = report.HolidayBonus;
-                item.DiligenceBonus = report.DiligenceBonus;
-                item.Reward = report.Reward;
-                item.Discipline = report.Discipline;
-                item.LeaveDays = report.LeaveDays;
-                item.LeaveType = report.LeaveType;
-                item.TaskStatus = report.TaskStatus;
-            }
-            return RedirectToAction("Index");
-        }
-
-        // ================================================================
-        // 🔥 PHẦN TÍNH NĂNG MỚI: UPLOAD FILE & GỬI BAN LÃNH ĐẠO 🔥
-        // ================================================================
-
-        [HttpPost]
-        public async Task<IActionResult> UploadReport(IFormFile fileReport, string title, string category)
-        {
-            if (!IsHR()) return Forbid(); // Chỉ HR mới được up file
-
-            if (fileReport != null && fileReport.Length > 0)
-            {
-                // 1. Kiểm tra định dạng (Chỉ nhận PDF, DOC, DOCX)
-                string extension = Path.GetExtension(fileReport.FileName).ToLower();
-                if (extension != ".pdf" && extension != ".doc" && extension != ".docx")
-                {
-                    TempData["Error"] = "Chỉ hỗ trợ up file Word hoặc PDF!";
-                    return RedirectToAction("Index");
-                }
-
-                // 2. Tạo thư mục lưu trữ nếu chưa có
-                string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "reports");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                // 3. Lưu file vật lý vào server (Chống trùng tên bằng Guid)
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + fileReport.FileName;
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await fileReport.CopyToAsync(fileStream);
-                }
-
-                // 4. Lưu thông tin file vào danh sách
-                var newReport = new ReportFile
-                {
-                    Id = reportFileList.Any() ? reportFileList.Max(x => x.Id) + 1 : 1,
-                    Title = title,
-
-                    // Lưu thông tin phân loại báo cáo
-                    Category = string.IsNullOrEmpty(category) ? "Khác" : category,
-
-                    FileName = fileReport.FileName,
-                    FilePath = "/uploads/reports/" + uniqueFileName,
-                    UploadedBy = HttpContext.Session.GetString("RealName") ?? "Phòng Nhân Sự",
-                    UploadedDate = DateTime.Now
-                };
-                reportFileList.Add(newReport);
-
-                // 5. Bắn sóng SignalR cho màn hình Ban lãnh đạo (Gửi kèm Title để leader phân loại ô màu)
-                await _hubContext.Clients.All.SendAsync("NewReportUploaded", reportFileList.Count, title);
-
-                TempData["Success"] = "Đã gửi báo cáo thành công cho Ban lãnh đạo!";
-            }
-            else
-            {
-                TempData["Error"] = "Vui lòng chọn một file đính kèm.";
-            }
-
-            return RedirectToAction("Index");
-        }
-
-        // 🔥 XỬ LÝ TẢI FILE VỀ (Cho Ban Lãnh Đạo)
-        public IActionResult Download(int id)
-        {
-            var report = reportFileList.FirstOrDefault(r => r.Id == id);
-            if (report == null) return NotFound();
-
-            var filepath = Path.Combine(_env.WebRootPath, report.FilePath.TrimStart('/'));
-            if (!System.IO.File.Exists(filepath)) return NotFound("Không tìm thấy file trên máy chủ.");
-
-            return PhysicalFile(filepath, "application/octet-stream", report.FileName);
-        }
+    private async Task<(List<Report> Rows, int Total)> BuildRows(string? search, string? department, DateTime? from, DateTime? to, int page, int pageSize)
+    {
+        var employees = _context.Employees.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search)) { var s = search.Trim(); employees = employees.Where(e => (e.Name != null && e.Name.Contains(s)) || (e.EmployeeCode != null && e.EmployeeCode.Contains(s))); }
+        if (!string.IsNullOrWhiteSpace(department)) employees = employees.Where(e => e.Department == department);
+        var total = await employees.CountAsync();
+        var selected = await employees.OrderBy(e => e.EmployeeCode).Skip((page - 1) * pageSize).Take(pageSize).Select(e => new { e.Id, e.EmployeeCode, e.Name, e.Department, e.KPIScore }).ToListAsync();
+        var ids = selected.Select(e => e.Id).ToList();
+        var salaries = await _context.Salaries.AsNoTracking().Where(s => s.EmployeeId.HasValue && ids.Contains(s.EmployeeId.Value) && (!from.HasValue || s.SalaryMonth >= from.Value) && (!to.HasValue || s.SalaryMonth <= to.Value)).GroupBy(s => s.EmployeeId).Select(g => g.OrderByDescending(x => x.SalaryMonth).First()).ToListAsync();
+        // Fetch only the current page's leave rows; calculate date spans in managed code
+        // because SQL Server providers cannot translate DateTime subtraction reliably.
+        var leaveRows = await _context.Leaves.AsNoTracking().Where(l => l.EmployeeId.HasValue && ids.Contains(l.EmployeeId.Value) && l.Status == "Đã duyệt" && (!from.HasValue || l.FromDate >= from.Value) && (!to.HasValue || l.ToDate <= to.Value)).Select(l => new { l.EmployeeId, l.FromDate, l.ToDate, l.LeaveType }).ToListAsync();
+        var leaves = leaveRows.GroupBy(l => l.EmployeeId).Select(g => new { EmployeeId = g.Key, Days = g.Sum(x => (x.ToDate - x.FromDate).Days + 1), Type = g.Select(x => x.LeaveType).FirstOrDefault() }).ToList();
+        var rows = selected.Select(e => { var sal = salaries.FirstOrDefault(x => x.EmployeeId == e.Id); var leave = leaves.FirstOrDefault(x => x.EmployeeId == e.Id); return new Report { Id = e.Id, EmployeeCode = e.EmployeeCode, EmployeeName = e.Name ?? "", Department = e.Department ?? "", HolidayBonus = sal?.HolidayBonus.ToString("N0", CultureInfo.InvariantCulture) ?? "0", DiligenceBonus = sal?.DiligenceBonus.ToString("N0", CultureInfo.InvariantCulture) ?? "0", Reward = sal?.Reward.ToString("N0", CultureInfo.InvariantCulture) ?? "0", Discipline = sal?.Discipline.ToString("N0", CultureInfo.InvariantCulture) ?? "0", LeaveDays = leave?.Days ?? 0, LeaveType = leave?.Type ?? "-", TaskStatus = e.KPIScore ?? "N/A" }; }).ToList();
+        return (rows, total);
     }
 }

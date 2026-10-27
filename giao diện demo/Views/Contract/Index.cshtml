@@ -1,39 +1,32 @@
-﻿@model List<giao_dien_demo.Models.Contract>
+@model List<giao_dien_demo.Models.Contract>
 @using Microsoft.AspNetCore.Http
 @{
     ViewData["Title"] = "Quản lý Hợp đồng";
     var role = Context.Session.GetString("Role");
-    // 🔥 Lấy danh sách nhân viên để tra cứu mã NV
+    // 🔹 Lấy danh sách nhân viên để tra cứu mã NV
     var empList = ViewBag.EmployeeList as List<giao_dien_demo.Models.Employee> ?? new List<giao_dien_demo.Models.Employee>();
 }
 
 <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 
 <style>
-    /* 1. Căn chỉnh bảng danh sách */
-    .table th, .table td { text-align: center; vertical-align: middle !important; }
-    .status-badge { padding: 6px 15px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; }
-    .bg-waiting-sign { background-color: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
-    .bg-waiting-approve { background-color: #fff3e0; color: #ef6c00; border: 1px solid #ffe0b2; }
-    .bg-active { background-color: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
-
-    /* 2. STYLE HỢP ĐỒNG */
+    /* Contract Paper Modal */
     .modal-xl { max-width: 900px; }
     .contract-paper {
         background: #fff; padding: 40px 50px; border: 1px solid #dee2e6;
         box-shadow: 0 0 10px rgba(0,0,0,0.05); font-family: 'Times New Roman', Times, serif;
-        font-size: 16px; line-height: 1.6; color: #212529; height: 450px; 
+        font-size: 16px; line-height: 1.6; color: #212529; height: 450px;
         overflow-y: auto; white-space: pre-wrap; text-align: left; margin-bottom: 20px;
     }
 
-    /* 3. VÙNG KÝ TÊN */
+    /* Signature Section */
     .signature-section {
-        background: #f8f9fa; padding: 20px; border-radius: 8px;
-        border: 1px solid #e9ecef; text-align: center;
+        background: #f8fafc; padding: 20px; border-radius: 10px;
+        border: 1px solid #e2e8f0; text-align: center;
     }
     .signature-input {
         font-family: 'Dancing Script', cursive; font-size: 30px !important;
-        color: #000080; text-align: center; border: 2px dashed #adb5bd !important;
+        color: #000080; text-align: center; border: 2px dashed #94a3b8 !important;
         background: #fff !important; height: 70px !important; margin-top: 10px;
     }
     .sig-display-text {
@@ -44,70 +37,93 @@
 
 <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 1060;"></div>
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-dark">📑 @(role == "HR" ? "Quản lý Hợp đồng Nhân viên" : "Hợp đồng của tôi")</h2>
-        @if (role == "HR") {
-            <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCreateContract">
-                <i class="fas fa-plus me-1"></i> Soạn hợp đồng mới
-            </button>
-        }
+<div>
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon text-primary"><i class="fa-solid fa-file-contract"></i></span>
+                @if (role == "HR") {
+                    <text>Quản lý Hợp đồng Nhân viên</text>
+                } else {
+                    <text>Hợp đồng của tôi</text>
+                }
+            </h1>
+            <p class="hrms-page-subtitle">Quản lý và xem xét hợp đồng lao động.</p>
+        </div>
+        <div class="hrms-page-header-actions">
+            @if (role == "HR") {
+                <button class="hrms-btn hrms-btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateContract">
+                    <i class="fas fa-plus me-1"></i> Soạn hợp đồng mới
+                </button>
+            }
+        </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 80px;">STT</th> 
-                        <th>Mã NV</th> 
-                        <th>Họ tên Nhân viên</th>
-                        <th>Trạng thái</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
+    <div class="hrms-card mb-4">
+        <div class="hrms-card-body p-0">
+            <div class="hrms-table-wrap">
+                <table class="hrms-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;" class="text-center">STT</th> 
+                            <th class="text-center">Mã NV</th> 
+                            <th>Họ tên Nhân viên</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                     @if (Model != null && Model.Any())
                     {
                         int stt = 1;
                         foreach (var item in Model) {
-                            // 🔥 LOGIC DÒ MÃ TỰ ĐỘNG BẰNG TÊN
+                            // 🔹 LOGIC DÒ MÃ TỰ ĐỘNG BẰNG TÊN
                             var emp = empList.FirstOrDefault(e => !string.IsNullOrEmpty(e.Name) && e.Name.Trim().ToLower() == item.EmployeeName.Trim().ToLower());
                             var empCode = (emp != null && !string.IsNullOrEmpty(emp.EmployeeCode)) ? emp.EmployeeCode : "---";
 
                             <tr id="row-contract-@item.Id">
-                                <td>#@(stt++)</td>
+                                <td class="text-center text-muted fw-medium">#@(stt++)</td>
                                 
-                                <td>
-                                    <span class="badge @(empCode == "---" ? "bg-info" : "bg-secondary")" style="font-size: 13px;">
+                                <td class="text-center">
+                                    <span class="hrms-badge @(empCode == "---" ? "hrms-badge-info" : "hrms-badge-neutral")">
                                         @empCode
                                     </span>
                                 </td>
 
-                                <td class="text-start ps-5"><span class="fw-bold">@item.EmployeeName</span></td>
-                                <td>
+                                <td class="text-start ps-5">
+                                    <span class="fw-bold">
+                                        @if(emp != null) {
+                                            <a href="/Employee/Details/@emp.Id" class="text-decoration-none" style="color: #0f172a;">@item.EmployeeName</a>
+                                        } else {
+                                            @item.EmployeeName
+                                        }
+                                    </span>
+                                </td>
+                                <td class="text-center">
                                     @if (item.Status == "Chờ nhân viên ký") { 
-                                        <span class="status-badge bg-waiting-sign">📝 Chờ ký</span> 
+                                        <span class="hrms-badge hrms-badge-warning">Chờ ký</span>
                                     }
                                     else if (item.Status == "Đã ký (Chờ duyệt cuối)") {
-                                        <span class="status-badge bg-waiting-approve">⏳ Chờ duyệt</span>
+                                        <span class="hrms-badge hrms-badge-purple">⏳ Chờ duyệt</span>
                                     }
                                     else { 
-                                        <span class="status-badge bg-active">✅ @item.Status</span> 
+                                        <span class="hrms-badge hrms-badge-success">✅ @item.Status</span> 
                                     }
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <input type="hidden" id="content_@item.Id" value="@item.Content" />
                                     <input type="hidden" id="hrSig_@item.Id" value="@item.HrSignature" />
                                     <input type="hidden" id="empSig_@item.Id" value="@item.Signature" />
 
                                     @if (role == "HR") {
-                                        <button onclick="openViewModal(@item.Id, '@item.Status')" class="btn btn-outline-info btn-sm">Xem chi tiết</button>
-                                        <button onclick="cancelContract(@item.Id)" class="btn btn-outline-danger btn-sm ms-1">Hủy bỏ</button>
+                                        <button onclick="openViewModal(@item.Id, '@item.Status')" class="hrms-btn hrms-btn-ghost hrms-btn-sm" style="padding: 4px 8px;"><i class="fas fa-eye text-info"></i> Xem</button>
+                                        @if (item.Status != "Còn hiệu lực" && item.Status != "Đã hủy") {
+                                            <button onclick="cancelContract(@item.Id)" class="hrms-btn hrms-btn-ghost hrms-btn-sm" style="padding: 4px 8px;" title="Hủy hợp đồng"><i class="fas fa-trash text-danger"></i></button>
+                                        }
                                     } else if (item.Status == "Chờ nhân viên ký") {
-                                        <button onclick="openSignModal(@item.Id)" class="btn btn-primary btn-sm px-3">✍️ Ký hợp đồng</button>
+                                        <button onclick="openSignModal(@item.Id)" class="hrms-btn hrms-btn-primary hrms-btn-sm px-3">✍️ Ký hợp đồng</button>
                                     } else {
-                                        <button onclick="openViewModal(@item.Id, '@item.Status')" class="btn btn-outline-secondary btn-sm">Xem lại</button>
+                                        <button onclick="openViewModal(@item.Id, '@item.Status')" class="hrms-btn hrms-btn-secondary hrms-btn-sm">Xem lại</button>
                                     }
                                 </td>
                             </tr>
@@ -115,7 +131,13 @@
                     }
                     else
                     {
-                        <tr><td colspan="5" class="py-5 text-muted">Hiện tại không có hợp đồng nào trong danh sách.</td></tr>
+                        <tr>
+                            <td colspan="5">
+                                <div class="hrms-empty-state py-5 text-center">
+                                    <div class="hrms-empty-state-title fw-bold">Hiện tại không có hợp đồng nào trong danh sách.</div>
+                                </div>
+                            </td>
+                        </tr>
                     }
                 </tbody>
             </table>
@@ -127,10 +149,11 @@
     <div class="modal-dialog modal-xl">
         <div class="modal-content border-0">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">📝 Soạn thảo Hợp đồng Lao động</h5>
+                <h5 class="modal-title">🔹 Soạn thảo Hợp đồng Lao động</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/Contract/Create">
+                @Html.AntiForgeryToken()
                 <div class="modal-body bg-light">
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
@@ -196,7 +219,7 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
 ĐIỀU 4: BẢO HIỂM VÀ PHÚC LỢI KHÁC
 - BHXH, BHYT, BHTN: Được công ty đóng đầy đủ theo quy định của Luật Lao động hiện hành sau khi ký HĐLĐ chính thức.
 - Nghỉ phép năm: 12 ngày phép/năm hưởng nguyên lương.
-- Thưởng: Lương tháng 13, thưởng Lễ/Tết và thưởng hiệu suất dự án theo tình hình kinh doanh của công ty.
+- Thưởng: Lương tháng 13, thưởng Lễ/Tết và thưởng hiệu suất dự án theo tính hình kinh doanh của công ty.
 
 ĐIỀU 5: NGHĨA VỤ VÀ QUYỀN LỢI CỦA NGƯỜI LAO ĐỘNG
 - Hoàn thành tốt công việc được giao, tuân thủ tuyệt đối nội quy và quy chế bảo mật thông tin của công ty.
@@ -228,6 +251,7 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="/Contract/SubmitSignature">
+                @Html.AntiForgeryToken()
                 <input type="hidden" id="signContractId" name="Id" />
                 <div class="modal-body" style="background-color: #f0f2f5;">
                     <div id="signContractContent" class="contract-paper shadow-sm"></div>
@@ -243,7 +267,7 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
                                 <option value="1 năm">1 năm (Tiêu chuẩn)</option>
                                 <option value="2 năm">2 năm</option>
                                 <option value="3 năm">3 năm</option>
-                                <option value="Vô thời hạn">Vô thời hạn</option>
+                                <option value="Và thời hạn">Và thời hạn</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -273,6 +297,7 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        
         const userRole = '@role';
 
         function openSignModal(id) {
@@ -282,7 +307,7 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
             new bootstrap.Modal(document.getElementById('modalSignContract')).show();
         }
 
-        // 🔥 MODAL CHI TIẾT + NÚT DUYỆT CỦA HR
+        // 🔹 MODAL CHI TIẾT + NÚT DUYỆT CỦA HR
         function openViewModal(id, status) {
             const content = document.getElementById('content_' + id).value;
             const hrSig = document.getElementById('hrSig_' + id).value;
@@ -292,19 +317,19 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
             const showApproveBtn = (userRole === 'HR' && status === 'Đã ký (Chờ duyệt cuối)');
 
             Swal.fire({
-                title: '📜 Chi tiết Hợp đồng',
+                title: '🔹 ' + 'Chi tiết Hợp đồng',
                 html: `
                     <div style="text-align: left; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; padding: 20px; font-family: 'Times New Roman', serif; white-space: pre-wrap; background: #fff;">
                         ${content}
                     </div>
                     <div style="margin-top: 20px; display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 15px;">
                         <div style="text-align: center;">
-                            <small style="color: gray; font-weight: bold;">Đại diện HR:</small><br/>
+                            <small style="color: gray; font-weight: bold;">${'Đại diện HR:'}</small><br/>
                             <span style="font-family: 'Dancing Script', cursive; font-size: 26px; color: #000080;">${hrSig}</span>
                         </div>
                         <div style="text-align: center;">
-                            <small style="color: gray; font-weight: bold;">Nhân viên ký:</small><br/>
-                            <span style="font-family: 'Dancing Script', cursive; font-size: 26px; color: #000080;">${empSig ? empSig : '<i style="font-size:14px; color:red;">Chưa ký</i>'}</span>
+                            <small style="color: gray; font-weight: bold;">${'Nhân viên ký:'}</small><br/>
+                            <span style="font-family: 'Dancing Script', cursive; font-size: 26px; color: #000080;">${empSig ? empSig : '<i style="font-size:14px; color:red;">' + 'Chưa ký' + '</i>'}</span>
                         </div>
                     </div>
                 `,
@@ -324,14 +349,14 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
             });
         }
 
-        // 🔥 HÀM GỌI AJAX DUYỆT VÀ ĐẨY SANG NHÂN SỰ
+        // 🔹 HÀM GỌI AJAX DUYỆT Và ĐẨY SANG NHÂN SỰ
         function approveContract(id) {
             Swal.fire({
                 title: 'Đang xử lý...',
                 didOpen: () => { Swal.showLoading(); }
             });
 
-            $.post('/Contract/Approve', { id: id }, function (response) {
+            $.post('/Contract/Approve', { id: id, __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value }, function (response) {
                 Swal.fire({
                     title: 'Thành công!',
                     text: 'Hợp đồng đã có hiệu lực. Nhân viên đã được thêm vào danh sách chính thức!',
@@ -349,7 +374,7 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
         function cancelContract(id) {
             Swal.fire({
                 title: 'Xác nhận hủy?',
-                text: "Dữ liệu hợp đồng sẽ bị gỡ bỏ vĩnh viễn!",
+                text: "Dữ liệu hợp đồng sẽ bị gỡ bỏ!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -358,9 +383,12 @@ Hai bên thỏa thuận ký kết Hợp đồng lao động (HĐLĐ) và cam k�
                 position: 'center'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    $.post('/Contract/Cancel', { id: id }, function () {
+                    $.post('/Contract/Cancel', { id: id, __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value }, function () {
                         $(`#row-contract-${id}`).fadeOut(500, function() { $(this).remove(); });
                         Swal.fire({ title: 'Đã hủy!', icon: 'success', timer: 1500, showConfirmButton: false });
+                    }).fail(function(xhr) {
+                        let msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Không thể hủy hợp đồng lúc này.';
+                        Swal.fire('Không thể hủy', msg, 'error');
                     });
                 }
             });

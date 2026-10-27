@@ -1,0 +1,203 @@
+@{
+    ViewData["Title"] = "Tiền lương của tôi";
+    var availablePeriods = ViewBag.AvailablePeriods as List<string>;
+    var selectedPeriod = ViewBag.SelectedPeriod as string;
+    var payment = ViewBag.Payment as giao_dien_demo.Models.PayrollPayment;
+    var snapshot = ViewBag.Snapshot as giao_dien_demo.Models.Salary;
+    var history = ViewBag.HistoryData as List<giao_dien_demo.Models.PayrollPayment>;
+    var trendData = ViewBag.TrendData as List<giao_dien_demo.Models.PayrollPayment>;
+}
+
+<style>
+    /* Old styling removed to use standard design system */
+</style>
+
+<div>
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fas fa-money-check-alt"></i></span>
+                Tiền lương của tôi
+            </h1>
+            <p class="hrms-page-subtitle mb-0">Tra cứu thông tin thu nhập cá nhân chi tiết và bảo mật.</p>
+        </div>
+        <div class="hrms-page-header-actions">
+            <form method="get" action="/MyPayroll/Index" class="d-flex align-items-center">
+                <label class="me-2 fw-medium text-secondary">Kỳ lương:</label>
+                <select name="period" class="form-select shadow-sm" onchange="this.form.submit()" style="width: 150px; border-radius: 8px;">
+                    @foreach (var p in availablePeriods)
+                    {
+                        <option value="@p" selected="@(p == selectedPeriod)">@p</option>
+                    }
+                </select>
+            </form>
+        </div>
+    </div>
+
+    @if (payment == null || snapshot == null)
+    {
+        <div class="hrms-alert hrms-alert-warning mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>Không tìm thấy dữ liệu cho kỳ lương này.
+        </div>
+    }
+    else
+    {
+        <!-- SUMMARY CARDS -->
+        <div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+            <div class="hrms-kpi-card kpi-green">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-success"><i class="fas fa-wallet"></i></div>
+                    <div class="hrms-kpi-value text-success" style="font-variant-numeric: tabular-nums;">@(payment.NetSalary.ToString("N0")) ₫</div>
+                </div>
+                <div class="hrms-kpi-label">Thực nhận (Net Salary)</div>
+                <p class="text-muted mb-0 mt-2" style="font-size: 13px;">Sau khi trừ thuế và BH</p>
+            </div>
+            
+            <div class="hrms-kpi-card kpi-blue">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-primary"><i class="fas fa-arrow-up"></i></div>
+                    <div class="hrms-kpi-value text-primary" style="font-variant-numeric: tabular-nums;">@(snapshot.TotalSalary.ToString("N0")) ₫</div>
+                </div>
+                <div class="hrms-kpi-label">Tổng Thu nhập (Gross)</div>
+                <p class="text-muted mb-0 mt-2" style="font-size: 13px;">Lương CB + Phụ cấp + OT</p>
+            </div>
+
+            <div class="hrms-kpi-card kpi-red">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-danger"><i class="fas fa-arrow-down"></i></div>
+                    <div class="hrms-kpi-value text-danger" style="font-variant-numeric: tabular-nums;">@((snapshot.Insurance + snapshot.TaxTNCN).ToString("N0")) ₫</div>
+                </div>
+                <div class="hrms-kpi-label">Tổng Khấu trừ</div>
+                <p class="text-muted mb-0 mt-2" style="font-size: 13px;">Thuế TNCN & Bảo hiểm</p>
+            </div>
+
+            <div class="hrms-kpi-card kpi-yellow">
+                <div class="hrms-kpi-top">
+                    <div class="hrms-kpi-icon text-warning"><i class="fas fa-info-circle"></i></div>
+                    <div class="hrms-kpi-value">
+                        @if (payment.Status == giao_dien_demo.Models.PaymentStatus.DaThanhToan)
+                        {
+                            <span class="hrms-badge hrms-badge-success"><i class="fas fa-check-circle me-1"></i>Đã thanh toán</span>
+                        }
+                        else
+                        {
+                            <span class="hrms-badge hrms-badge-warning"><i class="fas fa-clock me-1"></i>Chờ thanh toán</span>
+                        }
+                    </div>
+                </div>
+                <div class="hrms-kpi-label">Trạng thái thanh toán</div>
+                <p class="text-muted mb-0 mt-2" style="font-size: 13px;">@(payment.Status == giao_dien_demo.Models.PaymentStatus.DaThanhToan ? $"Lúc {payment.PaidAt?.ToString("dd/MM/yyyy HH:mm")}" : "Đang xử lý CK")</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- CHI TIẾT BẢNG LƯƠNG -->
+            <div class="col-md-8">
+                <div class="hrms-card mb-4 p-0">
+                    <div class="hrms-card-header d-flex justify-content-between align-items-center">
+                        <h5 class="hrms-card-title mb-0"><i class="fas fa-list-alt text-primary me-2"></i>Chi tiết Thu nhập & Khấu trừ</h5>
+                        <button class="hrms-btn hrms-btn-ghost hrms-btn-sm" onclick="window.print()">
+                            <i class="fas fa-file-pdf me-1"></i> Xuất PDF
+                        </button>
+                    </div>
+                    <div class="hrms-card-body p-0">
+                        <div class="hrms-table-wrap">
+                            <table class="hrms-table mb-0">
+                                <tbody>
+                                    <!-- A. THU NHẬP -->
+                                    <tr class="table-light">
+                                        <td colspan="2" class="fw-bold text-primary"><i class="fas fa-plus-circle me-2"></i>A. THU NHẬP (INCOME)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4">Lương cơ bản (Theo HĐLĐ)</td>
+                                        <td class="text-end fw-medium col-money">@(snapshot.BasicSalary.ToString("N0")) ₫</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4">Giờ công làm việc thực tế</td>
+                                        <td class="text-end fw-medium col-money">@(snapshot.HoursWorked) giờ</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4">Phụ cấp & Thưởng (Bonus & Allowance)</td>
+                                        <td class="text-end fw-medium col-money">@(snapshot.BonusAndAllowance.ToString("N0")) ₫</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 text-dark fw-bold bg-light">Tổng thu nhập (Total Gross)</td>
+                                        <td class="text-end fw-bold text-dark bg-light col-money">@(snapshot.TotalSalary.ToString("N0")) ₫</td>
+                                    </tr>
+                                    
+                                    <!-- B. KHẤU TRỪ -->
+                                    <tr class="table-light mt-2">
+                                        <td colspan="2" class="fw-bold text-danger"><i class="fas fa-minus-circle me-2"></i>B. KHẤU TRỪ (DEDUCTIONS)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4">Bảo hiểm bắt buộc (10.5%)</td>
+                                        <td class="text-end fw-medium text-danger col-money">- @(snapshot.Insurance.ToString("N0")) ₫</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4">Thuế TNCN (Personal Income Tax)</td>
+                                        <td class="text-end fw-medium text-danger col-money">- @(snapshot.TaxTNCN.ToString("N0")) ₫</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="ps-4 text-dark fw-bold bg-light">Tổng khấu trừ (Total Deductions)</td>
+                                        <td class="text-end fw-bold text-danger bg-light col-money">- @(((snapshot.Insurance + snapshot.TaxTNCN)).ToString("N0")) ₫</td>
+                                    </tr>
+
+                                    <!-- C. THỰC NHẬN -->
+                                    <tr class="table-primary">
+                                        <td class="ps-4 fs-5 fw-bold text-primary">C. THỰC NHẬN (NET SALARY)</td>
+                                        <td class="text-end fs-5 fw-bold text-primary col-money">@(snapshot.NetSalary.ToString("N0")) ₫</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TREND & LỊCH SỬ -->
+            <div class="col-md-4">
+                <div class="hrms-card mb-4">
+                    <div class="hrms-card-header">
+                        <h5 class="hrms-card-title mb-0"><i class="fas fa-history text-secondary me-2"></i>Lịch sử 6 tháng qua</h5>
+                    </div>
+                    <div class="hrms-card-body p-0">
+                        <ul class="list-group list-group-flush" style="border-radius: var(--radius-md, 8px);">
+                            @foreach (var hist in history.Take(6))
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-3 @(hist.PayrollPeriod == selectedPeriod ? "bg-light border-start border-4 border-primary" : "")">
+                                    <div>
+                                        <h6 class="mb-0 @(hist.PayrollPeriod == selectedPeriod ? "fw-bold text-primary" : "")" style="font-size: 14px;">Kỳ @hist.PayrollPeriod</h6>
+                                        <div style="font-size: 12px; margin-top: 4px;">
+                                            @if (hist.Status == giao_dien_demo.Models.PaymentStatus.DaThanhToan)
+                                            {
+                                                <span class="text-success fw-bold"><i class="fas fa-check-circle me-1"></i>Đã thanh toán</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-warning fw-bold"><i class="fas fa-clock me-1"></i>Chờ thanh toán</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold col-money" style="font-size: 14px; color: var(--text-primary);">@hist.NetSalary.ToString("N0") ₫</div>
+                                        @if (hist.PayrollPeriod != selectedPeriod)
+                                        {
+                                            <a href="/MyPayroll/Index?period=@hist.PayrollPeriod" class="btn btn-sm btn-link p-0 text-decoration-none" style="font-size: 12px;">Xem chi tiết</a>
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        // PDF Export by Printing window
+        // In real world, use jsPDF or backend PDF generator like DinkToPdf
+    </script>
+}

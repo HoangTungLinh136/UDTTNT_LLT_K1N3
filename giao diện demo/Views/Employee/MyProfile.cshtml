@@ -1,209 +1,186 @@
-﻿@model giao_dien_demo.Models.Employee
+@model giao_dien_demo.Models.Employee
 @{
     ViewData["Title"] = "Cập nhật hồ sơ cá nhân";
 }
 
 <style>
-    /* Tổng quan khung hồ sơ */
-    .profile-container {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 30px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        margin-top: 20px;
-    }
-
-    .profile-title {
-        font-weight: 700;
-        font-size: 24px;
-        margin-bottom: 30px;
-        text-transform: uppercase;
-    }
-
-    /* Phần ảnh đại diện bên trái */
-    .avatar-section {
-        text-align: center;
-        padding-top: 20px;
-    }
-
     .avatar-circle {
-        width: 180px;
-        height: 180px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid #f0f2f5;
-        background-color: #f8f9fa;
-        margin-bottom: 15px;
-        cursor: pointer;
-        transition: 0.3s;
+        width: 160px; height: 160px; border-radius: 50%; object-fit: cover;
+        border: 4px solid #fff; box-shadow: var(--shadow-md);
+        background-color: var(--hrms-border); margin-bottom: 20px; cursor: pointer; transition: var(--transition);
     }
+    .avatar-circle:hover { opacity: 0.85; transform: scale(1.02); }
     
-        .avatar-circle:hover {
-            opacity: 0.8;
-            border-color: #1a4d8c;
-        }
-
-    .btn-change-photo {
-        background-color: #ffffff;
-        border: 1px solid #dee2e6;
-        color: #495057;
-        font-size: 14px;
-        padding: 5px 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-    }
-
-    .display-name {
-        font-weight: 700;
-        font-size: 26px;
-        margin-bottom: 5px;
-    }
-
-    .job-badge {
-        background-color: #e9ecef;
-        color: #495057;
-        padding: 5px 20px;
-        border-radius: 20px;
-        font-size: 14px;
-        display: inline-block;
-        margin-bottom: 25px;
-    }
-
-    .btn-save-left {
-        background-color: #1a4d8c;
-        color: white;
-        border: none;
-        padding: 10px 40px;
-        border-radius: 8px;
-        font-weight: 600;
-        width: 160px;
-        transition: 0.3s;
-    }
-    
-        .btn-save-left:hover {
-            background-color: #133a6b;
-            transform: translateY(-2px);
-        }
-
-    /* Phần nhập liệu bên phải */
+    .form-group { margin-bottom: 20px; }
     .form-label {
-        font-weight: 700;
-        font-size: 16px;
-        color: #212529;
-        margin-bottom: 8px;
+        display: block; font-size: 13.5px; font-weight: 600; color: var(--hrms-text-primary); margin-bottom: 4px;
     }
-
     .label-note {
-        font-weight: 400;
-        font-style: italic;
-        color: #6c757d;
-        font-size: 14px;
-        margin-left: 5px;
+        display: block; font-size: 12px; color: var(--hrms-text-secondary); font-weight: 400; margin-bottom: 8px;
     }
-
     .form-control, .form-select {
-        border-radius: 8px;
-        padding: 10px 15px;
-        border: 1px solid #ced4da;
-        margin-bottom: 20px;
+        width: 100%; padding: 10px 14px; border: 1px solid var(--hrms-border); border-radius: var(--radius-sm);
+        font-size: 14px; color: var(--hrms-text-primary); background: var(--hrms-background); transition: var(--transition); outline: none;
     }
-
-        .form-control:focus {
-            border-color: #1a4d8c;
-            box-shadow: 0 0 0 0.2rem rgba(26, 77, 140, 0.1);
-        }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--hrms-primary); box-shadow: 0 0 0 3px var(--hrms-primary-alpha); background: #fff;
+    }
+    .form-control::placeholder { color: var(--hrms-text-muted); }
+    
+    @@media (max-width: 768px) {
+        .avatar-section { border-right: none !important; border-bottom: 1px solid var(--hrms-border); }
+        .form-section { padding: 24px 20px !important; }
+    }
 </style>
 
-<div class="container-fluid">
-    <h2 class="profile-title">CẬP NHẬT HỒ SƠ CÁ NHÂN</h2>
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fas fa-id-badge"></i></span>
+            Cập nhật hồ sơ cá nhân
+        </h1>
+        <div class="hrms-page-subtitle">Cập nhật thông tin liên lạc và tài khoản ngân hàng của bạn</div>
+    </div>
+</div>
 
-    <div class="profile-container">
-        @* 🔥 QUAN TRỌNG: enctype="multipart/form-data" để gửi file *@
-        <form asp-action="UpdateMyProfile" method="post" enctype="multipart/form-data">
-            <input type="hidden" asp-for="Id" />
-            
-            <div class="row">
-                <div class="col-md-4 avatar-section">
-                    <h5 class="text-start fw-bold mb-4">THÔNG TIN CÁ NHÂN</h5>
-                    
-                    <div id="imagePreviewContainer">
-                        @if (!string.IsNullOrEmpty(Model.AvatarPath))
-                        {
-                            <img id="previewAvatar" src="@Model.AvatarPath" class="avatar-circle" alt="Avatar" onclick="document.getElementById('fileInput').click()" />
-                        }
-                        else
-                        {
-                            <div id="avatarPlaceholder" class="avatar-circle d-flex align-items-center justify-content-center mx-auto" style="font-size: 70px; color: #dee2e6;" onclick="document.getElementById('fileInput').click()">👤</div>
-                        }
-                    </div>
-                    
-                    <div>
-                        @* Nút ảo để kích hoạt input file ẩn *@
-                        <button type="button" class="btn btn-change-photo" onclick="document.getElementById('fileInput').click()">Thay đổi ảnh</button>
-                        
-                        @* 🔥 Input file ẩn: name phải khớp với tham số trong Controller (AvatarFile) *@
-                        <input type="file" id="fileInput" name="AvatarFile" style="display:none" accept="image/*" onchange="previewImage(this)" />
-                    </div>
-
-                    <div class="display-name">@Model.Name</div>
-                    <div class="job-badge">@Model.JobTitle</div>
-
-                    <div>
-                        <button type="submit" class="btn btn-save-left shadow-sm">Lưu thay đổi</button>
-                    </div>
+<div class="hrms-card p-0" style="overflow: hidden;">
+    <form asp-action="UpdateMyProfile" method="post" enctype="multipart/form-data" class="m-0">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="text-danger px-4 pt-3" role="alert"></div>
+        
+        <div class="row g-0">
+            <div class="col-md-4 col-lg-3 avatar-section" style="padding: 40px 24px; text-align: center; border-right: 1px solid var(--border-default); background: var(--surface-page); display: flex; flex-direction: column; align-items: center; height: 100%;">
+                
+                <div id="imagePreviewContainer" style="margin-top: 10px;">
+                    @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                    {
+                        <img id="previewAvatar" src="@Model.AvatarPath" class="avatar-circle" alt="Avatar" onclick="document.getElementById('fileInput').click()" />
+                    }
+                    else
+                    {
+                        <div id="avatarPlaceholder" class="avatar-circle d-flex align-items-center justify-content-center" style="font-size: 60px; color: var(--text-muted);" onclick="document.getElementById('fileInput').click()">
+                            <i class="fas fa-camera"></i>
+                        </div>
+                    }
+                </div>
+                
+                <div>
+                    <button type="button" class="hrms-btn hrms-btn-sm hrms-btn-secondary mb-4" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-upload me-1"></i> Thay đổi ảnh
+                    </button>
+                    <input type="file" id="fileInput" name="AvatarFile" style="display:none" accept="image/*" onchange="previewImage(this)" />
                 </div>
 
-                <div class="col-md-8 ps-md-5 pt-4">
-                    <div class="row">
-                        <div class="col-12">
-                            <label class="form-label">Họ và Tên <span class="label-note">Nhập tên đầy đủ (không quá 100 ký tự)</span></label>
-                            <input asp-for="Name" class="form-control" placeholder="Nguyễn Đức Long" />
-                        </div>
+                <div style="font-weight: 700; font-size: 20px; color: var(--text-primary); margin-bottom: 6px;">@Model.Name</div>
+                <div class="hrms-badge hrms-badge-info mb-3" style="font-size: 13px; padding: 6px 14px;">@Model.JobTitle</div>
+                <div style="font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-bottom: 24px;">
+                    Mã NV: @(string.IsNullOrWhiteSpace(Model.EmployeeCode) ? "Chưa được cấp mã" : Model.EmployeeCode)
+                </div>
 
-                        <div class="col-12">
-                            <label class="form-label">Địa chỉ hiện tại <span class="label-note">Cung cấp địa chỉ liên lạc chi tiết nhất</span></label>
-                            <input asp-for="Address" class="form-control" placeholder="Địa chỉ - địa chỉ liên lạc chi tiết nhất" />
-                        </div>
+                <div style="width: 100%; max-width: 200px;">
+                    <button type="submit" class="hrms-btn hrms-btn-primary w-100">
+                        <i class="fas fa-save me-1"></i> Lưu thay đổi
+                    </button>
+                </div>
+            </div>
 
-                        <div class="col-12">
-                            <label class="form-label">CCCD/CMND <span class="label-note">Cung cấp 12 chữ số CCCD mới nhất</span></label>
-                            <input asp-for="CitizenId" class="form-control" placeholder="12 chữ số CCCD" />
+            <div class="col-md-8 col-lg-9 form-section" style="padding: 40px 32px;">
+                <div class="hrms-card-header p-0 pb-3 mb-4" style="border-bottom: 1px solid var(--border-default);">
+                    <h3 class="hrms-card-title"><i class="fas fa-user-edit text-warning me-2"></i> Thông tin cá nhân</h3>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Họ và Tên</label>
+                            <span class="label-note">Thông tin do HR quản lý</span>
+                            <div class="form-control" aria-readonly="true">@Model.Name</div>
                         </div>
+                    </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Ngày sinh <span class="label-note">Chọn ngày sinh theo định dạng</span></label>
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Email</label>
+                            <span class="label-note">Email liên hệ trong hồ sơ nhân viên</span>
+                            <input asp-for="Email" type="email" class="form-control" placeholder="name@company.com" autocomplete="email" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Số điện thoại</label>
+                            <span class="label-note">Cập nhật số điện thoại liên lạc</span>
+                            <input asp-for="PhoneNumber" class="form-control" placeholder="090..." autocomplete="tel" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Địa chỉ hiện tại</label>
+                            <span class="label-note">Cung cấp địa chỉ liên lạc chi tiết nhất</span>
+                            <input asp-for="Address" class="form-control" placeholder="Số nhà, đường, phường, quận/huyện, tỉnh/thành phố" autocomplete="off" />
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">CCCD / CMND</label>
+                            <span class="label-note">Nhập 9 số CMND hoặc 12 số CCCD</span>
+                            <input asp-for="CitizenId" class="form-control" inputmode="numeric" maxlength="12" placeholder="012345678912" autocomplete="off" />
+                            <span asp-validation-for="CitizenId" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Ngày sinh</label>
+                            <span class="label-note">Chọn ngày tháng năm sinh chính xác</span>
                             <input asp-for="BirthDate" type="date" class="form-control" />
                         </div>
+                    </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Giới tính <span class="label-note">Chọn giới tính phù hợp nhất</span></label>
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Giới tính</label>
+                            <span class="label-note">Chọn giới tính phù hợp nhất</span>
                             <select asp-for="Gender" class="form-select">
-                                <option value="">Chọn giới tính</option>
+                                <option value="">-- Chọn giới tính --</option>
                                 <option value="Nam">Nam</option>
                                 <option value="Nữ">Nữ</option>
                                 <option value="Khác">Khác</option>
                             </select>
                         </div>
+                    </div>
 
-                        <div class="col-12">
-                            <label class="form-label">Tên ngân hàng <span class="label-note">Nhập tên đầy đủ của Ngân hàng (không viết tắt)</span></label>
-                            <input asp-for="BankName" class="form-control" placeholder="Tên ngân hàng" />
+                    <div class="hrms-card-header p-0 pt-3 pb-3 mb-4 mt-3" style="border-bottom: 1px solid var(--border-default);">
+                        <h3 class="hrms-card-title"><i class="fas fa-money-check-alt text-success me-2"></i> Thông tin thanh toán</h3>
+                    </div>
+
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Tên ngân hàng</label>
+                            <span class="label-note">Nhập tên đầy đủ của Ngân hàng (không viết tắt)</span>
+                            <input asp-for="BankName" class="form-control" placeholder="Ví dụ: Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank)" autocomplete="off" />
                         </div>
+                    </div>
 
-                        <div class="col-12">
-                            <label class="form-label">Số tài khoản <span class="label-note">Nhập số tài khoản số sẵn chính xác</span></label>
-                            <input asp-for="BankAccountNumber" class="form-control" placeholder="Số tài khoản" />
+                    <div class="col-md-12">
+                        <div class="form-group mb-3">
+                            <label class="form-label fw-medium">Số tài khoản</label>
+                            <span class="label-note">Nhập số tài khoản đang có chính xác</span>
+                            <input asp-for="BankAccountNumber" class="form-control" placeholder="Số tài khoản ngân hàng" autocomplete="off" />
                         </div>
                     </div>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
     <script>
-        // 📸 Hàm xem trước ảnh (Preview)
+        // Hàm xem trước ảnh (Preview)
         function previewImage(input) {
             if (input.files && input.files[0]) {
                 var reader = new FileReader();

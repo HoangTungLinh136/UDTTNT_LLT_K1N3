@@ -1,0 +1,291 @@
+@model IEnumerable<giao_dien_demo.Models.User>
+
+@{
+    ViewData["Title"] = "Quản lý người dùng & tài khoản";
+    var roles = ViewBag.AvailableRoles as List<string> ?? new List<string>();
+    var currentRole = ViewBag.SelectedRole as string ?? "";
+    var currentStatus = ViewBag.SelectedStatus as bool?;
+    var search = ViewBag.Search as string ?? "";
+}
+
+<div class="hrms-page-header">
+    @Html.AntiForgeryToken()
+    <div class="hrms-page-header-left">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-users-gear"></i></span>
+            Quản lý người dùng & tài khoản
+        </h1>
+        <p class="hrms-page-subtitle">Quản trị danh sách tài khoản, quyền truy cập CanLogin và phân quyền hệ thống</p>
+    </div>
+    <div class="hrms-page-header-actions">
+        <a asp-action="Users" class="hrms-btn hrms-btn-secondary"><i class="fa-solid fa-arrows-rotate"></i> Làm mới</a>
+        <a asp-controller="Account" asp-action="Register" class="hrms-btn hrms-btn-primary">
+            <i class="fa-solid fa-user-plus"></i> Thêm tài khoản
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="hrms-alert hrms-alert-success mb-4">
+        <i class="fa-solid fa-circle-check me-2"></i> @TempData["Success"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="hrms-alert hrms-alert-danger mb-4">
+        <i class="fa-solid fa-circle-exclamation me-2"></i> @TempData["Error"]
+    </div>
+}
+
+<!-- KPI TỔNG QUAN TÀI KHOẢN -->
+<div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="hrms-kpi-value" id="totalCount">@ViewBag.TotalCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng tài khoản</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="hrms-kpi-value">@ViewBag.ActiveCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tài khoản được đăng nhập (CanLogin)</div>
+        </div>
+    </div>
+
+    <div class="hrms-kpi-card kpi-red">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-lock"></i></div>
+            <div class="hrms-kpi-value">@ViewBag.DisabledCount</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tài khoản đã khóa</div>
+        </div>
+    </div>
+</div>
+
+<!-- TÌM KIẾM & BỘ LỌC -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <form method="get" asp-action="Users" class="hrms-filter-bar d-flex flex-wrap align-items-center gap-3">
+            <div style="flex: 1; min-width: 240px; position: relative;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text"
+                       name="search"
+                       value="@search"
+                       class="hrms-form-control"
+                       placeholder="Tìm kiếm theo tên hoặc username..."
+                       style="padding-left: 36px;" />
+            </div>
+
+            <div style="min-width: 180px;">
+                <select name="role" class="hrms-form-select">
+                    <option value="">-- Tất cả vai trò --</option>
+                    @foreach (var r in roles)
+                    {
+                        if (r == currentRole)
+                        {
+                            <option value="@r" selected="selected">@r</option>
+                        }
+                        else
+                        {
+                            <option value="@r">@r</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div style="min-width: 180px;">
+                <select name="status" class="hrms-form-select">
+                    <option value="">-- Trạng thái đăng nhập --</option>
+                    @if (currentStatus == true)
+                    {
+                        <option value="true" selected="selected">Hoạt động (CanLogin)</option>
+                    }
+                    else
+                    {
+                        <option value="true">Hoạt động (CanLogin)</option>
+                    }
+
+                    @if (currentStatus == false)
+                    {
+                        <option value="false" selected="selected">Đã khóa (Locked)</option>
+                    }
+                    else
+                    {
+                        <option value="false">Đã khóa (Locked)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="hrms-btn hrms-btn-primary">
+                    <i class="fa-solid fa-filter"></i> Lọc
+                </button>
+                @if (!string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(currentRole) || currentStatus.HasValue)
+                {
+                    <a asp-action="Users" class="hrms-btn hrms-btn-ghost">
+                        <i class="fa-solid fa-xmark"></i> Bỏ lọc
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- BẢNG TÀI KHOẢN -->
+<div class="hrms-card">
+    <div class="hrms-card-header d-flex justify-content-between align-items-center">
+        <h3 class="hrms-card-title">
+            <i class="fa-solid fa-users card-title-icon"></i>
+            Danh sách tài khoản hệ thống (@Model.Count())
+        </h3>
+    </div>
+
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th style="width:60px; text-align:center;">STT</th>
+                    <th>Tài khoản</th>
+                    <th>Tên đăng nhập</th>
+                    <th>Vai trò</th>
+                    <th style="text-align:center;">Trực tuyến</th>
+                    <th style="text-align:center;">Quyền đăng nhập</th>
+                    <th class="col-actions" style="text-align:center; min-width:200px;">Hành động</th>
+                </tr>
+            </thead>
+
+            <tbody id="accountTableBody">
+                @{
+                    int stt = 1;
+                }
+
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7">
+                            <div class="hrms-empty-state">
+                                <div class="hrms-empty-icon"><i class="fa-solid fa-user-slash"></i></div>
+                                <div class="hrms-empty-text">Không tìm thấy tài khoản nào phù hợp điều kiện lọc.</div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+
+                @foreach (var user in Model)
+                {
+                    <tr id="row-@user.Id">
+                        <td style="text-align:center; color: var(--hrms-text-muted, #64748b);">@stt</td>
+                        <td>
+                            <div class="hrms-employee-cell">
+                                <div class="hrms-employee-avatar">@(user.FullName?.Length > 0 ? user.FullName.Substring(0,1).ToUpper() : "?")</div>
+                                <div>
+                                    <div class="hrms-employee-name">@user.FullName</div>
+                                    <div class="hrms-employee-id">ID: @user.Id</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <code style="background: var(--hrms-background, #f1f5f9); padding: 2px 6px; border-radius: 4px; color: var(--hrms-text-main, #334155);">@user.Username</code>
+                        </td>
+                        <td>
+                            <span class="hrms-badge hrms-badge-info">
+                                <i class="fa-solid fa-user-tag me-1"></i> @user.Role
+                            </span>
+                        </td>
+
+                        <td style="text-align:center;">
+                            @if (user.IsOnline)
+                            {
+                                <span class="hrms-badge hrms-badge-success">
+                                    <span class="hrms-badge-dot"></span>
+                                    Online
+                                </span>
+                            }
+                            else
+                            {
+                                var minutes = user.LastActive.HasValue
+                                    ? (int)(DateTime.Now - user.LastActive.Value).TotalMinutes
+                                    : 0;
+
+                                <span class="hrms-badge hrms-badge-neutral">
+                                     <span class="hrms-badge-dot"></span>
+                                     @(minutes > 0 ? $"{minutes}p trước" : "Offline")
+                                </span>
+                            }
+                        </td>
+
+                        <td style="text-align:center;">
+                            @if (user.CanLogin)
+                            {
+                                <span class="hrms-badge hrms-badge-success">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Cho phép
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="hrms-badge hrms-badge-danger">
+                                    <i class="fa-solid fa-ban me-1"></i> Đã khóa
+                                </span>
+                            }
+                        </td>
+
+                        <td style="text-align:center;">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <a asp-controller="Admin" asp-action="Details" asp-route-id="@user.Id" class="hrms-btn hrms-btn-sm hrms-btn-ghost" title="Xem chi tiết">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                                <a asp-controller="Admin" asp-action="EditUser" asp-route-id="@user.Id" class="hrms-btn hrms-btn-sm hrms-btn-secondary" title="Chỉnh sửa">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                                <form asp-controller="Admin" asp-action="GrantPermission" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="hrms-btn hrms-btn-sm @(user.CanLogin ? "hrms-btn-secondary" : "hrms-btn-primary")" 
+                                            title="@(user.CanLogin ? "Khóa đăng nhập" : "Mở khóa đăng nhập")"
+                                            onclick="return confirm('@(user.CanLogin ? $"Bạn có chắc muốn khóa đăng nhập của {user.Username}?" : $"Mở khóa cho {user.Username}?")');">
+                                        <i class="fa-solid @(user.CanLogin ? "fa-user-lock" : "fa-unlock")"></i>
+                                    </button>
+                                </form>
+                                <form asp-controller="Admin" asp-action="DeleteUser" asp-route-id="@user.Id" method="post" style="display:inline;">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="hrms-btn hrms-btn-sm hrms-btn-danger" 
+                                            title="Khóa tài khoản"
+                                            onclick="return confirm('Bạn có chắc muốn vô hiệu hóa/khóa tài khoản @user.Username?');">
+                                        <i class="fa-solid fa-ban"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    stt++;
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const connection = window.HRMSSignalRConnection;
+
+        connection.on("NewUserAdded", function () {
+            let total = document.getElementById("totalCount");
+            if (total) total.innerText = parseInt(total.innerText) + 1;
+        });
+
+        connection.on("UserDeleted", function () {
+            let total = document.getElementById("totalCount");
+            if (total) total.innerText = Math.max(0, parseInt(total.innerText) - 1);
+        });
+
+    </script>
+}

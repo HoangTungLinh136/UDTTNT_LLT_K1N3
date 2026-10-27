@@ -1,158 +1,253 @@
-﻿@using Microsoft.AspNetCore.Http
 @{
-    ViewData["Title"] = "👨‍💼 Trang chủ nhân viên";
-    var currentUser = Context.Session.GetString("User") ?? "";
-    var myRealName = Context.Session.GetString("RealName") ?? ""; 
+    ViewData["Title"] = "Tổng quan Nhân viên";
+    var currentUser = ViewBag.CurrentUsername as string ?? User?.Identity?.Name ?? "";
+    var myRealName = ViewBag.MyRealName as string ?? currentUser;
+    var myRole = ViewBag.CurrentRole as string ?? "Employee";
 
-    // Lấy danh sách chấm công từ ViewBag (đã được Controller lọc chuẩn)
     var myAtts = ViewBag.MyAttendances as List<giao_dien_demo.Models.Attendance> ?? new List<giao_dien_demo.Models.Attendance>();
     var latestAtt = myAtts.OrderByDescending(x => x.CheckIn).FirstOrDefault();
 
-    // Sử dụng trực tiếp con số từ Controller (Đọc từ Database SQL cho chính xác)
     int contractCount = ViewBag.MyContractCount ?? 0;
     int leaveCount = ViewBag.MyLeaveCount ?? 0;
     int notiCount = ViewBag.NotificationCount ?? 0;
+    int attCount = ViewBag.MyAttendanceCount ?? 0;
+
+    // Trạng thái hôm nay
+    var todayAtt = myAtts.FirstOrDefault(x => x.CheckIn.Date == DateTime.Today);
+    string todayStatus = "Chưa check-in";
+    string todayStatusClass = "status-absent";
+    if (todayAtt != null) {
+        if (todayAtt.CheckOut == null) { todayStatus = "Đang làm việc"; todayStatusClass = "status-working"; }
+        else { todayStatus = "Hoàn thành"; todayStatusClass = "status-done"; }
+    }
+
+    var nowMonth = DateTime.Now.ToString("MM/yyyy");
+    var greeting = DateTime.Now.Hour < 12 ? "Chào buổi sáng" : DateTime.Now.Hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
 }
 
 <style>
-    .new-row { animation: highlight 2s ease-out; }
-    @@keyframes highlight { from { background-color: #fff9c4; } to { background-color: transparent; } }
-    .card-link { cursor: pointer; text-decoration: none !important; color: inherit !important; }
-    .dashboard-cards .card { transition: transform 0.2s; position: relative; }
-    .dashboard-cards .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+    /* Specific quick buttons for employee portal */
+    .emp-quick-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: var(--surface-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md, 8px);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .emp-quick-btn:hover {
+        background: var(--surface-page);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
+        box-shadow: var(--shadow-xs);
+    }
 </style>
 
-<h2 class="fw-bold text-dark mb-4"><i class="fas fa-chart-line me-2"></i> Nhân viên: @myRealName</h2>
-
-<div class="dashboard-cards">
-    <div class="card-link">
-        <div class="card blue">
-            ⏱ Giờ Check-in 
-            <div class="number" id="checkInTime">@(latestAtt != null ? latestAtt.CheckIn.ToString("HH:mm") : "--:--")</div>
-        </div>
-    </div>
-    <div class="card-link">
-        <div class="card green">
-            ⏳ Giờ Check-out 
-            <div class="number" id="checkOutTime">@(latestAtt?.CheckOut != null ? latestAtt.CheckOut.Value.ToString("HH:mm") : "--:--")</div>
-        </div>
-    </div>
-    <div class="card-link">
-        <div class="card orange">
-            📋 Tổng công tháng 
-            <div class="number" id="attendanceCount">@(ViewBag.MyAttendanceCount ?? 0)</div>
-        </div>
-    </div>
-    
-    <a href="/Leave/Index" class="card-link">
-        <div class="card red">
-            📄 Đơn nghỉ phép 
-            <div class="number" id="myLeaveCount">@leaveCount</div>
-        </div>
-    </a>
-
-    <a href="/Contract/Index" class="card-link">
-        <div class="card purple">
-            📑 Hợp đồng 
-            <div class="number" id="myContractCount">@contractCount</div>
-        </div>
-    </a>
-
-    <div class="card-link">
-        <div class="card purple">
-            🔔 Thông báo mới 
-            <div class="number" id="myNotificationCount">@notiCount</div>
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-house-user"></i></span>
+            @greeting, @(string.IsNullOrEmpty(myRealName) ? currentUser : myRealName)!
+        </h1>
+        <div class="hrms-page-subtitle">
+            <i class="fa-regular fa-calendar me-1"></i> Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy") 
+            <span class="mx-2 text-muted">|</span> Kỳ lương: Tháng @nowMonth
         </div>
     </div>
 </div>
 
-<div class="mt-4">
-    <h3 class="fw-bold mb-3">📋 Nhật ký chấm công</h3>
-    <table class="table table-bordered table-hover shadow-sm bg-white">
-        <thead class="table-primary text-center">
-            <tr><th>Ngày</th><th>Check-in</th><th>Check-out</th><th>Trạng thái</th></tr>
-        </thead>
-        <tbody id="attendanceTableBody" class="text-center">
-            @if (myAtts.Any()) {
-                foreach (var item in myAtts.OrderByDescending(x => x.CheckIn)) {
+<div class="hrms-card mb-4" style="display: flex; justify-content: space-between; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary-subtle); color: var(--color-primary); display: flex; justify-content: center; align-items: center; font-size: 20px;">
+            <i class="fa-solid fa-fingerprint"></i>
+        </div>
+        <div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Trạng thái chấm công</div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <span class="hrms-badge @(todayStatusClass == "status-working" ? "hrms-badge-success" : todayStatusClass == "status-done" ? "hrms-badge-info" : "hrms-badge-warning")">
+                    @todayStatus
+                </span>
+            </div>
+        </div>
+    </div>
+    <a href="/Attendance/Index" class="hrms-btn hrms-btn-sm hrms-btn-secondary">
+        <i class="fa-solid fa-arrow-right me-1"></i> Xem chi tiết
+    </a>
+</div>
+
+<!-- KPI Grid -->
+<div class="hrms-kpi-grid hrms-kpi-grid-6 mb-4">
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon text-primary"><i class="fa-solid fa-right-to-bracket"></i></div>
+            <div class="hrms-kpi-value" id="checkInTime">@(todayAtt != null ? todayAtt.CheckIn.ToString("HH:mm") : "--:--")</div>
+        </div>
+        <div class="hrms-kpi-label">Check-in hôm nay</div>
+    </div>
+    
+    <div class="hrms-kpi-card">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon text-success"><i class="fa-solid fa-right-from-bracket"></i></div>
+            <div class="hrms-kpi-value" id="checkOutTime">@(todayAtt?.CheckOut != null ? todayAtt.CheckOut.Value.ToString("HH:mm") : "--:--")</div>
+        </div>
+        <div class="hrms-kpi-label">Check-out hôm nay</div>
+    </div>
+    
+    <a href="/Attendance/Index" class="hrms-kpi-card text-decoration-none">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon text-warning"><i class="fa-solid fa-calendar-check"></i></div>
+            <div class="hrms-kpi-value" id="attendanceCount">@attCount</div>
+        </div>
+        <div class="hrms-kpi-label">Ngày công tháng @DateTime.Now.Month</div>
+    </a>
+    
+    <a href="/Leave/Index" class="hrms-kpi-card text-decoration-none">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon text-purple"><i class="fa-solid fa-umbrella-beach"></i></div>
+            <div class="hrms-kpi-value" id="myLeaveCount">@leaveCount</div>
+        </div>
+        <div class="hrms-kpi-label">Đơn nghỉ phép</div>
+    </a>
+    
+    <a href="/Contract/Index" class="hrms-kpi-card text-decoration-none">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon text-info"><i class="fa-solid fa-file-signature"></i></div>
+            <div class="hrms-kpi-value" id="myContractCount">@contractCount</div>
+        </div>
+        <div class="hrms-kpi-label">Hợp đồng lao động</div>
+    </a>
+    
+    <a href="/Notification/Index" class="hrms-kpi-card text-decoration-none">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon text-danger"><i class="fa-regular fa-bell"></i></div>
+            <div class="hrms-kpi-value" id="myNotificationCount">@notiCount</div>
+        </div>
+        <div class="hrms-kpi-label">Thông báo mới</div>
+    </a>
+</div>
+
+<!-- Quick Access -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-header">
+        <h3 class="hrms-card-title">Truy cập nhanh</h3>
+    </div>
+    <div class="hrms-card-body">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="/Employee/MyProfile" class="emp-quick-btn">
+                <i class="fa-solid fa-user-circle text-primary"></i> Hồ sơ cá nhân
+            </a>
+            <a href="/Attendance/Index" class="emp-quick-btn">
+                <i class="fa-solid fa-clock-rotate-left text-warning"></i> Lịch sử chấm công
+            </a>
+            <a href="/Salary/Index" class="emp-quick-btn">
+                <i class="fa-solid fa-money-check-dollar text-success"></i> Thông tin lương
+            </a>
+            <a href="/Leave/Create" class="emp-quick-btn">
+                <i class="fa-solid fa-file-circle-plus text-purple"></i> Tạo đơn nghỉ phép
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Table -->
+<div class="hrms-card mb-4 p-0">
+    <div class="hrms-card-header d-flex justify-content-between align-items-center">
+        <h3 class="hrms-card-title mb-0">Nhật ký chấm công gần đây</h3>
+        <a href="/AttendanceAdjustment/Manage" class="hrms-btn hrms-btn-sm hrms-btn-secondary">
+            <i class="fa-solid fa-pen-to-square me-1"></i> Yêu cầu điều chỉnh
+        </a>
+    </div>
+    <div class="hrms-card-body p-0">
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
                     <tr>
-                        <td>@item.CheckIn.ToString("dd/MM/yyyy")</td>
-                        <td><strong>@item.CheckIn.ToString("HH:mm:ss")</strong></td>
-                        <td>@(item.CheckOut.HasValue ? item.CheckOut.Value.ToString("HH:mm:ss") : "--:--")</td>
-                        <td><span class="badge @(item.CheckOut == null ? "bg-warning text-dark" : "bg-success")">@(item.CheckOut == null ? "Đang làm việc" : "Hoàn thành")</span></td>
+                        <th>Ngày</th>
+                        <th>Thứ</th>
+                        <th style="text-align:center;">Check-in</th>
+                        <th style="text-align:center;">Check-out</th>
+                        <th style="text-align:center;">Trạng thái</th>
                     </tr>
-                }
-            } else {
-                <tr><td colspan="4" class="py-4 text-muted">Chưa có dữ liệu chấm công.</td></tr>
-            }
-        </tbody>
-    </table>
+                </thead>
+                <tbody id="attendanceTableBody">
+                    @if (myAtts.Any()) {
+                        int rowCount = 0;
+                        foreach (var item in myAtts.OrderByDescending(x => x.CheckIn)) {
+                            if (rowCount >= 8) break; rowCount++;
+                            var dowVi = item.CheckIn.DayOfWeek switch {
+                                DayOfWeek.Monday    => "Thứ 2",
+                                DayOfWeek.Tuesday   => "Thứ 3",
+                                DayOfWeek.Wednesday => "Thứ 4",
+                                DayOfWeek.Thursday  => "Thứ 5",
+                                DayOfWeek.Friday    => "Thứ 6",
+                                DayOfWeek.Saturday  => "Thứ 7",
+                                DayOfWeek.Sunday    => "Chủ nhật",
+                                _ => ""
+                            };
+                            <tr>
+                                <td><strong style="color: var(--text-primary);">@item.CheckIn.ToString("dd/MM/yyyy")</strong></td>
+                                <td style="color: var(--text-secondary);">@dowVi</td>
+                                <td style="text-align:center;"><strong style="color: var(--color-primary);">@item.CheckIn.ToString("HH:mm:ss")</strong></td>
+                                <td style="text-align:center; color: var(--text-secondary);">@(item.CheckOut.HasValue ? item.CheckOut.Value.ToString("HH:mm:ss") : "—")</td>
+                                <td style="text-align:center;">
+                                    @if(item.CheckOut == null) {
+                                        <span class="hrms-badge hrms-badge-success">Đang làm việc</span>
+                                    } else {
+                                        <span class="hrms-badge hrms-badge-info">Hoàn thành</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    } else {
+                        <tr>
+                            <td colspan="5">
+                                <div class="hrms-empty-state">
+                                    <div class="hrms-empty-state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+                                    <div class="hrms-empty-state-title">Chưa có dữ liệu chấm công</div>
+                                    <div class="hrms-empty-state-desc">Dữ liệu chấm công của bạn sẽ hiển thị tại đây khi có lượt ghi nhận.</div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/dashboardHub")
-            .withAutomaticReconnect()
-            .build();
+        const connection = window.HRMSSignalRConnection;
 
-        const loggedInUser = '@currentUser';
-        const myRealName = '@myRealName';
-
-        // 1. Nhận thông báo Real-time
         connection.on("ReceiveNotification", function (data) {
-            if (data.receiver === "Tất cả nhân viên" || data.receiver === "Tất cả" || data.receiver === loggedInUser || data.receiver === myRealName) {
-                const cardNum = document.getElementById("myNotificationCount");
-                if (cardNum) {
-                    let count = parseInt(cardNum.innerText) || 0;
-                    cardNum.innerText = count + 1;
-                }
-            }
+            const cardNum = document.getElementById("myNotificationCount");
+            if (cardNum) { let c = parseInt(cardNum.innerText)||0; cardNum.innerText = c+1; }
         });
 
-        // 2. Nhận tín hiệu duyệt Hợp đồng Real-time
-        connection.on("ContractApproved", function (employeeName) {
-            if (employeeName === myRealName || employeeName === loggedInUser) {
-                const contractElement = document.getElementById("myContractCount");
-                if (contractElement) {
-                    let currentCount = parseInt(contractElement.innerText) || 0;
-                    contractElement.innerText = currentCount + 1;
-                    
-                    Swal.fire({
-                        title: 'Chúc mừng!',
-                        text: 'Hợp đồng của bạn đã được phê duyệt!',
-                        icon: 'success',
-                        confirmButtonText: 'Xem ngay'
-                    }).then(() => {
-                        window.location.href = '/Contract/Index';
-                    });
-                }
-            }
-        });
-
-        // 3. Cập nhật Chấm công Real-time
         connection.on("UpdateAttendanceCount", (totalCount, name) => {
             if (name === loggedInUser || name === myRealName) {
-                const attCount = document.getElementById("attendanceCount");
-                if(attCount) attCount.innerText = totalCount;
-                
+                const el = document.getElementById("attendanceCount");
+                if(el) el.innerText = totalCount;
                 const now = new Date();
-                const timeStr = now.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });
-                const checkInEl = document.getElementById("checkInTime");
-                if(checkInEl) checkInEl.innerText = timeStr;
+                const timeStr = now.toLocaleTimeString("vi-VN", { hour:'2-digit', minute:'2-digit' });
+                const ci = document.getElementById("checkInTime");
+                if(ci) ci.innerText = timeStr;
             }
         });
 
-        async function startConnection() {
-            try { 
-                await connection.start(); 
-                console.log("Realtime Connected for: " + myRealName); 
-            } catch (err) { 
-                setTimeout(startConnection, 5000); 
+        connection.on("UpdateMyLeaveCount", (count, name) => {
+            if (name === loggedInUser || name === myRealName) {
+                const el = document.getElementById("myLeaveCount");
+                if(el) el.innerText = count;
             }
-        }
-        startConnection();
+        });
+
     </script>
 }

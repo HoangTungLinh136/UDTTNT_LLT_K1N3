@@ -1,8 +1,9 @@
 ﻿@model giao_dien_demo.Models.Report
 
-<h2>📝 Chỉnh sửa Báo cáo: @Model.EmployeeName</h2>
+<h2>🔹 Chỉnh sửa Báo cáo: @Model.EmployeeName</h2>
 <hr />
 <form asp-action="Edit" method="post">
+    @Html.AntiForgeryToken()
     <input type="hidden" asp-for="Id" />
     <div class="row">
         <div class="col-md-4 mb-3">

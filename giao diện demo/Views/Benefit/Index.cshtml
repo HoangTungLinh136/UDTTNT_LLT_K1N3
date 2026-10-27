@@ -1,0 +1,581 @@
+@{
+    ViewData["Title"] = "Phúc lợi của tôi";
+}
+
+<style>
+    .modal.right .modal-dialog {
+        position: fixed;
+        margin: auto;
+        max-width: 100%;
+        height: 100%;
+        right: 0;
+        transform: translate3d(100%, 0, 0);
+        transition: transform 0.3s ease-out;
+    }
+    .modal.right.show .modal-dialog {
+        transform: translate3d(0, 0, 0);
+    }
+    .modal.right .modal-content {
+        height: 100%;
+        overflow-y: auto;
+    }
+</style>
+
+<div class="py-2">
+    <!-- Header -->
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fas fa-gift"></i></span>
+                Phúc lợi của tôi
+            </h1>
+            <p class="hrms-page-subtitle">Khám phá các quyền lợi, chế độ phúc lợi và chương trình dành riêng cho bạn.</p>
+        </div>
+        <div class="hrms-page-header-actions">
+            <button class="hrms-btn hrms-btn-primary" onclick="loadPrograms()">
+                <i class="fas fa-search-plus me-1"></i> Khám phá chương trình
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div id="kpiCards" class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+        <div class="col-12 text-center py-4" id="kpiLoading">
+            <div class="spinner-border text-primary" role="status"></div>
+            <div class="mt-2 text-muted">Đang tải dữ liệu tổng quan...</div>
+        </div>
+    </div>
+
+    <!-- 2 Cột chính: Đang hưởng & Lịch sử -->
+    <div class="row">
+        <div class="col-md-7 mb-4">
+            <div class="hrms-card h-100 mb-4 p-0">
+                <div class="hrms-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="hrms-card-title mb-0"><i class="fas fa-shield-alt text-success me-2"></i> Đang được hưởng</h5>
+                    <span class="hrms-badge hrms-badge-neutral border">Chế độ hiện tại</span>
+                </div>
+                <div class="hrms-card-body p-0">
+                    <div id="activeBenefitsLoading" class="text-center p-5" style="display: none;">
+                        <div class="spinner-border text-primary" role="status"></div>
+                    </div>
+                    <ul class="list-group list-group-flush" id="activeBenefitsList" style="border-radius: var(--radius-md, 8px);">
+                        <!-- JS Renders here -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-5 mb-4">
+            <div class="hrms-card mb-4 p-0">
+                <div class="hrms-card-header">
+                    <h5 class="hrms-card-title mb-0"><i class="fas fa-history text-info me-2"></i> Lịch sử đăng ký</h5>
+                </div>
+                <div class="hrms-card-body p-0">
+                    <div id="historyLoading" class="text-center p-5" style="display: none;">
+                        <div class="spinner-border text-info" role="status"></div>
+                    </div>
+                    <div class="hrms-table-wrap" style="max-height: 350px; overflow-y: auto;">
+                        <table class="hrms-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Chương trình</th>
+                                    <th>Ngày ĐK</th>
+                                    <th>Trạng thái</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- JS Renders here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thông tin thêm Panel -->
+            <div class="hrms-card bg-light">
+                <div class="p-3">
+                    <h6 class="fw-bold text-dark mb-3"><i class="fas fa-info-circle me-2 text-primary"></i>Thông tin thêm</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-3"><a href="javascript:void(0)" class="text-decoration-none text-dark d-flex align-items-center"><i class="fas fa-file-contract me-3 text-muted fs-5"></i>Chính sách phúc lợi nội bộ</a></li>
+                        <li><a href="javascript:void(0)" class="text-decoration-none text-dark d-flex align-items-center"><i class="fas fa-question-circle me-3 text-muted fs-5"></i>Câu hỏi thường gặp (FAQ)</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Drawer: Explore Programs -->
+<div class="modal right fade" id="exploreDrawer" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document" style="width: 500px;">
+        <div class="modal-content border-0">
+            <div class="modal-header bg-primary text-white border-0 py-3">
+                <h5 class="modal-title mb-0"><i class="fas fa-box-open mr-2"></i> Chương trình Phúc lợi</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light" style="overflow-y: auto;">
+                <div id="programsLoading" class="text-center p-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <div class="mt-3 text-muted">Đang tải danh sách chương trình...</div>
+                </div>
+                <div class="row" id="programsGrid">
+                    <!-- JS Renders here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Đăng ký -->
+<div class="modal fade" id="registerModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light py-3 border-bottom-0">
+                <h5 class="modal-title mb-0">Đăng ký phúc lợi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="registerForm">
+                    <input type="hidden" id="regProgramId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Chương trình</label>
+                        <input type="text" id="regProgramName" class="form-control bg-light" readonly />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Ghi chú (Tùy chọn)</label>
+                        <textarea id="regNotes" class="form-control" rows="3" placeholder="Nhập ghi chú hoặc lý do đăng ký..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light border-top-0 py-3">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-4" onclick="submitRegister()">
+                    <i class="fas fa-paper-plane mr-1"></i> Gửi đăng ký
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Chi tiết quyền lợi đang hưởng -->
+<div class="modal fade" id="benefitDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light py-3 border-bottom-0">
+                <h5 class="modal-title mb-0"><i class="fas fa-shield-alt text-success mr-2"></i> Chi tiết quyền lợi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="benefitDetailContent">
+                <!-- JS Renders here -->
+            </div>
+            <div class="modal-footer bg-light border-top-0 py-2">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Chi tiết Chương trình Phúc lợi -->
+<div class="modal fade" id="programDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light py-3 border-bottom-0">
+                <h5 class="modal-title mb-0"><i class="fas fa-info-circle text-primary mr-2"></i> Chi tiết chương trình</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="programDetailContent">
+                <!-- JS Renders here -->
+            </div>
+            <div class="modal-footer bg-light border-top-0 py-3" id="programDetailFooter">
+                <!-- JS Renders here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Chi tiết Đăng ký (Enrollment) -->
+<div class="modal fade" id="enrollmentDetailModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light py-3 border-bottom-0">
+                <h5 class="modal-title mb-0"><i class="fas fa-file-alt text-info mr-2"></i> Chi tiết đăng ký phúc lợi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="enrollmentDetailContent">
+                <!-- JS Renders here -->
+            </div>
+            <div class="modal-footer bg-light border-top-0 py-3" id="enrollmentDetailFooter">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $(document).ready(function() {
+            loadSummary();
+            loadActiveBenefits();
+            loadHistory();
+        });
+
+        function loadSummary() {
+            $.get('/Benefit/GetMyBenefitSummary', function(data) {
+                $('#kpiLoading').hide();
+                let html = `
+                    <div class="emp-kpi-card" style="border-top: 4px solid var(--hrms-blue);">
+                        <div class="emp-kpi-header">
+                            <span class="emp-kpi-label text-uppercase">Bảo hiểm</span>
+                            <i class="fas fa-shield-alt text-primary"></i>
+                        </div>
+                        <div class="emp-kpi-value text-primary">${data.activeInsuranceCount}</div>
+                    </div>
+                    <div class="emp-kpi-card" style="border-top: 4px solid var(--hrms-green);">
+                        <div class="emp-kpi-header">
+                            <span class="emp-kpi-label text-uppercase">Quyền lợi khác</span>
+                            <i class="fas fa-hand-holding-heart text-success"></i>
+                        </div>
+                        <div class="emp-kpi-value text-success">${data.activeBenefitCount}</div>
+                    </div>
+                    <div class="emp-kpi-card" style="border-top: 4px solid var(--hrms-yellow);">
+                        <div class="emp-kpi-header">
+                            <span class="emp-kpi-label text-uppercase">Đang mở đăng ký</span>
+                            <i class="fas fa-box-open text-warning"></i>
+                        </div>
+                        <div class="emp-kpi-value text-warning">${data.eligibleProgramCount}</div>
+                    </div>
+                    <div class="emp-kpi-card" style="border-top: 4px solid var(--hrms-red);">
+                        <div class="emp-kpi-header">
+                            <span class="emp-kpi-label text-uppercase">Đang chờ duyệt</span>
+                            <i class="fas fa-hourglass-half text-danger"></i>
+                        </div>
+                        <div class="emp-kpi-value text-danger">${data.pendingEnrollmentCount}</div>
+                    </div>
+                `;
+                $('#kpiCards').html(html);
+            }).fail(function() {
+                $('#kpiCards').html('<div class="col-12 text-center py-4 text-danger">Không thể tải dữ liệu tổng quan. <a href="javascript:void(0)" onclick="loadSummary()">Thử lại</a></div>');
+            });
+        }
+
+        function getIconForType(type) {
+            if (type === 'Insurance') return '<i class="fas fa-shield-alt text-success"></i>';
+            if (type === 'Health') return '<i class="fas fa-notes-medical text-danger"></i>';
+            if (type === 'Allowance') return '<i class="fas fa-money-bill-wave text-warning"></i>';
+            return '<i class="fas fa-gift text-primary"></i>';
+        }
+
+        function loadActiveBenefits() {
+            $('#activeBenefitsLoading').show();
+            $.get('/Benefit/GetMyActiveBenefits', function(data) {
+                $('#activeBenefitsLoading').hide();
+                if (!data || data.length === 0) {
+                    $('#activeBenefitsList').html('<div class="p-5 text-center text-muted">Bạn chưa có quyền lợi nào đang hưởng.</div>');
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(item => {
+                    let dateStr = item.effectiveFrom ? new Date(item.effectiveFrom).toLocaleDateString('vi-VN') : 'N/A';
+                    let typeIcon = getIconForType(item.program?.benefitType);
+                    
+                    html += `
+                        <li class="list-group-item d-flex align-items-center p-3" style="cursor: pointer;" onmouseover="this.style.backgroundColor='#f8f9fa'" onmouseout="this.style.backgroundColor=''" onclick="openBenefitDetail(${item.id})">
+                            <div style="font-size: 2.5rem; width: 60px; text-align: center;" class="me-3">${typeIcon}</div>
+                            <div class="flex-grow-1 ms-2">
+                                <h6 class="mb-1 fw-bold text-dark">${item.program?.name || 'Không xác định'}</h6>
+                                <p class="mb-0 text-muted small">${item.program?.description || ''}</p>
+                            </div>
+                            <div class="text-end">
+                                <span class="emp-badge emp-badge-success mb-1">Đang hưởng</span><br/>
+                                <small class="text-muted">Từ: ${dateStr}</small>
+                            </div>
+                        </li>
+                    `;
+                });
+                $('#activeBenefitsList').html(html);
+            }).fail(function() {
+                $('#activeBenefitsLoading').hide();
+                $('#activeBenefitsList').html('<div class="p-5 text-center text-danger">Không thể tải danh sách. <a href="javascript:void(0)" onclick="loadActiveBenefits()">Thử lại</a></div>');
+            });
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'APPROVED') return '<span class="emp-badge emp-badge-success">Đã duyệt</span>';
+            if (status === 'PENDING_APPROVAL') return '<span class="emp-badge emp-badge-warning">Chờ duyệt</span>';
+            if (status === 'REJECTED') return '<span class="emp-badge emp-badge-danger">Từ chối</span>';
+            if (status === 'CANCELLED') return '<span class="emp-badge emp-badge-neutral">Đã hủy</span>';
+            if (status === 'DRAFT') return '<span class="emp-badge emp-badge-info">Bản nháp</span>';
+            return `<span class="emp-badge emp-badge-info">${status}</span>`;
+        }
+
+        function loadHistory() {
+            $('#historyLoading').show();
+            $.get('/Benefit/GetMyEnrollmentHistory', function(data) {
+                $('#historyLoading').hide();
+                if (!data || data.length === 0) {
+                    $('#historyTableBody').html('<tr><td colspan="4" class="text-center text-muted py-5">Bạn chưa có lịch sử đăng ký phúc lợi.</td></tr>');
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(item => {
+                    let dateStr = new Date(item.registrationDate).toLocaleDateString('vi-VN');
+                    html += `
+                        <tr>
+                            <td class="fw-bold text-dark">${item.programName}</td>
+                            <td class="text-muted" style="font-size: 13px;">${dateStr}</td>
+                            <td>${getStatusBadge(item.status)}</td>
+                            <td>
+                                <button class="hrms-btn hrms-btn-ghost hrms-btn-sm" style="padding: 4px 8px;" onclick="openEnrollmentDetail(${item.id})">
+                                    <i class="fas fa-eye text-primary"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                $('#historyTableBody').html(html);
+            }).fail(function() {
+                $('#historyLoading').hide();
+                $('#historyTableBody').html('<tr><td colspan="4" class="text-center text-danger py-5">Lỗi tải dữ liệu. <a href="javascript:void(0)" onclick="loadHistory()">Thử lại</a></td></tr>');
+            });
+        }
+
+        function loadPrograms() {
+            $('#exploreDrawer').modal('show');
+            $('#programsLoading').show();
+            $('#programsGrid').empty();
+            
+            $.get('/Benefit/GetAvailablePrograms', function(data) {
+                $('#programsLoading').hide();
+                if (!data || data.length === 0) {
+                    $('#programsGrid').html('<div class="col-12 text-center text-muted py-5">Hiện chưa có chương trình phúc lợi nào có thể đăng ký.</div>');
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(item => {
+                    let typeIcon = getIconForType(item.benefitType);
+                    let buttonHtml = '';
+                    let badgeHtml = '';
+                    
+                    if (item.isEligible) {
+                        buttonHtml = `<button class="hrms-btn hrms-btn-primary w-100 mt-3" onclick="openRegisterModal(${item.id}, '${item.name.replace(/'/g, "\\'")}')">Đăng ký ngay</button>`;
+                        badgeHtml = '<span class="emp-badge emp-badge-success position-absolute" style="top: 15px; right: 15px;">Có thể đăng ký</span>';
+                    } else {
+                        buttonHtml = `<button class="hrms-btn hrms-btn-secondary w-100 mt-3" disabled>${item.eligibilityMessage}</button>`;
+                        badgeHtml = '<span class="emp-badge emp-badge-neutral position-absolute" style="top: 15px; right: 15px;">Không khả dụng</span>';
+                    if (item.enrollmentStatus === 'PENDING_APPROVAL' || item.enrollmentStatus === 'APPROVED') {
+                             badgeHtml = '<span class="emp-badge emp-badge-info position-absolute" style="top: 15px; right: 15px;">Đã đăng ký</span>';
+                        }
+                    }
+
+                    let dateStr = item.registrationEnd ? 'Hạn: ' + new Date(item.registrationEnd).toLocaleDateString('vi-VN') : 'Không giới hạn';
+                    
+                    html += `
+                        <div class="col-12 mb-3">
+                            <div class="card program-card h-100 position-relative border-0 shadow-sm">
+                                ${badgeHtml}
+                                <div class="card-body p-4">
+                                    <div class="d-flex mb-3">
+                                        <div class="me-3" style="font-size: 2rem;">${typeIcon}</div>
+                                        <h6 class="fw-bold mb-0 align-self-center text-truncate" style="max-width: 70%;" title="${item.name}">${item.name}</h6>
+                                    </div>
+                                    <p class="text-muted small mb-3" style="height: 40px; overflow: hidden;">${item.description || 'Không có mô tả'}</p>
+                                    <div class="text-info small mb-3 fw-bold"><i class="far fa-clock me-1"></i>${dateStr}</div>
+                                    <div class="d-flex gap-2">
+                                        <button class="hrms-btn hrms-btn-secondary w-100 mt-3" onclick="openProgramDetail(${item.id})">Chi tiết</button>
+                                        ${buttonHtml}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                $('#programsGrid').html(html);
+            }).fail(function() {
+                $('#programsLoading').hide();
+                $('#programsGrid').html('<div class="col-12 text-center text-danger py-5">Lỗi tải dữ liệu. <a href="javascript:void(0)" onclick="loadPrograms()">Thử lại</a></div>');
+            });
+        }
+
+        // Xem chi tiết Quyền lợi đang hưởng
+        function openBenefitDetail(id) {
+            $('#benefitDetailContent').html('<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>');
+            $('#benefitDetailModal').modal('show');
+            $.get('/Benefit/GetBenefitDetail/' + id, function(data) {
+                let dStart = data.effectiveFrom ? new Date(data.effectiveFrom).toLocaleDateString('vi-VN') : 'N/A';
+                let dEnd = data.effectiveTo ? new Date(data.effectiveTo).toLocaleDateString('vi-VN') : 'Không xác định';
+                let html = `
+                    <h5 class="fw-bold mb-2 text-primary">${data.programName}</h5>
+                    <p class="text-muted mb-4">${data.programDescription || ''}</p>
+                    <table class="table table-borderless table-sm mb-0">
+                        <tr><td class="text-muted fw-bold" style="width: 35%;">Trạng thái:</td><td><span class="badge bg-success">${data.status}</span></td></tr>
+                        <tr><td class="text-muted fw-bold">Ngày bắt đầu:</td><td>${dStart}</td></tr>
+                        <tr><td class="text-muted fw-bold">Ngày kết thúc:</td><td>${dEnd}</td></tr>
+                        <tr><td class="text-muted fw-bold">Ghi chú:</td><td>${data.notes || '-'}</td></tr>
+                    </table>
+                `;
+                $('#benefitDetailContent').html(html);
+            }).fail(function() {
+                $('#benefitDetailContent').html('<div class="text-center text-danger p-5">Không thể tải thông tin.</div>');
+            });
+        }
+
+        // Xem chi tiết Chương trình
+        function openProgramDetail(id) {
+            $('#programDetailContent').html('<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>');
+            $('#programDetailFooter').empty();
+            $('#exploreDrawer').modal('hide');
+            
+            setTimeout(() => {
+                $('#programDetailModal').modal('show');
+                $.get('/Benefit/GetProgramDetail/' + id, function(data) {
+                    let dStart = data.registrationStart ? new Date(data.registrationStart).toLocaleDateString('vi-VN') : '-';
+                    let dEnd = data.registrationEnd ? new Date(data.registrationEnd).toLocaleDateString('vi-VN') : '-';
+                    let cap = data.capacity || 'Không giới hạn';
+                    
+                    let html = `
+                        <h5 class="fw-bold mb-3 text-primary">${data.name}</h5>
+                        <p class="text-muted mb-4" style="line-height: 1.6;">${data.description || 'Chưa có mô tả'}</p>
+                        
+                        <div class="bg-light p-3 rounded">
+                            <h6 class="fw-bold mb-3 border-bottom pb-2">Thông tin đăng ký</h6>
+                            <table class="table table-borderless table-sm mb-0">
+                                <tr><td class="text-muted" style="width: 40%;">Mở đăng ký:</td><td class="fw-bold">${dStart}</td></tr>
+                                <tr><td class="text-muted">Đóng đăng ký:</td><td class="fw-bold">${dEnd}</td></tr>
+                                <tr><td class="text-muted">Số lượng (Quota):</td><td class="fw-bold">${cap}</td></tr>
+                                <tr><td class="text-muted">Phê duyệt:</td><td class="fw-bold">${data.requiresApproval ? 'Bắt buộc' : 'Tự động duyệt'}</td></tr>
+                            </table>
+                        </div>
+                    `;
+                    $('#programDetailContent').html(html);
+                    
+                    let footerHtml = '<button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Đóng</button>';
+                    if (data.isEligible) {
+                        footerHtml += `<button type="button" class="btn btn-primary px-4" onclick="openRegisterModalFromDetail(${data.id}, '${data.name.replace(/'/g, "\\'")}')">Đăng ký ngay</button>`;
+                    } else {
+                        footerHtml += `<button type="button" class="btn btn-secondary px-4" disabled>${data.eligibilityMessage}</button>`;
+                    }
+                    $('#programDetailFooter').html(footerHtml);
+                    
+                }).fail(function() {
+                    $('#programDetailContent').html('<div class="text-center text-danger p-5">Không thể tải thông tin.</div>');
+                    $('#programDetailFooter').html('<button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Đóng</button>');
+                });
+            }, 350);
+        }
+
+        // Xem chi tiết Đăng ký / Hủy đăng ký
+        function openEnrollmentDetail(id) {
+            $('#enrollmentDetailContent').html('<div class="text-center p-5"><div class="spinner-border text-primary"></div></div>');
+            $('#enrollmentDetailFooter').html('<button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Đóng</button>');
+            $('#enrollmentDetailModal').modal('show');
+            
+            $.get('/Benefit/GetEnrollmentDetail/' + id, function(data) {
+                let dReg = data.registrationDate ? new Date(data.registrationDate).toLocaleString('vi-VN') : '-';
+                let rejHtml = data.status === 'REJECTED' ? `<tr><td class="text-danger fw-bold">Lý do từ chối:</td><td class="text-danger fw-bold">${data.rejectionReason || 'Không có'}</td></tr>` : '';
+                
+                let html = `
+                    <h5 class="fw-bold text-primary mb-4">${data.programName}</h5>
+                    <table class="table table-borderless table-sm">
+                        <tr><td class="text-muted fw-bold" style="width: 40%;">Ngày đăng ký:</td><td>${dReg}</td></tr>
+                        <tr><td class="text-muted fw-bold">Trạng thái:</td><td>${getStatusBadge(data.status)}</td></tr>
+                        ${rejHtml}
+                        <tr><td class="text-muted fw-bold">Ghi chú của bạn:</td><td>${data.notes || '-'}</td></tr>
+                    </table>
+                `;
+                $('#enrollmentDetailContent').html(html);
+                
+                let footerHtml = '<button type="button" class="btn btn-light border" data-bs-dismiss="modal" data-dismiss="modal">Đóng</button>';
+                if (data.canWithdraw) {
+                    footerHtml += `<button type="button" class="btn btn-outline-danger px-4" onclick="withdrawEnrollment(${data.id})">Hủy đăng ký</button>`;
+                }
+                $('#enrollmentDetailFooter').html(footerHtml);
+                
+            }).fail(function() {
+                $('#enrollmentDetailContent').html('<div class="text-center text-danger p-5">Không thể tải thông tin.</div>');
+            });
+        }
+
+        function withdrawEnrollment(id) {
+            Swal.fire({
+                title: 'Xác nhận hủy?',
+                text: "Bạn có chắc chắn muốn hủy yêu cầu đăng ký này không?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Đồng ý hủy',
+                cancelButtonText: 'Không'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/Benefit/WithdrawEnrollment', { id: id }, function(res) {
+                        if (res.success) {
+                            Swal.fire('Đã hủy!', res.message, 'success');
+                            $('#enrollmentDetailModal').modal('hide');
+                            loadSummary();
+                            loadHistory();
+                        }
+                    }).fail(function(err) {
+                        Swal.fire('Lỗi', err.responseJSON?.message || 'Có lỗi xảy ra.', 'error');
+                    });
+                }
+            });
+        }
+
+        function openRegisterModalFromDetail(id, name) {
+            $('#programDetailModal').modal('hide');
+            setTimeout(() => {
+                openRegisterModal(id, name);
+            }, 350);
+        }
+
+        function openRegisterModal(id, name) {
+            $('#regProgramId').val(id);
+            $('#regProgramName').val(name);
+            $('#regNotes').val('');
+            $('#exploreDrawer').modal('hide');
+            
+            setTimeout(() => {
+                $('#registerModal').modal('show');
+            }, 350);
+        }
+
+        function submitRegister() {
+            let id = $('#regProgramId').val();
+            let notes = $('#regNotes').val();
+            
+            Swal.fire({
+                title: 'Xác nhận đăng ký?',
+                text: `Bạn đang đăng ký chương trình: ${$('#regProgramName').val()}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Đăng ký',
+                cancelButtonText: 'Hủy'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.post('/Benefit/Register', { programId: id, notes: notes }, function(res) {
+                        if (res.success) {
+                            Swal.fire('Thành công!', res.message, 'success');
+                            $('#registerModal').modal('hide');
+                            loadSummary();
+                            loadActiveBenefits();
+                            loadHistory();
+                        } else {
+                            Swal.fire('Lỗi', res.message, 'error');
+                        }
+                    }).fail(function(err) {
+                        let msg = "Có lỗi xảy ra khi đăng ký.";
+                        if (err.responseJSON && err.responseJSON.message) {
+                            msg = err.responseJSON.message;
+                        }
+                        Swal.fire('Lỗi', msg, 'error');
+                    });
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,800 @@
+@{
+    ViewData["Title"] = "Đề xuất";
+    var role = Context.Session.GetString("Role") ?? "";
+    var currentUsername = Context.Session.GetString("User") ?? "";
+    var employees = ViewBag.Employees as IEnumerable<dynamic>;
+    var positions = ViewBag.JobPositions as IEnumerable<dynamic>;
+}
+@Html.AntiForgeryToken()
+
+<style>
+/* Drawer styles kept for JS functionality */
+
+/* --- DRAWERS --- */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s; }
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer-panel { position: fixed; top: 0; right: -700px; width: 100%; max-width: 650px; height: 100%; background: #fff; z-index: 9999; box-shadow: -4px 0 24px rgba(0,0,0,0.1); transition: right 0.3s ease; display: flex; flex-direction: column; }
+.drawer-panel.open { right: 0; }
+.drawer-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+.drawer-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; }
+.drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff; color: #64748b; font-size: 16px; cursor: pointer; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; justify-content: flex-end; gap: 12px; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.dynamic-section { display: none; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 16px; }
+</style>
+
+<div>
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon" style="color: #c026d3; background: #fdf4ff;"><i class="fa-solid fa-file-signature"></i></span>
+                Đề xuất
+            </h1>
+            <div class="hrms-page-subtitle">Tạo và theo dõi đề xuất nhân sự, lương, tuyển dụng hoặc chính sách.</div>
+        </div>
+        <div class="hrms-page-header-actions">
+            @if (role == "HR") {
+                <button class="hrms-btn hrms-btn-primary" onclick="openCreateDrawer()"><i class="fas fa-plus me-1"></i> Tạo đề xuất</button>
+            }
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+        <div class="hrms-kpi-card hrms-kpi-horizontal kpi-indigo">
+            <div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-file-pen"></i></div></div>
+            <div class="hrms-kpi-body"><div class="hrms-kpi-label">Nháp</div><div class="hrms-kpi-value" id="statDraft">0</div></div>
+        </div>
+        <div class="hrms-kpi-card hrms-kpi-horizontal kpi-yellow">
+            <div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-hourglass-half"></i></div></div>
+            <div class="hrms-kpi-body"><div class="hrms-kpi-label">Chờ duyệt</div><div class="hrms-kpi-value kpi-yellow" id="statPending">0</div></div>
+        </div>
+        <div class="hrms-kpi-card hrms-kpi-horizontal kpi-green">
+            <div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-circle-check"></i></div></div>
+            <div class="hrms-kpi-body"><div class="hrms-kpi-label">Đã duyệt</div><div class="hrms-kpi-value kpi-green" id="statApproved">0</div></div>
+        </div>
+        <div class="hrms-kpi-card hrms-kpi-horizontal kpi-red">
+            <div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-circle-xmark"></i></div></div>
+            <div class="hrms-kpi-body"><div class="hrms-kpi-label">Từ chối</div><div class="hrms-kpi-value kpi-red" id="statRejected">0</div></div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="hrms-card mb-4">
+        <div class="hrms-card-body">
+            <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px; position: relative;">
+                    <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--hrms-gray-400);"></i>
+                    <input type="text" id="searchInput" class="hrms-form-control" style="padding-left: 36px; width: 100%;" placeholder="Tìm mã, tiêu đề, người tạo..." onkeyup="if(event.key==='Enter') loadList()">
+                </div>
+                <select id="typeFilter" class="hrms-form-select" style="width: 200px;" onchange="loadList()">
+                    <option value="">Loại đề xuất</option>
+                    <option value="TRANSFER">Thuyên chuyển</option>
+                    <option value="APPOINTMENT">Bổ nhiệm</option>
+                    <option value="SALARY_ADJUSTMENT">Điều chỉnh lương</option>
+                    <option value="REWARD">Khen thưởng</option>
+                    <option value="OTHER">Khác</option>
+                </select>
+                <select id="statusFilter" class="hrms-form-select" style="width: 200px;" onchange="loadList()">
+                    <option value="">Trạng thái</option>
+                    <option value="DRAFT">Nháp</option>
+                    <option value="PENDING_APPROVAL">Chờ duyệt</option>
+                    <option value="NEEDS_REVISION">Cần bổ sung</option>
+                    <option value="APPROVED">Đã duyệt</option>
+                    <option value="REJECTED">Từ chối</option>
+                </select>
+                <button class="hrms-btn hrms-btn-ghost" onclick="resetFilter()" title="Đặt lại bộ lọc"><i class="fas fa-undo"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div class="hrms-card">
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Mã ĐX</th>
+                        <th>Tiêu đề</th>
+                        <th>Loại đề xuất</th>
+                        <th>Người tạo</th>
+                        <th>Ngày tạo</th>
+                        <th>Trạng thái</th>
+                        <th>Cấp duyệt</th>
+                    </tr>
+                </thead>
+                <tbody id="tblBody">
+                    <tr><td colspan="7" class="text-center">Đang tải...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- OVERLAYS & DRAWERS -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeAllDrawers()"></div>
+
+<!-- CREATE DRAWER -->
+<div class="drawer-panel" id="createDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Tạo đề xuất mới</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmCreate">
+            <div class="form-group">
+                <label>Loại đề xuất *</label>
+                <select name="ProposalType" id="ProposalType" class="form-control" onchange="toggleDynamicFields()" required>
+                    <option value="">-- Chọn loại đề xuất --</option>
+                    <option value="TRANSFER">Thuyên chuyển</option>
+                    <option value="APPOINTMENT">Bổ nhiệm</option>
+                    <option value="SALARY_ADJUSTMENT">Điều chỉnh lương</option>
+                    <option value="REWARD">Khen thưởng</option>
+                    <option value="OTHER">Khác</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tiêu đề *</label>
+                <input type="text" name="Title" class="form-control" required>
+            </div>
+
+            <!-- DYNAMIC FIELD SECTION -->
+            <div id="dynSection" class="dynamic-section">
+                <h4 style="margin:0 0 12px 0; font-size:14px; color:#0f172a;">Thông tin nghiệp vụ</h4>
+                
+                <div class="form-group" id="df_Employee">
+                    <label>Nhân viên liên quan</label>
+                    <select name="RelatedEmployeeId" class="hrms-form-control">
+                        <option value="">-- Chọn nhân viên --</option>
+                        @if(employees != null) {
+                            foreach(var emp in employees) {
+                                <option value="@emp.Id">@emp.Name (@emp.EmployeeCode)</option>
+                            }
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" id="df_Department">
+                        <label>Phòng ban mới</label>
+                        <input type="text" name="RelatedDepartment" class="hrms-form-control">
+                    </div>
+                    <div class="form-group" id="df_Position">
+                        <label>Vị trí mới</label>
+                        <select name="TargetPositionId" class="hrms-form-control">
+                            <option value="">-- Chọn vị trí --</option>
+                            @if(positions != null) {
+                                foreach(var pos in positions) {
+                                    <option value="@pos.Id">@pos.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" id="df_Cost">
+                        <label>Chi phí dự kiến (VNĐ)</label>
+                        <input type="number" name="EstimatedCost" class="hrms-form-control">
+                    </div>
+                    <div class="form-group" id="df_Date">
+                        <label>Ngày áp dụng dự kiến</label>
+                        <input type="date" name="ProposedEffectiveDate" class="hrms-form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Hiện trạng *</label>
+                <textarea name="CurrentSituation" class="hrms-form-control" rows="2" placeholder="Bối cảnh hiện tại..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Nội dung đề xuất *</label>
+                <textarea name="ProposalContent" class="hrms-form-control" rows="3" placeholder="Đề nghị thay đổi gì..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Lý do *</label>
+                <textarea name="Reason" class="hrms-form-control" rows="2" required></textarea>
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="hrms-btn hrms-btn-ghost" id="btnCreateDraft" onclick="saveCreate('DRAFT')">Lưu nháp</button>
+        <button class="hrms-btn hrms-btn-primary" id="btnCreateSubmit" onclick="saveCreate('SUBMIT')"><i class="fas fa-paper-plane me-1"></i> Gửi duyệt</button>
+    </div>
+</div>
+
+<!-- EDIT DRAWER -->
+<div class="drawer-panel" id="editDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title" id="editDrawerTitle">Chỉnh sửa đề xuất</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmEdit">
+            <input type="hidden" name="Id" id="edit_Id" />
+            <div class="form-group">
+                <label>Loại đề xuất *</label>
+                <select name="ProposalType" id="edit_ProposalType" class="form-control" onchange="toggleEditDynamicFields()" required>
+                    <option value="">-- Chọn loại đề xuất --</option>
+                    <option value="TRANSFER">Thuyên chuyển</option>
+                    <option value="APPOINTMENT">Bổ nhiệm</option>
+                    <option value="SALARY_ADJUSTMENT">Điều chỉnh lương</option>
+                    <option value="REWARD">Khen thưởng</option>
+                    <option value="OTHER">Khác</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tiêu đề *</label>
+                <input type="text" name="Title" id="edit_Title" class="form-control" required>
+            </div>
+
+            <!-- DYNAMIC FIELD SECTION -->
+            <div id="edit_dynSection" class="dynamic-section">
+                <h4 style="margin:0 0 12px 0; font-size:14px; color:#0f172a;">Thông tin nghiệp vụ</h4>
+                
+                <div class="form-group" id="edit_df_Employee">
+                    <label>Nhân viên liên quan</label>
+                    <select name="RelatedEmployeeId" id="edit_RelatedEmployeeId" class="hrms-form-control">
+                        <option value="">-- Chọn nhân viên --</option>
+                        @if(employees != null) {
+                            foreach(var emp in employees) {
+                                <option value="@emp.Id">@emp.Name (@emp.EmployeeCode)</option>
+                            }
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" id="edit_df_Department">
+                        <label>Phòng ban liên quan / mới</label>
+                        <input type="text" name="RelatedDepartment" id="edit_RelatedDepartment" class="hrms-form-control">
+                    </div>
+                    <div class="form-group" id="edit_df_Position">
+                        <label>Vị trí mới</label>
+                        <select name="TargetPositionId" id="edit_TargetPositionId" class="hrms-form-control">
+                            <option value="">-- Chọn vị trí --</option>
+                            @if(positions != null) {
+                                foreach(var pos in positions) {
+                                    <option value="@pos.Id">@pos.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" id="edit_df_Cost">
+                        <label>Chi phí dự kiến (VNĐ)</label>
+                        <input type="number" name="EstimatedCost" id="edit_EstimatedCost" class="hrms-form-control">
+                    </div>
+                    <div class="form-group" id="edit_df_Date">
+                        <label>Ngày áp dụng dự kiến</label>
+                        <input type="date" name="ProposedEffectiveDate" id="edit_ProposedEffectiveDate" class="hrms-form-control">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Hiện trạng *</label>
+                <textarea name="CurrentSituation" id="edit_CurrentSituation" class="hrms-form-control" rows="2" placeholder="Bối cảnh hiện tại..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Nội dung đề xuất *</label>
+                <textarea name="ProposalContent" id="edit_ProposalContent" class="hrms-form-control" rows="3" placeholder="Đề nghị thay đổi gì..." required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Lý do *</label>
+                <textarea name="Reason" id="edit_Reason" class="hrms-form-control" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú</label>
+                <textarea name="Notes" id="edit_Notes" class="hrms-form-control" rows="2"></textarea>
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="hrms-btn hrms-btn-ghost" onclick="closeAllDrawers()">Hủy</button>
+        <button class="hrms-btn hrms-btn-primary" id="btnSaveEdit" onclick="saveEdit()"><i class="fas fa-save me-1"></i> Lưu thay đổi</button>
+    </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-panel" id="detailDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title" id="d_code">Chi tiết đề xuất</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" style="background:#f8fafc;" id="detailBody">
+        <div id="detailContent">Đang tải...</div>
+    </div>
+    <div class="drawer-footer" id="detailFooter" style="display:none; justify-content:flex-end; gap:10px;">
+        <!-- Dynamically rendered based on role and status -->
+    </div>
+</div>
+
+<!-- REASON MODAL (for Reject / Revision) -->
+<div id="reasonBox" style="display:none; position:absolute; bottom:70px; right:24px; background:#fff; padding:16px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); border:1px solid #e2e8f0; z-index:10000; width:300px;">
+    <label style="font-size:13px; font-weight:600; margin-bottom:8px; display:block;" id="lblReasonTitle">Lý do</label>
+    <textarea id="inpReason" class="hrms-form-control" rows="3" style="margin-bottom:12px;"></textarea>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="hrms-btn hrms-btn-ghost hrms-btn-sm" onclick="$('#reasonBox').hide()">Hủy</button>
+        <button class="hrms-btn hrms-btn-primary hrms-btn-sm" id="btnConfirmReason" onclick="submitReason()">Xác nhận</button>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const proposalToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    $.ajaxSetup({ headers: { 'RequestVerificationToken': proposalToken } });
+    
+    const currentUserRole = '@role';
+    const currentUserName = '@currentUsername';
+    let currentProposalId = 0;
+    let currentProposalData = null;
+    let reasonAction = ''; // REJECT or REVISION
+
+    $(document).ready(function() {
+        loadStats();
+        loadList();
+    });
+
+    function getBadge(status) {
+        if(status=='DRAFT') return '<span class="hrms-badge hrms-badge-neutral">Nháp</span>';
+        if(status=='PENDING_APPROVAL') return '<span class="hrms-badge hrms-badge-warning">Chờ duyệt</span>';
+        if(status=='NEEDS_REVISION') return '<span class="hrms-badge hrms-badge-info">Cần bổ sung</span>';
+        if(status=='APPROVED') return '<span class="hrms-badge hrms-badge-success">Đã duyệt</span>';
+        if(status=='REJECTED') return '<span class="hrms-badge hrms-badge-danger">Từ chối</span>';
+        return `<span class="hrms-badge hrms-badge-neutral">${status}</span>`;
+    }
+
+    function loadStats() {
+        $.get('/Proposal/GetStatistics', function(res) {
+            $('#statDraft').text(res.draft);
+            $('#statPending').text(res.pending);
+            $('#statApproved').text(res.approved);
+            $('#statRejected').text(res.rejected);
+        });
+    }
+
+    function loadList() {
+        let type = $('#typeFilter').val();
+        let status = $('#statusFilter').val();
+        let search = $('#searchInput').val();
+        
+        $.get('/Proposal/GetProposals', { type, status, search }, function(res) {
+            let html = '';
+            if (!res || res.length === 0) {
+                html = '<tr><td colspan="7" class="text-center text-muted py-4">Chưa có đề xuất nào trong phạm vi quản lý.</td></tr>';
+            } else {
+                res.forEach(p => {
+                    html += `<tr onclick="openDetail(${p.id})" style="cursor:pointer;">
+                        <td><strong>${p.proposalCode||'---'}</strong></td>
+                        <td>${p.title}</td>
+                        <td>${p.type}</td>
+                        <td>${p.createdBy}</td>
+                        <td>${p.createdAt}</td>
+                        <td>${getBadge(p.status)}</td>
+                        <td>${p.level}</td>
+                    </tr>`;
+                });
+            }
+            $('#tblBody').html(html);
+        });
+    }
+
+    function resetFilter() {
+        $('#typeFilter').val('');
+        $('#statusFilter').val('');
+        $('#searchInput').val('');
+        loadList();
+    }
+
+    function closeAllDrawers() {
+        $('#drawerOverlay').removeClass('open');
+        $('.drawer-panel').removeClass('open');
+        $('#reasonBox').hide();
+    }
+
+    function openCreateDrawer() {
+        $('#frmCreate')[0].reset();
+        toggleDynamicFields();
+        $('#drawerOverlay').addClass('open');
+        $('#createDrawer').addClass('open');
+    }
+
+    function toggleDynamicFields() {
+        let type = $('#ProposalType').val();
+        if(!type) {
+            $('#dynSection').hide();
+            return;
+        }
+        $('#dynSection').show();
+        $('#df_Employee, #df_Department, #df_Position, #df_Cost, #df_Date').hide();
+
+        if(type === 'TRANSFER' || type === 'APPOINTMENT') {
+            $('#df_Employee, #df_Department, #df_Position, #df_Date').show();
+        } else if(type === 'SALARY_ADJUSTMENT') {
+            $('#df_Employee, #df_Cost, #df_Date').show();
+        } else {
+            $('#df_Employee, #df_Date').show(); // generic
+        }
+    }
+
+    function toggleEditDynamicFields() {
+        let type = $('#edit_ProposalType').val();
+        if(!type) {
+            $('#edit_dynSection').hide();
+            return;
+        }
+        $('#edit_dynSection').show();
+        $('#edit_df_Employee, #edit_df_Department, #edit_df_Position, #edit_df_Cost, #edit_df_Date').hide();
+
+        if(type === 'TRANSFER' || type === 'APPOINTMENT') {
+            $('#edit_df_Employee, #edit_df_Department, #edit_df_Position, #edit_df_Date').show();
+        } else if(type === 'SALARY_ADJUSTMENT') {
+            $('#edit_df_Employee, #edit_df_Cost, #edit_df_Date').show();
+        } else {
+            $('#edit_df_Employee, #edit_df_Date').show();
+        }
+    }
+
+    function saveCreate(action) {
+        let data = {};
+        $('#frmCreate').serializeArray().map(x => data[x.name] = x.value);
+        if(!data.Title || !data.ProposalType || !data.CurrentSituation || !data.ProposalContent || !data.Reason) {
+            alert('Vui lòng nhập đủ thông tin bắt buộc có dấu *'); return;
+        }
+
+        let $btnSubmit = $('#btnCreateSubmit');
+        let $btnDraft = $('#btnCreateDraft');
+        $btnSubmit.prop('disabled', true);
+        $btnDraft.prop('disabled', true);
+
+        $.ajax({
+            url: '/Proposal/SaveDraft',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(res) {
+                if(res.success) {
+                    if(action === 'SUBMIT') {
+                        $.ajax({
+                            url: '/Proposal/Submit',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ id: res.id }),
+                            success: function(subRes) {
+                                $btnSubmit.prop('disabled', false);
+                                $btnDraft.prop('disabled', false);
+                                if(subRes.success) {
+                                    closeAllDrawers();
+                                    loadStats(); loadList();
+                                    alert('Đã gửi đề xuất phê duyệt thành công!');
+                                } else {
+                                    alert(subRes.message || 'Lỗi khi gửi duyệt đề xuất.');
+                                    closeAllDrawers();
+                                    loadStats(); loadList();
+                                }
+                            },
+                            error: function(err) {
+                                $btnSubmit.prop('disabled', false);
+                                $btnDraft.prop('disabled', false);
+                                alert('Lỗi khi gửi duyệt đề xuất: ' + (err.responseJSON?.message || err.responseText || ''));
+                                closeAllDrawers();
+                                loadStats(); loadList();
+                            }
+                        });
+                    } else {
+                        $btnSubmit.prop('disabled', false);
+                        $btnDraft.prop('disabled', false);
+                        closeAllDrawers();
+                        loadStats(); loadList();
+                        alert('Đã lưu nháp đề xuất thành công!');
+                    }
+                } else {
+                    $btnSubmit.prop('disabled', false);
+                    $btnDraft.prop('disabled', false);
+                    alert(res.message);
+                }
+            },
+            error: function(err) {
+                $btnSubmit.prop('disabled', false);
+                $btnDraft.prop('disabled', false);
+                alert('Lỗi: ' + (err.responseJSON?.message || err.responseText || ''));
+            }
+        });
+    }
+
+    function openEditDrawer() {
+        if(!currentProposalData) return;
+        let p = currentProposalData;
+        $('#edit_Id').val(p.id);
+        $('#edit_ProposalType').val(p.proposalType);
+        $('#edit_Title').val(p.title);
+        $('#edit_RelatedEmployeeId').val(p.relatedEmployeeId || '');
+        $('#edit_RelatedDepartment').val(p.relatedDepartment || '');
+        $('#edit_TargetPositionId').val(p.targetPositionId || '');
+        $('#edit_EstimatedCost').val(p.estimatedCost || '');
+        $('#edit_ProposedEffectiveDate').val(p.proposedEffectiveDate ? p.proposedEffectiveDate.substring(0, 10) : '');
+        $('#edit_CurrentSituation').val(p.currentSituation || '');
+        $('#edit_ProposalContent').val(p.proposalContent || '');
+        $('#edit_Reason').val(p.reason || '');
+        $('#edit_Notes').val(p.notes || '');
+
+        $('#editDrawerTitle').text(p.status === 'NEEDS_REVISION' ? 'Cập nhật đề xuất theo yêu cầu bổ sung' : 'Chỉnh sửa bản nháp đề xuất');
+        toggleEditDynamicFields();
+
+        $('#detailDrawer').removeClass('open');
+        $('#editDrawer').addClass('open');
+    }
+
+    function saveEdit() {
+        let data = {};
+        $('#frmEdit').serializeArray().map(x => data[x.name] = x.value);
+        if(!data.Title || !data.ProposalType || !data.CurrentSituation || !data.ProposalContent || !data.Reason) {
+            alert('Vui lòng nhập đủ thông tin bắt buộc có dấu *'); return;
+        }
+        data.Id = parseInt(data.Id);
+        if(data.RelatedEmployeeId) data.RelatedEmployeeId = parseInt(data.RelatedEmployeeId);
+        else data.RelatedEmployeeId = null;
+        if(data.TargetPositionId) data.TargetPositionId = parseInt(data.TargetPositionId);
+        else data.TargetPositionId = null;
+        if(data.EstimatedCost) data.EstimatedCost = parseFloat(data.EstimatedCost);
+        else data.EstimatedCost = null;
+
+        let $btn = $('#btnSaveEdit');
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '/Proposal/UpdateDraft',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(res) {
+                $btn.prop('disabled', false);
+                if(res.success) {
+                    alert('Đã cập nhật đề xuất thành công!');
+                    $('#editDrawer').removeClass('open');
+                    openDetail(data.Id);
+                    loadStats(); loadList();
+                } else {
+                    alert(res.message || 'Lỗi khi cập nhật đề xuất.');
+                }
+            },
+            error: function(err) {
+                $btn.prop('disabled', false);
+                alert('Lỗi: ' + (err.responseJSON?.message || err.responseText || ''));
+            }
+        });
+    }
+
+    function submitProposalDirect(id) {
+        if(!confirm('Xác nhận gửi duyệt đề xuất này?')) return;
+        let $btn = $('#btnDetailSubmit');
+        if($btn.length) $btn.prop('disabled', true);
+        $.ajax({
+            url: '/Proposal/Submit',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: id }),
+            success: function(res) {
+                if($btn.length) $btn.prop('disabled', false);
+                if(res.success) {
+                    alert('Đã gửi đề xuất thành công!');
+                    openDetail(id);
+                    loadStats(); loadList();
+                } else {
+                    alert(res.message || 'Không thể gửi duyệt.');
+                }
+            },
+            error: function(err) {
+                if($btn.length) $btn.prop('disabled', false);
+                alert('Có lỗi xảy ra: ' + (err.responseJSON?.message || err.responseText || ''));
+            }
+        });
+    }
+
+    function openDetail(id) {
+        currentProposalId = id;
+        currentProposalData = null;
+        $('#detailContent').html('<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải dữ liệu...</div>');
+        $('#detailFooter').hide();
+        $('#drawerOverlay').addClass('open');
+        $('#detailDrawer').addClass('open');
+        $('#reasonBox').hide();
+
+        $.get('/Proposal/GetDetail', { id }, function(res) {
+            let p = res.proposal;
+            currentProposalData = p;
+            $('#d_code').text((p.proposalCode || 'DX-' + p.id) + " - " + p.title);
+            
+            let revisionBoxHtml = '';
+            if (p.status === 'NEEDS_REVISION') {
+                revisionBoxHtml = `
+                    <div style="background:#fffbeb; border:1px solid #fde68a; padding:14px 16px; border-radius:8px; margin-bottom:16px;">
+                        <div style="color:#b45309; font-weight:700; font-size:13.5px; margin-bottom:4px;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Yêu cầu bổ sung nội dung
+                        </div>
+                        <div style="color:#92400e; font-size:13px;">${p.revisionRequestReason || p.rejectionReason || 'Cần bổ sung thêm thông tin trước khi duyệt.'}</div>
+                        <div style="color:#b45309; font-size:12px; margin-top:4px;">Người yêu cầu: <strong>${p.revisionRequestedBy || 'Lãnh đạo'}</strong></div>
+                    </div>
+                `;
+            } else if (p.status === 'REJECTED') {
+                revisionBoxHtml = `
+                    <div style="background:#fef2f2; border:1px solid #fca5a5; padding:14px 16px; border-radius:8px; margin-bottom:16px;">
+                        <div style="color:#b91c1c; font-weight:700; font-size:13.5px; margin-bottom:4px;">
+                            <i class="fa-solid fa-circle-xmark me-1"></i> Đề xuất bị từ chối
+                        </div>
+                        <div style="color:#7f1d1d; font-size:13px;">Lý do: ${p.rejectionReason || 'Không có lý do chi tiết.'}</div>
+                        <div style="color:#991b1b; font-size:12px; margin-top:4px;">Người từ chối: <strong>${p.rejectedBy || 'Lãnh đạo'}</strong></div>
+                    </div>
+                `;
+            }
+
+            let html = `
+                ${revisionBoxHtml}
+                <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:16px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                        <span style="font-weight:700; color:#0f172a; font-size:16px;">${p.proposalType}</span>
+                        ${getBadge(p.status)}
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px; color:#334155; margin-bottom:16px;">
+                        <div><strong>Người tạo:</strong> ${p.createdBy || '-'}</div>
+                        <div><strong>Ngày tạo:</strong> ${p.createdAt ? p.createdAt.substring(0,10) : '-'}</div>
+                        <div><strong>Nhân viên l.quan:</strong> ${p.relatedEmployeeNameSnapshot || '-'}</div>
+                        <div><strong>Phòng ban l.quan:</strong> ${p.relatedDepartment || '-'}</div>
+                        <div><strong>Ngày áp dụng:</strong> ${p.proposedEffectiveDate ? p.proposedEffectiveDate.substring(0,10) : '-'}</div>
+                        <div><strong>Chi phí dự kiến:</strong> ${p.estimatedCost ? Number(p.estimatedCost).toLocaleString('vi-VN') + ' VNĐ' : '-'}</div>
+                    </div>
+                    
+                    <h5 style="margin:0 0 6px 0; color:#475569; font-size:13px;">Hiện trạng</h5>
+                    <p style="font-size:13.5px; color:#0f172a; background:#f8fafc; padding:10px; border-radius:6px;">${p.currentSituation || '-'}</p>
+                    
+                    <h5 style="margin:12px 0 6px 0; color:#475569; font-size:13px;">Nội dung đề xuất</h5>
+                    <p style="font-size:13.5px; color:#0f172a; background:#f8fafc; padding:10px; border-radius:6px;">${p.proposalContent || '-'}</p>
+                    
+                    <h5 style="margin:12px 0 6px 0; color:#475569; font-size:13px;">Lý do</h5>
+                    <p style="font-size:13.5px; color:#0f172a; background:#f8fafc; padding:10px; border-radius:6px;">${p.reason || '-'}</p>
+
+                    ${p.notes ? `
+                    <h5 style="margin:12px 0 6px 0; color:#475569; font-size:13px;">Ghi chú</h5>
+                    <p style="font-size:13.5px; color:#0f172a; background:#f8fafc; padding:10px; border-radius:6px;">${p.notes}</p>
+                    ` : ''}
+                </div>
+            `;
+
+            // Preserve historical display of generated records without offering action button
+            if(p.generatedBusinessRecordId) {
+                html += `
+                <div style="background:#ecfdf5; padding:14px 16px; border-radius:12px; border:1px solid #a7f3d0; margin-bottom:16px;">
+                    <div style="color:#065f46; font-weight:700; font-size:14px; margin-bottom:4px;"><i class="fas fa-check-circle"></i> Hồ sơ nghiệp vụ đã được liên kết</div>
+                    <div style="color:#047857; font-size:13px;">Loại: ${p.generatedBusinessType} | ID Record: ${p.generatedBusinessRecordId}</div>
+                </div>`;
+            }
+
+            html += `<h4 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#0f172a;">LỊCH SỬ WORKFLOW</h4>`;
+
+            if(res.history && res.history.length > 0) {
+                res.history.forEach(h => {
+                    html += `
+                    <div style="background:#fff; padding:12px 16px; border-left:3px solid #c026d3; border-radius:4px; border:1px solid #e2e8f0; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
+                            <span style="font-weight:600; color:#0f172a;">${h.actor} (${h.action})</span>
+                            <span style="color:#64748b;">${h.timestamp}</span>
+                        </div>
+                        <div style="font-size:13px; color:#334155;">${h.details}</div>
+                    </div>`;
+                });
+            } else {
+                html += `<div class="text-muted small">Chưa có lịch sử thao tác.</div>`;
+            }
+
+            $('#detailContent').html(html);
+
+            // Phase E & Target Contract Footer Logic:
+            let footerHtml = '';
+            if (currentUserRole === 'HR') {
+                if (p.status === 'DRAFT') {
+                    footerHtml = `
+                        <button class="hrms-btn hrms-btn-ghost" onclick="openEditDrawer()"><i class="fas fa-edit me-1"></i> Chỉnh sửa</button>
+                        <button class="hrms-btn hrms-btn-primary" id="btnDetailSubmit" onclick="submitProposalDirect(${p.id})"><i class="fas fa-paper-plane me-1"></i> Gửi duyệt</button>
+                    `;
+                } else if (p.status === 'NEEDS_REVISION') {
+                    footerHtml = `
+                        <button class="hrms-btn hrms-btn-ghost" onclick="openEditDrawer()"><i class="fas fa-edit me-1"></i> Chỉnh sửa & Bổ sung</button>
+                        <button class="hrms-btn hrms-btn-primary" id="btnDetailSubmit" onclick="submitProposalDirect(${p.id})"><i class="fas fa-paper-plane me-1"></i> Gửi lại</button>
+                    `;
+                }
+            } else if (currentUserRole === 'Leader') {
+                if (p.status === 'PENDING_APPROVAL') {
+                    footerHtml = `
+                        <button class="hrms-btn hrms-btn-ghost text-danger" onclick="openReasonModal('REJECT')">Từ chối</button>
+                        <button class="hrms-btn hrms-btn-ghost text-warning" onclick="openReasonModal('REVISION')">Yêu cầu bổ sung</button>
+                        <button class="hrms-btn hrms-btn-primary" id="btnLeaderApprove" onclick="approveProposal()"><i class="fas fa-check me-1"></i> Phê duyệt</button>
+                    `;
+                }
+            }
+
+            if (footerHtml) {
+                $('#detailFooter').html(footerHtml).css('display', 'flex');
+            } else {
+                $('#detailFooter').html('').hide();
+            }
+        }).fail(function(err) {
+            $('#detailContent').html('<div class="text-danger text-center py-4"><i class="fa-solid fa-triangle-exclamation me-2"></i>Không tìm thấy đề xuất hoặc bạn không có quyền xem trong phạm vi phụ trách.</div>');
+            $('#detailFooter').hide();
+        });
+    }
+
+    function approveProposal() {
+        if(!confirm('Xác nhận phê duyệt chủ trương đề xuất này?')) return;
+        let $btn = $('#btnLeaderApprove');
+        $btn.prop('disabled', true);
+        $.ajax({
+            url: '/Proposal/Approve',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: currentProposalId }),
+            success: function(res) {
+                $btn.prop('disabled', false);
+                if(res.success) {
+                    alert('Đã phê duyệt đề xuất thành công!');
+                    openDetail(currentProposalId);
+                    loadStats(); loadList();
+                } else {
+                    alert(res.message || 'Lỗi khi phê duyệt.');
+                }
+            },
+            error: function(err) {
+                $btn.prop('disabled', false);
+                alert('Có lỗi xảy ra: ' + (err.responseJSON?.message || err.responseText || ''));
+            }
+        });
+    }
+
+    function openReasonModal(action) {
+        reasonAction = action;
+        $('#lblReasonTitle').text(action === 'REJECT' ? 'Lý do từ chối đề xuất' : 'Nội dung yêu cầu bổ sung');
+        $('#inpReason').val('');
+        $('#reasonBox').show();
+        $('#inpReason').focus();
+    }
+
+    function submitReason() {
+        let r = $('#inpReason').val().trim();
+        if(!r) { alert('Vui lòng nhập lý do / nội dung yêu cầu'); return; }
+        
+        let $btn = $('#btnConfirmReason');
+        $btn.prop('disabled', true);
+
+        let url = reasonAction === 'REJECT' ? '/Proposal/Reject' : '/Proposal/RequestRevision';
+        $.ajax({
+            url: url,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ id: currentProposalId, reason: r }),
+            success: function(res) {
+                $btn.prop('disabled', false);
+                if(res.success) { 
+                    $('#reasonBox').hide();
+                    alert(reasonAction === 'REJECT' ? 'Đã từ chối đề xuất.' : 'Đã gửi yêu cầu bổ sung.');
+                    openDetail(currentProposalId);
+                    loadStats(); loadList(); 
+                } else {
+                    alert(res.message || 'Lỗi khi xử lý.');
+                }
+            },
+            error: function(err) {
+                $btn.prop('disabled', false);
+                alert('Có lỗi xảy ra: ' + (err.responseJSON?.message || err.responseText || ''));
+            }
+        });
+    }
+</script>
+}

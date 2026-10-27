@@ -1,53 +1,20 @@
-﻿<!DOCTYPE html>
-<html lang="vi">
+@inject giao_dien_demo.Data.ApplicationDbContext DbContext
+@using Microsoft.EntityFrameworkCore
+<!DOCTYPE html>
+<html lang="vi" id="hrms-html-root">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - HRMS</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
-
-    <style>
-        .notification-badge {
-            display: inline-block;
-            min-width: 22px;
-            text-align: center;
-            background: red;
-            color: white;
-            border-radius: 50%;
-            padding: 2px 6px;
-            font-size: 12px;
-            margin-left: 8px;
-            line-height: 18px;
-            vertical-align: middle;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        canvas#signature-pad {
-            position: relative;
-            z-index: 10;
-            touch-action: none;
-        }
-
-        .sidebar .logo-container {
-            text-align: center;
-            padding: 20px 0;
-            margin-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        .sidebar .logo-container img {
-            max-width: 80%;
-            height: auto;
-            mix-blend-mode: screen; 
-            filter: brightness(1.2);
-        }
-        /* Giữ màu đỏ cho nút đăng xuất để dễ phân biệt */
-        .logout-link { color: #ff4757 !important; font-weight: 500; }
-    </style>
+    <link rel="stylesheet" href="~/css/ava-assistant.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
 
@@ -55,95 +22,985 @@
     @{
         var role = Context.Session.GetString("Role");
         var currentUser = Context.Session.GetString("User") ?? "";
-        var realName = Context.Session.GetString("RealName") ?? ""; 
+        var realName = Context.Session.GetString("RealName") ?? "";
+        var avatarChar = (realName.Length > 0 ? realName.Substring(0, 1).ToUpper() : (currentUser.Length > 0 ? currentUser.Substring(0, 1).ToUpper() : "H"));
+
+        var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
         
+        string majorModule = "HR";
+        if (role == "Employee") {
+            majorModule = "Employee";
+        } else if (role == "Admin") {
+            majorModule = "Admin";
+        } else if (role == "Manager") {
+            majorModule = "Manager";
+        } else if (role == "Leader") {
+            majorModule = "Leadership";
+        } else if (new[] { "Attendance", "AttendanceAdjustment", "Timesheet", "Approval", "Holiday", "WorkShift", "AttendanceReport", "AttendanceRule" }.Contains(currentController)) {
+            majorModule = "Attendance";
+        } else if (new[] { "Salary", "PayrollPayment", "PayrollInput", "PayrollValidation", "PayrollCostReport", "PayrollTaxReport", "PayrollTemplate", "PayrollComponent", "PayrollSetting" }.Contains(currentController)) {
+            majorModule = "Payroll";
+        }
+
         int soThongBao = 0;
+        
+        // Determine AI Name
+        string aiName = majorModule == "Employee" ? "AVA Nhân viên" :
+                        majorModule == "Attendance" ? "AVA Chấm công" : 
+                        majorModule == "Payroll" ? "AVA Tiền lương" : "AVA HR";
+
         if (!string.IsNullOrEmpty(currentUser))
         {
-            soThongBao = giao_dien_demo.Controllers.NotificationController.list
-                .Count(n => 
-                    !string.IsNullOrEmpty(n.NguoiNhan) && 
-                    (
-                        n.NguoiNhan == "Tất cả nhân viên" || 
-                        n.NguoiNhan.Trim().ToLower() == currentUser.Trim().ToLower() ||
-                        (realName != "" && n.NguoiNhan.Trim().ToLower() == realName.Trim().ToLower())
-                    )
-                );
+            var currentUserId = await DbContext.Users.Where(x => x.Username == currentUser)
+                .Select(x => (int?)x.Id).FirstOrDefaultAsync();
+            if (currentUserId.HasValue)
+            {
+                soThongBao = await DbContext.Notifications
+                    .CountAsync(n => n.RecipientUserId == currentUserId.Value && !n.IsRead);
+            }
         }
+
+
+        string activeModule = "HRMS";
+        string activeSubModule = "";
+
+        if (role == "Employee") {
+            // Employee: breadcrumb theo controller
+            if (currentController == "NhanVien") {
+                activeModule = "Tổng quan";
+            } else if (currentController == "Employee") {
+                activeModule = "Hồ sơ của tôi";
+            } else if (currentController == "Attendance" || currentController == "AttendanceAdjustment") {
+                activeModule = "Chấm công";
+            } else if (currentController == "MyRequest" || currentController == "Leave") {
+                activeModule = "Nghỉ phép";
+            } else if (currentController == "Salary" || currentController == "MyPayroll") {
+                activeModule = "Tiền lương";
+            } else if (currentController == "Contract") {
+                activeModule = "Hợp đồng";
+            } else if (currentController == "Notification") {
+                activeModule = "Thông báo";
+            } else if (currentController == "Benefit") {
+                activeModule = "Phúc lợi";
+            } else if (currentController == "Training") {
+                activeModule = "Đào tạo";
+            } else if (currentController == "Reward") {
+                activeModule = "Khen thưởng";
+            } else if (currentController == "MyKPI") {
+                activeModule = "KPI của tôi";
+            } else {
+                activeModule = "Tổng quan";
+            }
+        } else if (role == "Admin") {
+            // Admin: module detection riêng
+            if (currentController == "Admin" && (currentAction == "Index" || currentAction == "")) {
+                activeModule = "Tổng quan hệ thống";
+                activeSubModule = "";
+            } else if (currentController == "Admin" && (currentAction == "Users" || currentAction == "Details" || currentAction == "EditUser" || currentAction == "CreateUser")) {
+                activeModule = "Người dùng";
+                activeSubModule = currentAction == "Users" ? "" : currentAction == "Details" ? "Chi tiết" : currentAction == "EditUser" ? "Cập nhật" : "Thêm mới";
+            } else if (currentController == "AdminRole") {
+                activeModule = "Vai trò & phân quyền";
+            } else if (currentController == "AdminOrg") {
+                activeModule = "Đơn vị tổ chức";
+            } else if (currentController == "AdminCategory") {
+                activeModule = "Danh mục hệ thống";
+            } else if (currentController == "AdminSecurity") {
+                activeModule = "Chính sách bảo mật";
+            } else if (currentController == "AdminNotificationConfig") {
+                activeModule = "Cấu hình thông báo";
+            } else if (currentController == "AdminIntegration") {
+                activeModule = "Tích hợp hệ thống";
+            } else if (currentController == "AdminAudit") {
+                activeModule = "Audit Log";
+            } else if (currentController == "AdminBackup") {
+                activeModule = "Sao lưu & phục hồi";
+            } else if (currentController == "AdminSettings") {
+                activeModule = "Cấu hình hệ thống";
+            } else if (currentController == "AdminMonitoring") {
+                activeModule = "System Monitoring";
+            } else {
+                activeModule = "Tổng quan hệ thống";
+            }
+        } else if (majorModule == "Manager") {
+            if (currentController == "ManagerKPI") {
+                activeModule = "KPI / Hiệu suất";
+            } else if (currentController == "Appointment") {
+                activeModule = "Đề xuất nhân sự";
+                activeSubModule = "Bổ nhiệm";
+            } else if (currentController == "Dismissal") {
+                activeModule = "Đề xuất nhân sự";
+                activeSubModule = "Miễn nhiệm";
+            } else if (currentController == "Transfer") {
+                activeModule = "Đề xuất nhân sự";
+                activeSubModule = "Điều chuyển";
+            } else if (currentController == "Reward") {
+                activeModule = "Đề xuất nhân sự";
+                activeSubModule = "Khen thưởng";
+                } else if (currentController == "ManagerWorkspace") {
+                    activeModule = currentAction switch {
+                    "Profile" => "Hồ sơ",
+                    "Employees" => "Nhân viên trực thuộc",
+                    "Attendance" => "Chấm công đội nhóm",
+                    "LeaveApprovals" => "Duyệt nghỉ phép",
+                    "AttendanceAdjustments" => "Duyệt giải trình công",
+                    "Reports" => "Báo cáo",
+                    "Notifications" => "Thông báo",
+                    _ => "Tổng quan"
+                };
+            } else {
+                activeModule = "Tổng quan";
+            }
+        } else if (majorModule == "Leadership") {
+            if (currentController == "Leader") activeModule = "Tổng quan";
+            else if (currentController == "LeaderPersonnel") activeModule = "Nhân sự";
+            else if (currentController == "LeaderAttendance") activeModule = "Chấm công";
+            else if (currentController == "LeaderLeave") activeModule = "Nghỉ phép";
+            else if (currentController == "LeaderContract") activeModule = "Hợp đồng";
+            else if (currentController == "LeaderCost") activeModule = "Chi phí nhân sự";
+            else if (currentController == "LeaderKPI") activeModule = "KPI / Hiệu suất";
+            else if (currentController == "LeaderAnalytics") activeModule = "Phân tích";
+            else if (currentController == "LeaderReport") activeModule = "Báo cáo";
+            else if (currentController == "LeaderApproval") activeModule = "Phê duyệt";
+            else activeModule = "Tổng quan";
+        } else {
+            // HR: giữ nguyên logic cũ
+            if (currentController == "HR" || (currentController == "Home" && role != "Admin" && role != "Employee" && role != "Leader")) {
+                activeModule = "Tổng quan";
+                activeSubModule = "";
+            } else if (currentController == "Onboarding") {
+                activeModule = "Hội nhập";
+                activeSubModule = "Danh sách hội nhập";
+            } else if (currentController == "Employee") {
+                activeModule = "Quản lý Hồ sơ";
+                if (currentAction == "MyProfile") activeSubModule = "Hồ sơ cá nhân";
+                else if (currentAction == "Index") activeSubModule = "Danh sách nhân viên";
+                else if (currentAction == "Details") activeSubModule = "Chi tiết hồ sơ";
+                else activeSubModule = "Hồ sơ nhân viên";
+            } else if (currentController == "Attendance" || currentController == "AttendanceAdjustment" || currentController == "Timesheet") {
+                activeModule = "Chấm công";
+                if (currentController == "AttendanceAdjustment") activeSubModule = "Yêu cầu điều chỉnh";
+                else if (currentController == "Timesheet") activeSubModule = "Bảng chấm công";
+                else if (currentAction == "Index") activeSubModule = "Tổng quan";
+                else activeSubModule = "Dữ liệu chấm công";
+            } else if (currentController == "AttendanceRule") {
+                activeModule = "Chấm công";
+                activeSubModule = "Quy tắc chấm công";
+            } else if (currentController == "WorkShift") {
+                activeModule = "Chấm công";
+                activeSubModule = "Ca làm việc";
+            } else if (currentController == "Approval") {
+                activeModule = "Chấm công";
+                activeSubModule = "Đơn chờ duyệt";
+            } else if (currentController == "Holiday") {
+                activeModule = "Chấm công";
+                activeSubModule = "Ngày nghỉ lễ";
+            } else if (currentController == "AttendanceReport") {
+                activeModule = "Chấm công";
+                activeSubModule = currentAction == "Late" ? "Báo cáo đi muộn" : "Báo cáo chấm công";
+            } else if (new[] { "Salary", "PayrollPayment", "PayrollInput", "PayrollValidation", "PayrollCostReport", "PayrollTaxReport", "PayrollTemplate", "PayrollComponent", "PayrollSetting" }.Contains(currentController)) {
+                activeModule = "Lương";
+                if (currentController == "Salary" && currentAction == "Index") activeSubModule = "Bảng lương";
+                else if (currentController == "PayrollPayment") activeSubModule = "Thanh toán lương";
+                else if (currentController == "PayrollInput") activeSubModule = "Nhập liệu";
+                else if (currentController == "PayrollValidation") activeSubModule = "Kiểm tra";
+                else if (currentController == "PayrollCostReport") activeSubModule = "Báo cáo chi phí";
+                else if (currentController == "PayrollTaxReport") activeSubModule = "Báo cáo thuế";
+                else if (currentController == "PayrollTemplate") activeSubModule = "Mẫu bảng lương";
+                else if (currentController == "PayrollComponent") activeSubModule = "Thành phần lương";
+                else if (currentController == "PayrollSetting") activeSubModule = "Thiết lập";
+                else activeSubModule = "Tổng quan";
+            } else if (currentController == "Leave") {
+                activeModule = "Nghỉ phép";
+                activeSubModule = "Tổng quan";
+            } else if (currentController == "Contract") {
+                activeModule = "Hợp đồng";
+                activeSubModule = "Tổng quan";
+            } else if (currentController == "Appointment") {
+                activeModule = "Bổ nhiệm";
+                activeSubModule = "Danh sách quyết định";
+            } else if (currentController == "Dismissal") {
+                activeModule = "Miễn nhiệm";
+                activeSubModule = "Danh sách quyết định";
+            } else if (currentController == "Transfer") {
+                activeModule = "Thuyên chuyển";
+                activeSubModule = "Danh sách thuyên chuyển";
+            } else if (currentController == "Offboarding") {
+                activeModule = "Nghỉ việc";
+                activeSubModule = "Danh sách nghỉ việc";
+            } else if (currentController == "Reward") {
+                activeModule = "Khen thưởng";
+                activeSubModule = "Danh sách khen thưởng";
+            } else if (currentController == "Incident") {
+                activeModule = "Sự cố nhân sự";
+                activeSubModule = "Quản lý sự cố";
+            } else if (currentController == "Succession") {
+                activeModule = "Quy hoạch";
+                activeSubModule = "Quản lý quy hoạch";
+            } else if (currentController == "TaskTracking") {
+                activeModule = "Công việc HR";
+                activeSubModule = "Quản lý công việc";
+            } else if (currentController == "Proposal") {
+                activeModule = "Đề xuất";
+                activeSubModule = "Quản lý đề xuất";
+            } else if (currentController == "Report") {
+                activeModule = "Báo cáo";
+                if (currentAction == "Export") activeSubModule = "Xuất báo cáo";
+                else activeSubModule = "Tổng quan";
+            } else if (currentController == "KPIPeriod" || currentController == "KPIConfig") {
+                activeModule = "KPI / Hiệu suất";
+                activeSubModule = currentController == "KPIPeriod" ? "Kỳ đánh giá KPI" : "Cấu hình hệ số";
+            } else {
+                activeModule = "Hệ thống";
+            }
+        }
+
+        string activeModuleIcon = "fa-solid fa-circle";
+        string displayModule = activeModule;
+        
+        if (activeModule == "Tổng quan") activeModuleIcon = "fa-solid fa-house";
+        else if (activeModule == "Tổng quan hệ thống") { activeModuleIcon = "fa-solid fa-shield-halved"; displayModule = "Tổng quan hệ thống"; }
+        else if (activeModule == "Người dùng") activeModuleIcon = "fa-solid fa-users";
+        else if (activeModule == "Vai trò & phân quyền") activeModuleIcon = "fa-solid fa-lock";
+        else if (activeModule == "Đơn vị tổ chức") activeModuleIcon = "fa-solid fa-sitemap";
+        else if (activeModule == "Danh mục hệ thống") activeModuleIcon = "fa-solid fa-layer-group";
+        else if (activeModule == "Chính sách bảo mật") activeModuleIcon = "fa-solid fa-shield-halved";
+        else if (activeModule == "Cấu hình thông báo") activeModuleIcon = "fa-solid fa-bell-slash";
+        else if (activeModule == "Tích hợp hệ thống") activeModuleIcon = "fa-solid fa-plug";
+        else if (activeModule == "Audit Log") activeModuleIcon = "fa-solid fa-scroll";
+        else if (activeModule == "Sao lưu & phục hồi") activeModuleIcon = "fa-solid fa-database";
+        else if (activeModule == "Cấu hình hệ thống") activeModuleIcon = "fa-solid fa-gear";
+        else if (activeModule == "System Monitoring") activeModuleIcon = "fa-solid fa-chart-line";
+        else if (activeModule == "Hồ sơ của tôi") { activeModuleIcon = "fa-solid fa-address-card"; }
+        else if (activeModule == "Hồ sơ" || activeModule == "Quản lý Hồ sơ") { activeModuleIcon = "fa-solid fa-address-card"; displayModule = "Hồ sơ"; }
+        else if (activeModule == "Chấm công") activeModuleIcon = "fa-solid fa-clock-rotate-left";
+        else if (activeModule == "Lương") activeModuleIcon = "fa-solid fa-money-check-dollar";
+        else if (activeModule == "Nghỉ phép") activeModuleIcon = "fa-solid fa-umbrella-beach";
+        else if (activeModule == "Hợp đồng") activeModuleIcon = "fa-solid fa-file-contract";
+        else if (activeModule == "Bổ nhiệm") activeModuleIcon = "fa-solid fa-user-plus";
+        else if (activeModule == "Miễn nhiệm") activeModuleIcon = "fa-solid fa-user-minus";
+        else if (activeModule == "Thuyên chuyển") activeModuleIcon = "fa-solid fa-right-left";
+        else if (activeModule == "Nghỉ việc") activeModuleIcon = "fa-solid fa-person-walking-arrow-right";
+        else if (activeModule == "Nhân sự") activeModuleIcon = "fa-solid fa-users";
+        else if (activeModule == "Chi phí nhân sự") activeModuleIcon = "fa-solid fa-coins";
+        else if (activeModule == "KPI / Hiệu suất") activeModuleIcon = "fa-solid fa-chart-column";
+        else if (activeModule == "Phân tích") activeModuleIcon = "fa-solid fa-magnifying-glass-chart";
+        else if (activeModule == "Phê duyệt") activeModuleIcon = "fa-solid fa-clipboard-check";
+        else if (activeModule == "Báo cáo") activeModuleIcon = "fa-solid fa-chart-line";
+        else if (activeModule == "Thông báo") activeModuleIcon = "fa-solid fa-bell";
+        else if (activeModule == "Phúc lợi") activeModuleIcon = "fa-solid fa-hand-holding-heart";
+        else if (activeModule == "Đào tạo") activeModuleIcon = "fa-solid fa-graduation-cap";
+        else if (activeModule == "Khen thưởng") activeModuleIcon = "fa-solid fa-award";
+        else if (activeModule == "Sự cố" || activeModule == "Sự cố nhân sự") activeModuleIcon = "fa-solid fa-triangle-exclamation";
+        else if (activeModule == "Quy hoạch") activeModuleIcon = "fa-solid fa-sitemap";
+        else if (activeModule == "Đôn đốc" || activeModule == "Công việc HR") activeModuleIcon = "fa-solid fa-bullhorn";
+        else if (activeModule == "Đề xuất") activeModuleIcon = "fa-solid fa-lightbulb";
+        else if (activeModule == "Hội nhập") activeModuleIcon = "fa-solid fa-handshake-angle";
     }
 
     <div class="app-container">
-        <aside class="sidebar">
-            <div class="logo-container">
-                <a href="/">
-                    <img src="~/images/logo.jpg" alt="HRMS Đức Long" />
+
+        <!-- HEADER TOPBAR -->
+        <header class="topbar">
+            <div class="topbar-left">
+                @if (role != "Employee" && role != "Admin" && role != "Leader" && role != "Manager")
+                {
+                    <button id="appLauncherBtn" class="app-launcher-btn" title="Chuyển đổi chức năng">
+                        <div style="display: grid; grid-template-columns: repeat(2, 4px); grid-template-rows: repeat(3, 4px); gap: 3px; opacity: 0.8;">
+                            <div style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></div>
+                            <div style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></div>
+                            <div style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></div>
+                            <div style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></div>
+                            <div style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></div>
+                            <div style="width: 4px; height: 4px; background: currentColor; border-radius: 50%;"></div>
+                        </div>
+                    </button>
+                }
+                <a href="/" class="topbar-logo">
+                    <img src="~/images/logo.jpg" alt="Logo" style="height: 32px; border-radius: 4px; object-fit: cover; width: 32px;" />
+                    HRMS
                 </a>
+                
+                <div class="topbar-function-path" style="display: flex; align-items: center; flex-wrap: nowrap; gap: 12px; font-size: 15px; font-weight: 600; margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--hrms-border);">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #3b82f6; white-space: nowrap;">
+                        <i class="@activeModuleIcon"></i> <span>@displayModule</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(activeSubModule) && role != "Employee") {
+                        <span style="color: #cbd5e1; flex-shrink: 0;">/</span>
+                        <span style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">@activeSubModule</span>
+                    }
+                </div>
+            </div>
+            
+            <div class="topbar-center" style="display: flex; align-items: center; justify-content: center; flex: 1;">
+                <div style="position: relative; width: 400px; max-width: 100%;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <input type="text" placeholder="@(role == "Manager" ? "Tìm nhân viên trong phạm vi..." : "Tìm kiếm thông minh, nhân viên, hợp đồng...")" style="width: 100%; height: 36px; padding: 0 16px 0 36px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 14px; outline: none; transition: var(--transition);" onfocus="this.style.background='#fff'; this.style.borderColor='#3b82f6';" onblur="this.style.background='#f8fafc'; this.style.borderColor='#e2e8f0';" />
+                </div>
             </div>
 
-            <ul class="menu">
-                @* ===== MENU ADMIN ===== *@
-                @if (role == "Admin")
-                {
-                    <li><a asp-controller="Admin" asp-action="Index">🏠 Bảng điều khiển</a></li>
-                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ của tôi</a></li>
-                    <li><a asp-controller="Admin" asp-action="Index">👥 Quản lý tài khoản</a></li>
-                    <li><a asp-controller="Admin" asp-action="Index">🛡 Phân quyền</a></li>
+            <div class="topbar-right">
+                @if (role != "Employee" && role != "Manager") {
+                    <button class="topbar-action-btn" title="Thêm nhanh" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; display: flex; align-items: center; gap: 6px; margin-right: 8px;">
+                        <i class="fa-solid fa-plus"></i> Thêm nhanh
+                    </button>
+                    <div class="topbar-new-feature">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Tính năng mới
+                    </div>
                 }
-
-                @* ===== MENU NHÂN VIÊN ===== *@
-                else if (role == "Employee")
+                
+                <a asp-controller="Notification" asp-action="Index" class="topbar-action-btn" style="text-decoration:none;" title="Thông báo">
+                    <i class="fa-regular fa-bell"></i>
+                    @if (soThongBao > 0)
+                    {
+                        <span id="notificationBadge" style="position:absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; border-radius: 50%; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;">@soThongBao</span>
+                    }
+                </a>
+                
+                <button class="topbar-action-btn" title="Trợ giúp">
+                    <i class="fa-regular fa-circle-question"></i>
+                </button>
+                <button class="topbar-action-btn" title="Cài đặt">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                
+                @if (!string.IsNullOrEmpty(realName))
                 {
-                    <li><a asp-controller="NhanVien" asp-action="Index">🏠 Trang chủ</a></li>
-                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ của tôi</a></li>
-                    <li><a asp-controller="Attendance" asp-action="Index">⏱ Chấm công</a></li>
-                    <li><a asp-controller="Leave" asp-action="Index">📄 Nghỉ phép</a></li>
-                    <li><a asp-controller="Contract" asp-action="Index">📑 Hợp đồng</a></li>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-left: 8px;">
+                        <div class="topbar-avatar">@avatarChar</div>
+                        <div class="topbar-user-info">
+                            <span class="topbar-user-name">@realName</span>
+                            <span class="topbar-user-role">@role</span>
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" style="display: inline; margin-left: 8px;">
+                            <button type="submit" style="border: 0; background: transparent; color: #64748b; padding: 0;" title="Đăng xuất">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </button>
+                        </form>
+                    </div>
                 }
+            </div>
+        </header>
 
-                @* ===== MENU HR ===== *@
-                else if (role == "HR")
-                {
-                    <li><a asp-controller="HR" asp-action="Index">🏠 Trang chủ</a></li>
-                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ cá nhân</a></li>
-                    <li><a asp-controller="Employee" asp-action="Index">👥 Quản lý nhân viên</a></li>
-                    <li><a asp-controller="Attendance" asp-action="Index">⏱ Chấm công</a></li>
-                    <li><a asp-controller="Salary" asp-action="Index">💰 Lương</a></li>
-                    <li><a asp-controller="Leave" asp-action="Index">📄 Nghỉ phép</a></li>
-                    <li><a asp-controller="Contract" asp-action="Index">📑 Hợp đồng</a></li>
-                    <li><a asp-controller="Report" asp-action="Index">📊 Báo cáo</a></li>
-                }
+        <!-- APP LAUNCHER POPOVER -->
+        <div class="app-launcher-popover" id="appLauncherPopover">
+            @if (role == "Employee") {
+                <div style="padding: 12px 16px; font-weight: 600; color: #64748b; font-size: 13px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                    Menu nhanh
+                </div>
+                <a asp-controller="NhanVien" asp-action="Index" class="app-launcher-item @(currentController == "NhanVien" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #6366f1;"><i class="fa-solid fa-house"></i></div>
+                    <span class="app-launcher-text">Tổng quan</span>
+                </a>
+                <a asp-controller="Attendance" asp-action="Index" class="app-launcher-item @(currentController == "Attendance" || currentController == "AttendanceAdjustment" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #f59e0b;"><i class="fa-solid fa-clock"></i></div>
+                    <span class="app-launcher-text">Chấm công</span>
+                </a>
+                <a asp-controller="MyPayroll" asp-action="Index" class="app-launcher-item @(currentController == "MyPayroll" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #10b981;"><i class="fa-solid fa-money-check-dollar"></i></div>
+                    <span class="app-launcher-text">Lương của tôi</span>
+                </a>
+                <a asp-controller="MyRequest" asp-action="Index" class="app-launcher-item @(currentController == "MyRequest" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #ec4899;"><i class="fa-solid fa-file-signature"></i></div>
+                    <span class="app-launcher-text">Đơn từ</span>
+                </a>
+                <a asp-controller="Contract" asp-action="Index" class="app-launcher-item @(currentController == "Contract" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #8b5cf6;"><i class="fa-solid fa-file-contract"></i></div>
+                    <span class="app-launcher-text">Hợp đồng</span>
+                </a>
+            } else {
+                <div style="padding: 12px 16px; font-weight: 600; color: #64748b; font-size: 13px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+                    Chuyển chức năng
+                </div>
+                <a asp-controller="HR" asp-action="Index" class="app-launcher-item @(majorModule == "HR" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #3b82f6;"><i class="fa-solid fa-users"></i></div>
+                    <span class="app-launcher-text">Quản lý nhân sự</span>
+                </a>
+                <a asp-controller="Attendance" asp-action="Index" class="app-launcher-item @(majorModule == "Attendance" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #f59e0b;"><i class="fa-solid fa-clock"></i></div>
+                    <span class="app-launcher-text">Chấm công</span>
+                </a>
+                <a asp-controller="Salary" asp-action="Index" class="app-launcher-item @(majorModule == "Payroll" ? "active" : "")">
+                    <div class="app-launcher-icon" style="color: #10b981;"><i class="fa-solid fa-money-check-dollar"></i></div>
+                    <span class="app-launcher-text">Tiền lương</span>
+                </a>
+            }
+        </div>
 
-                @* ===== MENU LEADER ===== *@
-                else if (role == "Leader")
-                {
-                    <li><a asp-controller="Leader" asp-action="Index">📊 Bảng điều khiển</a></li>
-                    <li><a asp-controller="Employee" asp-action="MyProfile">👤 Hồ sơ cá nhân</a></li>
-                    <li><a asp-controller="Report" asp-action="Index">📈 Báo cáo</a></li>
-                    <li><a asp-controller="Report" asp-action="Export">📥 Xuất báo cáo</a></li>
-                }
-
-                @if (!string.IsNullOrEmpty(role))
-                {
-                    <li class="mt-2 border-top pt-2">
-                        <a asp-controller="Notification" asp-action="Index">
-                            🔔 Thông báo <span id="notificationBadge" class="notification-badge">@soThongBao</span>
+        <!-- CONTEXTUAL SIDEBAR (ACCORDION) -->
+        <aside class="sidebar" id="mainSidebar">
+            <ul class="menu" style="margin-top: 12px;">
+                @if (majorModule == "Employee") {
+                    <!-- SIDEBAR NHÂN VIÊN — 11 mục flat -->
+                    <!-- 1. Tổng quan -->
+                    <li>
+                        <a href="@Url.Action("Index", "NhanVien")" class="@(currentController == "NhanVien" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                            <span class="nav-text">Tổng quan</span>
                         </a>
                     </li>
+                    <!-- 2. Hồ sơ của tôi -->
                     <li>
-                        <a asp-controller="Account" asp-action="Logout" class="logout-link">
-                            🚪 Đăng xuất
+                        <a href="@Url.Action("MyProfile", "Employee")" class="@(currentController == "Employee" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-address-card"></i></span>
+                            <span class="nav-text">Hồ sơ của tôi</span>
+                        </a>
+                    </li>
+                    <!-- 3. Chấm công -->
+                    <li>
+                        <a href="@Url.Action("Index", "Attendance")" class="@(currentController == "Attendance" || currentController == "AttendanceAdjustment" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-clock"></i></span>
+                            <span class="nav-text">Chấm công</span>
+                        </a>
+                    </li>
+
+                    <!-- 4. Đơn từ (tổng hợp — dùng MyRequest làm trang cha) -->
+                    <li>
+                        <a href="@Url.Action("Index", "MyRequest")" class="@(currentController == "MyRequest" || currentController == "Leave" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-file-alt"></i></span>
+                            <span class="nav-text">Đơn từ</span>
+                        </a>
+                    </li>
+                    <!-- 5. Lương -->
+                    <li>
+                        <a href="@Url.Action("Index", "MyPayroll")" class="@(currentController == "MyPayroll" || currentController == "Salary" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-money-check-dollar"></i></span>
+                            <span class="nav-text">Tiền lương</span>
+                        </a>
+                    </li>
+                    <!-- 6. KPI của tôi -->
+                    <li>
+                        <a href="@Url.Action("Index", "MyKPI")" class="@(currentController == "MyKPI" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-bullseye"></i></span>
+                            <span class="nav-text">KPI của tôi</span>
+                        </a>
+                    </li>
+                    <!-- 7. Hợp đồng -->
+                    <li>
+                        <a href="@Url.Action("Index", "Contract")" class="@(currentController == "Contract" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-file-contract"></i></span>
+                            <span class="nav-text">Hợp đồng</span>
+                        </a>
+                    </li>
+                    <!-- 8. Phúc lợi -->
+                    <li>
+                        <a href="@Url.Action("Index", "Benefit")" class="@(currentController == "Benefit" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-gift"></i></span>
+                            <span class="nav-text">Phúc lợi</span>
+                        </a>
+                    </li>
+                    <!-- 9. Đào tạo -->
+                    <li>
+                        <a href="@Url.Action("Index", "Training")" class="@(currentController == "Training" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+                            <span class="nav-text">Đào tạo</span>
+                        </a>
+                    </li>
+                    <!-- 10. Khen thưởng -->
+                    <li>
+                        <a href="@Url.Action("Index", "Reward")" class="@(currentController == "Reward" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-trophy"></i></span>
+                            <span class="nav-text">Khen thưởng</span>
+                        </a>
+                    </li>
+                    <!-- 11. Thông báo -->
+                    <li>
+                        <a href="@Url.Action("Index", "Notification")" class="@(currentController == "Notification" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-regular fa-bell"></i></span>
+                            <span class="nav-text">Thông báo</span>
+                            @if (soThongBao > 0) {
+                                <span style="margin-left:auto; background:#ef4444; color:white; font-size:10px; font-weight:700; border-radius:10px; padding:1px 7px;">@soThongBao</span>
+                            }
+                        </a>
+                    </li>
+                }
+                else if (majorModule == "Admin") {
+                    <!-- SIDEBAR QUẢN TRỊ HỆ THỐNG — 11 mục kỹ thuật -->
+                    <!-- 1. Tổng quan hệ thống -->
+                    <li>
+                        <a href="@Url.Action("Index", "Admin")" class="@(activeModule == "Tổng quan hệ thống" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                            <span class="nav-text">Tổng quan hệ thống</span>
+                        </a>
+                    </li>
+                    <!-- 2. Người dùng -->
+                    <li>
+                        <a href="@Url.Action("Users", "Admin")" class="@(activeModule == "Người dùng" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+                            <span class="nav-text">Người dùng</span>
+                        </a>
+                    </li>
+                    <!-- 3. Vai trò & phân quyền -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminRole")" class="@(currentController == "AdminRole" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-lock"></i></span>
+                            <span class="nav-text">Vai trò & phân quyền</span>
+                        </a>
+                    </li>
+                    <!-- 4. Đơn vị tổ chức -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminOrg")" class="@(currentController == "AdminOrg" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-sitemap"></i></span>
+                            <span class="nav-text">Đơn vị tổ chức</span>
+                        </a>
+                    </li>
+                    <!-- 5. Chính sách bảo mật -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminSecurity")" class="@(currentController == "AdminSecurity" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                            <span class="nav-text">Chính sách bảo mật</span>
+                        </a>
+                    </li>
+                    <!-- 6. Cấu hình thông báo -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminNotificationConfig")" class="@(currentController == "AdminNotificationConfig" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-bell-slash"></i></span>
+                            <span class="nav-text">Cấu hình thông báo</span>
+                        </a>
+                    </li>
+                    <!-- 7. Tích hợp hệ thống -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminIntegration")" class="@(currentController == "AdminIntegration" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-plug"></i></span>
+                            <span class="nav-text">Tích hợp hệ thống</span>
+                        </a>
+                    </li>
+                    <!-- 8. Audit Log -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminAudit")" class="@(currentController == "AdminAudit" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-scroll"></i></span>
+                            <span class="nav-text">Audit Log</span>
+                        </a>
+                    </li>
+                    <!-- 9. Sao lưu & phục hồi -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminBackup")" class="@(currentController == "AdminBackup" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-database"></i></span>
+                            <span class="nav-text">Sao lưu & phục hồi</span>
+                        </a>
+                    </li>
+                    <!-- 10. Cấu hình hệ thống -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminSettings")" class="@(currentController == "AdminSettings" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+                            <span class="nav-text">Cấu hình hệ thống</span>
+                        </a>
+                    </li>
+                    <!-- 11. System Monitoring -->
+                    <li>
+                        <a href="@Url.Action("Index", "AdminMonitoring")" class="@(currentController == "AdminMonitoring" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                            <span class="nav-text">System Monitoring</span>
+                        </a>
+                    </li>
+                }
+                else if (majorModule == "Manager") {
+                    <li><a href="@Url.Action("Index", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Index" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span><span class="nav-text">Tổng quan</span></a></li>
+                    <li><a href="@Url.Action("Profile", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Profile" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-id-card"></i></span><span class="nav-text">Hồ sơ</span></a></li>
+                    <li><a href="@Url.Action("Employees", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Employees" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Nhân viên trực thuộc</span></a></li>
+                    <li><a href="@Url.Action("Attendance", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Attendance" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-clock"></i></span><span class="nav-text">Chấm công đội nhóm</span></a></li>
+                    <li><a href="@Url.Action("LeaveApprovals", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "LeaveApprovals" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-umbrella-beach"></i></span><span class="nav-text">Duyệt nghỉ phép</span></a></li>
+                    <li><a href="@Url.Action("AttendanceAdjustments", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "AttendanceAdjustments" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="nav-text">Duyệt giải trình công</span></a></li>
+                    <li><a href="@Url.Action("Index", "ManagerKPI")" class="@(currentController == "ManagerKPI" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span><span class="nav-text">KPI / Hiệu suất</span></a></li>
+                    <li class="has-submenu @(new[] { "Appointment", "Dismissal", "Transfer", "Reward" }.Contains(currentController) ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(new[] { "Appointment", "Dismissal", "Transfer", "Reward" }.Contains(currentController) ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-user-gear"></i></span>
+                                <span class="nav-text">Đề xuất nhân sự</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "Appointment")" class="@(currentController == "Appointment" ? "active" : "")">Bổ nhiệm</a></li>
+                            <li><a href="@Url.Action("Index", "Dismissal")" class="@(currentController == "Dismissal" ? "active" : "")">Miễn nhiệm</a></li>
+                            <li><a href="@Url.Action("Index", "Transfer")" class="@(currentController == "Transfer" ? "active" : "")">Điều chuyển</a></li>
+                            <li><a href="@Url.Action("Index", "Reward")" class="@(currentController == "Reward" ? "active" : "")">Khen thưởng</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="@Url.Action("Reports", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Reports" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span><span class="nav-text">Báo cáo</span></a></li>
+                    <li><a href="@Url.Action("Notifications", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Notifications" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-bell"></i></span><span class="nav-text">Thông báo</span></a></li>
+                }
+                else if (majorModule == "Leadership") {
+                    <!-- SIDEBAR BAN LÃNH ĐẠO — 10 chức năng -->
+                    <!-- 1. Tổng quan -->
+                    <li>
+                        <a href="@Url.Action("Index", "Leader")" class="@(activeModule == "Tổng quan" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                            <span class="nav-text">Tổng quan</span>
+                        </a>
+                    </li>
+                    <!-- 2. Nhân sự -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderPersonnel")" class="@(activeModule == "Nhân sự" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
+                            <span class="nav-text">Nhân sự</span>
+                        </a>
+                    </li>
+                    <!-- 3. Chấm công -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderAttendance")" class="@(activeModule == "Chấm công" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                            <span class="nav-text">Chấm công</span>
+                        </a>
+                    </li>
+                    <!-- 4. Nghỉ phép -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderLeave")" class="@(activeModule == "Nghỉ phép" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-umbrella-beach"></i></span>
+                            <span class="nav-text">Nghỉ phép</span>
+                        </a>
+                    </li>
+                    <!-- 5. Hợp đồng -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderContract")" class="@(activeModule == "Hợp đồng" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-file-contract"></i></span>
+                            <span class="nav-text">Hợp đồng</span>
+                        </a>
+                    </li>
+                    <!-- 6. Chi phí nhân sự -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderCost")" class="@(activeModule == "Chi phí nhân sự" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-coins"></i></span>
+                            <span class="nav-text">Chi phí nhân sự</span>
+                        </a>
+                    </li>
+                    <!-- 7. KPI / Hiệu suất -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderKPI")" class="@(activeModule == "KPI / Hiệu suất" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+                            <span class="nav-text">KPI / Hiệu suất</span>
+                        </a>
+                    </li>
+                    <!-- 8. Phân tích -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderAnalytics")" class="@(activeModule == "Phân tích" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                            <span class="nav-text">Phân tích</span>
+                        </a>
+                    </li>
+                    <!-- 9. Báo cáo -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderReport")" class="@(activeModule == "Báo cáo" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                            <span class="nav-text">Báo cáo</span>
+                        </a>
+                    </li>
+                    <!-- 10. Phê duyệt -->
+                    <li>
+                        <a href="@Url.Action("Index", "LeaderApproval")" class="@(activeModule == "Phê duyệt" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-clipboard-check"></i></span>
+                            <span class="nav-text">Phê duyệt</span>
+                        </a>
+                    </li>
+                }
+                else if (majorModule == "HR") {
+                    <!-- 1. Tổng quan -->
+                    <li class="@(currentController == "HR" ? "open" : "")">
+                        <a href="@Url.Action("Index", "HR")" class="@(currentController == "HR" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                            <span class="nav-text">Tổng quan</span>
+                        </a>
+                    </li>
+                    <!-- 2. Hội nhập -->
+                    <li class="@(currentController == "Onboarding" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Onboarding")" class="@(currentController == "Onboarding" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-handshake-angle"></i></span>
+                            <span class="nav-text">Hội nhập</span>
+                        </a>
+                    </li>
+                    <!-- 3. Hồ sơ -->
+                    <li class="has-submenu @(currentController == "Employee" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Employee" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-address-card"></i></span>
+                                <span class="nav-text">Hồ sơ</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("MyProfile", "Employee")" class="@(currentController == "Employee" && currentAction == "MyProfile" ? "active" : "")">Hồ sơ của tôi</a></li>
+                            @if (role == "HR") {
+                                <li><a href="@Url.Action("Index", "Employee")" class="@(currentController == "Employee" && currentAction != "MyProfile" ? "active" : "")">Danh sách nhân viên</a></li>
+                            }
+                        </ul>
+                    </li>
+                    <!-- 4. Hợp đồng -->
+                    <li class="@(currentController == "Contract" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Contract")" class="@(currentController == "Contract" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-file-contract"></i></span>
+                            <span class="nav-text">Hợp đồng</span>
+                        </a>
+                    </li>
+                    <!-- 5. Chấm công -->
+                    <li class="@(currentController == "Attendance" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Attendance")" class="@(currentController == "Attendance" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-business-time"></i></span>
+                            <span class="nav-text">Chấm công</span>
+                        </a>
+                    </li>
+                    <!-- 6. Nghỉ phép -->
+                    <li class="@(currentController == "Leave" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Leave")" class="@(currentController == "Leave" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-umbrella-beach"></i></span>
+                            <span class="nav-text">Nghỉ phép</span>
+                        </a>
+                    </li>
+                    <!-- 7. Bổ nhiệm -->
+                    <li class="@(currentController == "Appointment" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Appointment")" class="@(currentController == "Appointment" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-user-plus"></i></span>
+                            <span class="nav-text">Bổ nhiệm</span>
+                        </a>
+                    </li>
+                    <!-- 8. Miễn nhiệm -->
+                    <li class="@(currentController == "Dismissal" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Dismissal")" class="@(currentController == "Dismissal" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-user-minus"></i></span>
+                            <span class="nav-text">Miễn nhiệm</span>
+                        </a>
+                    </li>
+                    <!-- 9. Thuyên chuyển -->
+                    <li class="@(currentController == "Transfer" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Transfer")" class="@(currentController == "Transfer" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-right-left"></i></span>
+                            <span class="nav-text">Thuyên chuyển</span>
+                        </a>
+                    </li>
+                    <!-- 10. Nghỉ việc -->
+                    <li class="@(currentController == "Offboarding" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Offboarding")" class="@(currentController == "Offboarding" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-person-walking-arrow-right"></i></span>
+                            <span class="nav-text">Nghỉ việc</span>
+                        </a>
+                    </li>
+                    <!-- 11. Khen thưởng -->
+                    <li class="@(currentController == "Reward" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Reward")" class="@(currentController == "Reward" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-award"></i></span>
+                            <span class="nav-text">Khen thưởng</span>
+                        </a>
+                    </li>
+                    <!-- 12. Sự cố nhân sự -->
+                    <li class="@(currentController == "Incident" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Incident")" class="@(currentController == "Incident" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                            <span class="nav-text">Sự cố nhân sự</span>
+                        </a>
+                    </li>
+                    <!-- 13. Đào tạo -->
+                    <li class="@(currentController == "Training" && currentAction == "HrIndex" ? "open" : "")">
+                        <a href="@Url.Action("HrIndex", "Training")" class="@(currentController == "Training" && currentAction == "HrIndex" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-graduation-cap"></i></span>
+                            <span class="nav-text">Đào tạo</span>
+                        </a>
+                    </li>
+                    <!-- 14. Phúc lợi -->
+                    <li class="@(currentController == "Benefit" && currentAction == "HrIndex" ? "open" : "")">
+                        <a href="@Url.Action("HrIndex", "Benefit")" class="@(currentController == "Benefit" && currentAction == "HrIndex" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-gift"></i></span>
+                            <span class="nav-text">Phúc lợi</span>
+                        </a>
+                    </li>
+                    <!-- 15. Quy hoạch -->
+                    <li class="@(currentController == "Succession" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Succession")" class="@(currentController == "Succession" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-sitemap"></i></span>
+                            <span class="nav-text">Quy hoạch</span>
+                        </a>
+                    </li>
+                    <!-- 16. Công việc HR -->
+                    <li class="@(currentController == "TaskTracking" ? "open" : "")">
+                        <a href="@Url.Action("Index", "TaskTracking")" class="@(currentController == "TaskTracking" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-bullhorn"></i></span>
+                            <span class="nav-text">Công việc HR</span>
+                        </a>
+                    </li>
+                    <!-- 17. Đề xuất -->
+                    <li class="@(currentController == "Proposal" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Proposal")" class="@(currentController == "Proposal" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-lightbulb"></i></span>
+                            <span class="nav-text">Đề xuất</span>
+                        </a>
+                    </li>
+                    <!-- 18. KPI / Hiệu suất -->
+                    <li class="has-submenu @(currentController == "KPIPeriod" || currentController == "KPIConfig" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "KPIPeriod" || currentController == "KPIConfig" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                                <span class="nav-text">KPI / Hiệu suất</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "KPIPeriod")" class="@(currentController == "KPIPeriod" ? "active" : "")">Kỳ đánh giá KPI</a></li>
+                            <li><a href="@Url.Action("Index", "KPIConfig")" class="@(currentController == "KPIConfig" ? "active" : "")">Cấu hình hệ số</a></li>
+                        </ul>
+                    </li>
+                    <!-- 19. Báo cáo -->
+                    <li class="has-submenu @(currentController == "Report" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Report" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                                <span class="nav-text">Báo cáo</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "Report")" class="@(currentController == "Report" && currentAction == "Index" ? "active" : "")">Báo cáo tổng hợp</a></li>
+                        </ul>
+                    </li>
+                }
+                else if (majorModule == "Attendance") {
+                    <!-- 1. Tổng quan -->
+                    <li class="@(activeModule == "Chấm công" && currentController == "Attendance" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Attendance")" class="@(currentController == "Attendance" && currentAction == "Index" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                            <span class="nav-text">Tổng quan</span>
+                        </a>
+                    </li>
+                    <!-- 2. Ca làm việc -->
+                    <li class="@(currentController == "WorkShift" ? "open" : "")">
+                        <a href="@Url.Action("Index", "WorkShift")" class="@(currentController == "WorkShift" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-business-time"></i></span>
+                            <span class="nav-text">Ca làm việc</span>
+                        </a>
+                    </li>
+                    <!-- 3. Chấm công -->
+                    <li class="has-submenu @(currentController == "Timesheet" || currentController == "AttendanceAdjustment" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Timesheet" || currentController == "AttendanceAdjustment" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-clipboard-user"></i></span>
+                                <span class="nav-text">Chấm công</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "Timesheet")" class="@(currentController == "Timesheet" ? "active" : "")">Bảng chấm công</a></li>
+                            <li><a href="@Url.Action("Manage", "AttendanceAdjustment")" class="@(currentController == "AttendanceAdjustment" ? "active" : "")">Xác nhận công</a></li>
+                        </ul>
+                    </li>
+                    <!-- 4. Quản lý đơn -->
+                    <li class="has-submenu @(currentController == "Approval" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Approval" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-file-signature"></i></span>
+                                <span class="nav-text">Quản lý đơn</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "Approval")" class="@(currentController == "Approval" && Context.Request.Query["status"] != "All" ? "active" : "")">Đơn chờ duyệt</a></li>
+                            <li><a href="@Url.Action("Index", "Approval", new { status = "All" })" class="@(currentController == "Approval" && Context.Request.Query["status"] == "All" ? "active" : "")">Tất cả đơn</a></li>
+                        </ul>
+                    </li>
+                    <!-- 5. Báo cáo -->
+                    <li class="has-submenu @(currentController == "AttendanceReport" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "AttendanceReport" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+                                <span class="nav-text">Báo cáo</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "AttendanceReport")" class="@(currentController == "AttendanceReport" && currentAction == "Index" ? "active" : "")">Báo cáo chấm công</a></li>
+                            <li><a href="@Url.Action("Late", "AttendanceReport")" class="@(currentController == "AttendanceReport" && currentAction == "Late" ? "active" : "")">Báo cáo đi muộn</a></li>
+                        </ul>
+                    </li>
+                    <!-- 6. Thiết lập -->
+                    <li class="has-submenu @(currentController == "Holiday" || currentController == "AttendanceRule" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Holiday" || currentController == "AttendanceRule" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+                                <span class="nav-text">Thiết lập</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "AttendanceRule")" class="@(currentController == "AttendanceRule" ? "active" : "")">Quy tắc chấm công</a></li>
+                            <li><a href="@Url.Action("Index", "Holiday")" class="@(currentController == "Holiday" ? "active" : "")">Ngày nghỉ lễ</a></li>
+                        </ul>
+                    </li>
+                }
+                else if (majorModule == "Payroll") {
+                    <!-- 1. Tổng quan -->
+                    <li class="@(activeModule == "Lương" && currentAction == "Dashboard" ? "open" : "")">
+                        <a href="@Url.Action("Dashboard", "Salary")" class="@(currentController == "Salary" && currentAction == "Dashboard" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-house"></i></span>
+                            <span class="nav-text">Tổng quan</span>
+                        </a>
+                    </li>
+                    <!-- 2. Dữ liệu tính lương -->
+                    <li class="has-submenu @(currentController == "PayrollInput" || currentController == "PayrollValidation" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "PayrollInput" || currentController == "PayrollValidation" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-database"></i></span>
+                                <span class="nav-text">Dữ liệu tính lương</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "PayrollInput")" class="@(currentController == "PayrollInput" ? "active" : "")">Nhập liệu</a></li>
+                            <li><a href="@Url.Action("Index", "PayrollValidation")" class="@(currentController == "PayrollValidation" ? "active" : "")">Kiểm tra</a></li>
+                        </ul>
+                    </li>
+                    <!-- 3. Tính lương -->
+                    <li class="@(activeModule == "Lương" && currentAction == "Index" ? "open" : "")">
+                        <a href="@Url.Action("Index", "Salary")" class="@(currentController == "Salary" && currentAction == "Index" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-calculator"></i></span>
+                            <span class="nav-text">Tính lương</span>
+                        </a>
+                    </li>
+                    <!-- 4. Chi trả lương -->
+                    <li class="@(currentController == "PayrollPayment" ? "open" : "")">
+                        <a href="@Url.Action("Index", "PayrollPayment")" class="@(currentController == "PayrollPayment" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-credit-card"></i></span>
+                            <span class="nav-text">Chi trả lương</span>
+                        </a>
+                    </li>
+                    <!-- 5. Báo cáo -->
+                    <li class="has-submenu @(currentController == "PayrollCostReport" || currentController == "PayrollTaxReport" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "PayrollCostReport" || currentController == "PayrollTaxReport" ? "active" : "")">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+                                <span class="nav-text">Báo cáo</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-down nav-chevron"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li><a href="@Url.Action("Index", "PayrollCostReport")" class="@(currentController == "PayrollCostReport" ? "active" : "")">Báo cáo chi phí</a></li>
+                            <li><a href="@Url.Action("Index", "PayrollTaxReport")" class="@(currentController == "PayrollTaxReport" ? "active" : "")">Báo cáo thuế</a></li>
+                        </ul>
+                    </li>
+                    <!-- 6. Mẫu bảng lương -->
+                    <li class="@(currentController == "PayrollTemplate" ? "open" : "")">
+                        <a href="@Url.Action("Index", "PayrollTemplate")" class="@(currentController == "PayrollTemplate" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-file-invoice"></i></span>
+                            <span class="nav-text">Mẫu bảng lương</span>
+                        </a>
+                    </li>
+                    <!-- 7. Thành phần lương -->
+                    <li class="@(currentController == "PayrollComponent" ? "open" : "")">
+                        <a href="@Url.Action("Index", "PayrollComponent")" class="@(currentController == "PayrollComponent" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-puzzle-piece"></i></span>
+                            <span class="nav-text">Thành phần lương</span>
+                        </a>
+                    </li>
+                    <!-- 8. Thiết lập -->
+                    <li class="@(currentController == "PayrollSetting" ? "open" : "")">
+                        <a href="@Url.Action("Index", "PayrollSetting")" class="@(currentController == "PayrollSetting" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>
+                            <span class="nav-text">Thiết lập</span>
                         </a>
                     </li>
                 }
             </ul>
         </aside>
 
+        <!-- MAIN CONTENT -->
         <main class="main-content">
-            <div class="topbar">
-                <h2 class="fw-bold">@ViewData["Title"]</h2>
-            </div>
-
-            <div class="content-area p-4">
+            <div class="content-area">
                 @RenderBody()
             </div>
         </main>
@@ -153,34 +1010,220 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="~/js/notification-sound.js" asp-append-version="true"></script>
+    <script src="~/lib/signalr/7.0.5/signalr.min.js" asp-append-version="true"></script>
+    
+    <form id="aiCsrf" hidden>@Html.AntiForgeryToken()</form>
     <script>
+        (() => {
+            const token = document.querySelector('#aiCsrf input[name="__RequestVerificationToken"]')?.value;
+            if (!token) return;
+            const unsafe = method => /^(POST|PUT|PATCH|DELETE)$/i.test(method || 'GET');
+            const sameOrigin = url => new URL(url, window.location.href).origin === window.location.origin;
+            const originalFetch = window.fetch.bind(window);
+            window.fetch = (input, init = {}) => {
+                const method = init.method || (input instanceof Request ? input.method : 'GET');
+                const url = typeof input === 'string' ? input : input.url;
+                if (unsafe(method) && sameOrigin(url)) {
+                    const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+                    if (!headers.has('RequestVerificationToken')) headers.set('RequestVerificationToken', token);
+                    init = { ...init, headers };
+                }
+                return originalFetch(input, init);
+            };
+            if (window.jQuery) {
+                window.jQuery.ajaxPrefilter((options, _, xhr) => {
+                    if (unsafe(options.type) && sameOrigin(options.url)) xhr.setRequestHeader('RequestVerificationToken', token);
+                });
+            }
+        })();
+    </script>
+    <script>
+        // Toggle App Launcher Popover (the launcher is intentionally hidden for Manager).
+        const launcherBtn = document.getElementById('appLauncherBtn');
+        if (launcherBtn) {
+            launcherBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const popover = document.getElementById('appLauncherPopover');
+                if (popover) popover.classList.toggle('show');
+            });
+        }
+        
+        // Hide popover when clicking outside
+        document.addEventListener('click', function(e) {
+            const popover = document.getElementById('appLauncherPopover');
+            const btn = document.getElementById('appLauncherBtn');
+            if (popover && popover.classList.contains('show') && !popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                popover.classList.remove('show');
+            }
+        });
+
+        // Sidebar Accordion Logic
+        document.querySelectorAll('.menu-toggle').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const parentLi = this.parentElement;
+                
+                // Toggle current submenu
+                parentLi.classList.toggle('open');
+                
+                // Optional: Close other open submenus
+                document.querySelectorAll('.sidebar .menu > li.has-submenu').forEach(li => {
+                    if (li !== parentLi) {
+                        li.classList.remove('open');
+                    }
+                });
+            });
+        });
+
         const globalConnection = new signalR.HubConnectionBuilder()
             .withUrl("/dashboardHub")
             .withAutomaticReconnect()
             .build();
+        window.HRMSSignalRConnection = globalConnection;
 
-        globalConnection.on("ReceiveNotification", function (message) {
+        globalConnection.on("ReceiveNotification", function (data) {
+            const loggedInUser = '@currentUser';
+            const myRealName = '@realName';
+
+            if (data && data.receiver) {
+                if (data.receiver !== "Tất cả nhân viên" && data.receiver !== "Tất cả"
+                    && data.receiver !== loggedInUser && data.receiver !== myRealName) {
+                    return;
+                }
+            }
+
+            try {
+                if (window.HRMS_Sound) {
+                    var soundId = (data && data.sender ? data.sender : '') + '_' +
+                                  (data && data.time ? data.time : '') + '_' +
+                                  (data && data.content ? data.content.substring(0, 20) : '');
+                    HRMS_Sound.playForNotification(soundId);
+                }
+            } catch(e) { }
+
             let badge = document.getElementById("notificationBadge");
             if (badge) {
                 let currentCount = parseInt(badge.innerText) || 0;
                 badge.innerText = currentCount + 1;
-                badge.style.boxShadow = "0 0 12px #ff4757";
-                badge.style.transform = "scale(1.2)";
-                setTimeout(() => { 
-                    badge.style.boxShadow = "none"; 
-                    badge.style.transform = "scale(1)";
-                }, 1000);
+                badge.style.transform = "scale(1.25)";
+                setTimeout(() => badge.style.transform = "scale(1)", 1000);
             }
         });
 
+        let globalConnectionStartAttempts = 0;
+        const globalConnectionRetryDelays = [2000, 5000, 15000];
+        globalConnection.onreconnecting(() => window.dispatchEvent(new Event('hrms:signalr-disconnected')));
+        globalConnection.onreconnected(() => window.dispatchEvent(new Event('hrms:signalr-connected')));
+        globalConnection.onclose(() => window.dispatchEvent(new Event('hrms:signalr-disconnected')));
+
         async function startGlobalConnection() {
-            try { await globalConnection.start(); console.log("Global SignalR Connected."); } 
-            catch (err) { setTimeout(startGlobalConnection, 5000); }
+            try {
+                await globalConnection.start();
+                globalConnectionStartAttempts = 0;
+                const loggedInUser = '@currentUser';
+                const myRealName = '@realName';
+                if (loggedInUser) { await globalConnection.invoke("JoinGroup", loggedInUser); }
+                if (myRealName)   { await globalConnection.invoke("JoinGroup", myRealName); }
+                window.dispatchEvent(new Event('hrms:signalr-connected'));
+            }
+            catch (err) {
+                window.dispatchEvent(new Event('hrms:signalr-disconnected'));
+                if (globalConnectionStartAttempts < globalConnectionRetryDelays.length) {
+                    const delay = globalConnectionRetryDelays[globalConnectionStartAttempts++];
+                    setTimeout(startGlobalConnection, delay);
+                }
+            }
         }
-        startGlobalConnection();
+        setTimeout(startGlobalConnection, 0);
     </script>
+
+    @* Legacy inline chatbot retired; AVA is mounted once through _AvaAssistant.
+    <!-- AI Chatbot -->
+    <div id="robot-chat-container" class="d-print-none" style="position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: 'Inter', sans-serif;">
+        <div id="robot-trigger" onclick="toggleChatBox()" style="width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #2563EB, #3B82F6); display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 10001; position: relative; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+            <i class="fa-solid fa-robot" style="font-size: 24px; color: white;"></i>
+        </div>
+
+        <div id="hrms-chat-box" style="display: none; position: absolute; bottom: 75px; right: 0; width: 360px; background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.18); overflow: hidden; border: 1px solid #e2e8f0; flex-direction: column;">
+            <div style="background: linear-gradient(135deg, #2563EB, #3B82F6); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 14px; gap: 10px;">
+                <span><i class="fa-solid fa-robot" style="margin-right:8px;"></i>@aiName</span>
+                <button onclick="resetChatHistory()" style="background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; font-size: 11px; padding: 3px 10px; cursor: pointer; font-family: inherit;">Làm mới</button>
+            </div>
+            <div id="chat-history-content" style="height: 300px; overflow-y: auto; padding: 14px; background: #f8fafc; display: flex; flex-direction: column; gap: 10px;">
+                <div id="ai-greeting-msg" style="background: #e2e8f0; padding: 10px 14px; border-radius: 12px 12px 12px 4px; align-self: flex-start; max-width: 85%; font-size: 13.5px; color: #334155; line-height: 1.5;">
+                    Chào bạn! Tôi là @aiName. Tôi có thể giúp gì cho bạn?
+                </div>
+            </div>
+            <div style="padding: 10px 14px; border-top: 1px solid #e2e8f0; display: flex; gap: 8px; background: white;">
+                <input type="text" id="ai-user-input"
+                       placeholder="Hỏi về lương, nhân viên, chấm công..."
+                       style="flex: 1; padding: 9px 13px; border: 1px solid #e2e8f0; border-radius: 8px; outline: none; font-size: 13.5px; font-family: inherit; color: #334155; background: #f8fafc; transition: border-color 0.2s;">
+                <button onclick="sendQuestionToAi()" style="background: linear-gradient(135deg, #2563EB, #3B82F6); color: white; border: none; border-radius: 8px; padding: 0 16px; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 13px;">Gửi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleChatBox() {
+            const box = document.getElementById("hrms-chat-box");
+            box.style.display = (box.style.display === "none" || box.style.display === "") ? "flex" : "none";
+        }
+
+        async function sendQuestionToAi() {
+            const input = document.getElementById("ai-user-input");
+            const history = document.getElementById("chat-history-content");
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            history.innerHTML += `<div style="background: linear-gradient(135deg,#2563EB,#3B82F6); color: white; padding: 10px 14px; border-radius: 12px 12px 4px 12px; align-self: flex-end; max-width: 85%; font-size: 13.5px; line-height:1.5;">${prompt}</div>`;
+            input.value = "";
+            history.scrollTop = history.scrollHeight;
+
+            const loadingId = "ai-loading-" + Date.now();
+            history.innerHTML += `<div id="${loadingId}" style="background: #e2e8f0; color: #64748b; padding: 10px 14px; border-radius: 12px 12px 12px 4px; align-self: flex-start; font-size: 13.5px;"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:6px;"></i>Đang xử lý...</div>`;
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const response = await fetch('/Ai/Chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'RequestVerificationToken': document.querySelector('#aiCsrf input[name="__RequestVerificationToken"]').value
+                    },
+                    body: new URLSearchParams({ question: prompt })
+                });
+                const answer = await response.text();
+                document.getElementById(loadingId).remove();
+
+                if (response.ok) {
+                    history.innerHTML += `<div style="background: #e2e8f0; padding: 10px 14px; border-radius: 12px 12px 12px 4px; align-self: flex-start; max-width: 85%; font-size: 13.5px; color: #334155; line-height:1.5;">${answer}</div>`;
+                } else {
+                    history.innerHTML += `<div style="background: #fee2e2; color: #991b1b; padding: 10px 14px; border-radius: 12px 12px 12px 4px; align-self: flex-start; font-size: 13.5px;">Xin lỗi, tôi đang gặp lỗi kết nối.</div>`;
+                }
+                history.scrollTop = history.scrollHeight;
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                history.innerHTML += `<div style="background: #fee2e2; color: #991b1b; padding: 10px 14px; border-radius: 12px 12px 12px 4px; align-self: flex-start; font-size: 13.5px;">Không thể kết nối đến máy chủ AI.</div>`;
+                history.scrollTop = history.scrollHeight;
+            }
+        }
+
+        function resetChatHistory() {
+            document.getElementById("chat-history-content").innerHTML = `
+                <div id="ai-greeting-msg" style="background: #e2e8f0; padding: 10px 14px; border-radius: 12px 12px 12px 4px; align-self: flex-start; max-width: 85%; font-size: 13.5px; color: #334155; line-height: 1.5;">
+                    Chào bạn! Tôi là trợ lý AI. Bạn cần tôi giúp gì về nhân sự hôm nay?
+                </div>
+            `;
+        }
+
+        document.getElementById("ai-user-input").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendQuestionToAi();
+        });
+    </script>
+    }
+    *@
+
+    @await Html.PartialAsync("_AvaAssistant")
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

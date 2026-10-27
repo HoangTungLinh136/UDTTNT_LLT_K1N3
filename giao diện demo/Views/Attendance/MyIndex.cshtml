@@ -1,0 +1,949 @@
+@{
+    ViewData["Title"] = "Chấm công của tôi";
+}
+
+<style>
+    .attendance-view {
+        --primary-color: var(--color-primary);
+        --secondary-color: var(--status-success);
+        --warning-color: var(--status-warning);
+        --danger-color: var(--status-danger);
+        --text-color: var(--text-primary);
+        --text-muted: var(--text-secondary);
+        --bg-body: var(--surface-page);
+        --bg-card: var(--surface-card);
+        --border-color: var(--border-default);
+        --radius: var(--radius-lg, 10px);
+    }
+
+    .card-custom {
+        background: var(--surface-card);
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-lg, 10px);
+        box-shadow: var(--shadow-xs);
+        transition: box-shadow 0.2s;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-custom:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .kpi-card {
+        padding: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .kpi-icon.primary { background: var(--color-primary-subtle); color: var(--color-primary); }
+    .kpi-icon.success { background: var(--status-success-subtle); color: var(--status-success); }
+    .kpi-icon.warning { background: var(--status-warning-subtle); color: var(--status-warning); }
+    .kpi-icon.danger { background: var(--status-danger-subtle); color: var(--status-danger); }
+    .kpi-icon.info { background: var(--status-info-subtle); color: var(--status-info); }
+    .kpi-icon.purple { background: var(--status-purple-subtle); color: var(--status-purple); }
+
+    .kpi-details h4 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-details p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .today-card {
+        background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+    }
+    
+    .today-card h5 {
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+        opacity: 0.95;
+    }
+
+    .time-large {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .today-stats {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .today-stat-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .today-stat-label {
+        font-size: 0.8rem;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .today-stat-val {
+        font-size: 1.25rem;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Skeleton Loading */
+    .skeleton {
+        background: #e2e8f0;
+        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+        background-size: 200% 100%;
+        animation: loading 1.5s infinite;
+        border-radius: 4px;
+    }
+
+    @@keyframes loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    
+    .skeleton-text { height: 16px; margin-bottom: 8px; width: 100%; }
+    .skeleton-title { height: 24px; margin-bottom: 12px; width: 50%; }
+    .skeleton-circle { height: 48px; width: 48px; border-radius: 50%; }
+    
+    /* Calendar */
+    .fc-event {
+        cursor: pointer;
+    }
+    
+    .badge-custom {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 600;
+        border-radius: var(--radius-sm, 6px);
+    }
+
+    .table-custom th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        background: var(--surface-page);
+        border-bottom: 1px solid var(--border-default);
+    }
+    
+    .table-custom td {
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        padding: 3rem;
+        text-align: center;
+        color: var(--text-secondary);
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: var(--text-muted);
+    }
+</style>
+
+<div class="attendance-view py-3">
+    <!-- Header -->
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fa-solid fa-clock"></i></span>
+                Chấm công của tôi
+            </h1>
+            <p class="hrms-page-subtitle" id="current-date-subtitle">Đang tải...</p>
+        </div>
+        <div class="hrms-page-header-actions">
+            <button class="hrms-btn hrms-btn-primary" data-bs-toggle="modal" data-bs-target="#explanationModal">
+                <i class="fa-solid fa-paper-plane me-1"></i> Gửi giải trình
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Today Card: Chấm công hôm nay -->
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="card-custom today-card h-100 p-4 d-flex flex-column justify-content-between" id="todayContainer">
+                @Html.AntiForgeryToken()
+                <div>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-calendar-day me-2"></i>Chấm công hôm nay</h5>
+                            <small class="text-white-50" id="todayDateStr">--/--/----</small>
+                        </div>
+                        <div class="text-end" id="todayStatusBadge">
+                            <span class="badge bg-white text-primary fw-semibold px-2 py-1 shadow-sm">
+                                <i class="fa-solid fa-spinner fa-spin me-1"></i>Đang tải...
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Live Server Clock Display -->
+                    <div class="text-center my-3 py-2 px-3 rounded-3" style="background: rgba(0, 0, 0, 0.2);">
+                        <span class="d-block text-white-50 text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">Giờ máy chủ</span>
+                        <div class="time-large font-monospace my-1" id="liveServerClock">--:--:--</div>
+                    </div>
+
+                    <!-- Today Metrics Grid -->
+                    <div class="p-3 rounded-3 mb-3" style="background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(4px);">
+                        <div class="row g-2 text-center">
+                            <div class="col-6 border-end border-white-50 pb-2">
+                                <span class="today-stat-label d-block text-white-50 text-uppercase small">Check-in</span>
+                                <span class="today-stat-val font-monospace fw-bold fs-5 text-white" id="todayCheckIn">--:--:--</span>
+                            </div>
+                            <div class="col-6 pb-2">
+                                <span class="today-stat-label d-block text-white-50 text-uppercase small">Check-out</span>
+                                <span class="today-stat-val font-monospace fw-bold fs-5 text-white" id="todayCheckOut">--:--:--</span>
+                            </div>
+                            <div class="col-6 border-end border-white-50 pt-2 border-top border-white-50">
+                                <span class="today-stat-label d-block text-white-50 text-uppercase small">Ca làm việc</span>
+                                <span class="today-stat-val fw-semibold small text-white text-truncate d-block" id="todayShift">--</span>
+                            </div>
+                            <div class="col-6 pt-2 border-top border-white-50">
+                                <span class="today-stat-label d-block text-white-50 text-uppercase small">Thời gian làm</span>
+                                <span class="today-stat-val fw-bold text-warning font-monospace" id="todayWorkedTime">0h 0m 00s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Shift / Late Note -->
+                    <div id="todayStatusNoteWrapper" class="d-none mb-3 p-2 rounded-2 text-center" style="background: rgba(0,0,0,0.2); font-size: 0.85rem;">
+                        <i class="fa-solid fa-circle-info me-1"></i><span id="todayStatusNote">Đúng giờ</span>
+                    </div>
+                </div>
+
+                <!-- Primary Action Area (Single Active Action) -->
+                <div class="mt-3 pt-3 border-top border-white-50" id="actionAreaWrapper">
+                    <div id="attendanceActionContainer">
+                        <div class="text-center py-2 text-white">
+                            <i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải hành động...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="row h-100">
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card-custom kpi-card h-100">
+                        <div class="kpi-icon primary"><i class="fa-solid fa-calendar-check"></i></div>
+                        <div class="kpi-details">
+                            <p>Công chuẩn</p>
+                            <h4 id="kpiStandard">--</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card-custom kpi-card h-100">
+                        <div class="kpi-icon success"><i class="fa-solid fa-check-double"></i></div>
+                        <div class="kpi-details">
+                            <p>Thực tế</p>
+                            <h4 id="kpiActual">--</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card-custom kpi-card h-100">
+                        <div class="kpi-icon danger"><i class="fa-solid fa-person-running"></i></div>
+                        <div class="kpi-details">
+                            <p>Đi muộn</p>
+                            <h4 id="kpiLate">--</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card-custom kpi-card h-100">
+                        <div class="kpi-icon warning"><i class="fa-solid fa-person-walking-arrow-right"></i></div>
+                        <div class="kpi-details">
+                            <p>Về sớm</p>
+                            <h4 id="kpiEarly">--</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card-custom kpi-card h-100">
+                        <div class="kpi-icon info"><i class="fa-solid fa-umbrella-beach"></i></div>
+                        <div class="kpi-details">
+                            <p>Nghỉ phép</p>
+                            <h4 id="kpiLeave">--</h4>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="card-custom kpi-card h-100">
+                        <div class="kpi-icon purple"><i class="fa-solid fa-moon"></i></div>
+                        <div class="kpi-details">
+                            <p>Tăng ca (giờ)</p>
+                            <h4 id="kpiOT">--</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="card-custom p-0">
+        <div class="card-header bg-white border-bottom p-0">
+            <ul class="nav nav-tabs px-3 pt-3 border-0" id="attendanceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold text-dark border-0 pb-3" id="calendar-tab" data-bs-toggle="tab" data-bs-target="#calendar-pane" type="button" role="tab">Lịch chấm công</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold text-muted border-0 pb-3" id="list-tab" data-bs-toggle="tab" data-bs-target="#list-pane" type="button" role="tab">Danh sách yêu cầu</button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content" id="attendanceTabsContent">
+                <!-- Tab Calendar -->
+                <div class="tab-pane fade show active" id="calendar-pane" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div id="calendar" style="min-height: 500px;"></div>
+                        </div>
+                        <div class="col-lg-4 mt-4 mt-lg-0">
+                            <h5 class="fw-bold mb-3"><i class="fa-solid fa-circle-info text-primary me-2"></i>Chi tiết ngày <span id="detailDateLabel">...</span></h5>
+                            <div id="dayDetailContainer" class="p-3 bg-light rounded border">
+                                <div class="empty-state">
+                                    <i class="fa-regular fa-hand-pointer"></i>
+                                    <p>Chọn một ngày trên lịch để xem chi tiết</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Request List -->
+                <div class="tab-pane fade" id="list-pane" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-custom table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ngày</th>
+                                    <th>Lý do giải trình</th>
+                                    <th>Trạng thái</th>
+                                    <th>Ngày tạo</th>
+                                </tr>
+                            </thead>
+                            <tbody id="requestTableBody">
+                                <tr>
+                                    <td colspan="4" class="text-center py-4">
+                                        <div class="skeleton skeleton-text"></div>
+                                        <div class="skeleton skeleton-text"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Giải trình -->
+<div class="modal fade" id="explanationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="modal-title fw-bold">Gửi giải trình chấm công</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmExplanation">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Ngày cần giải trình</label>
+                        <input type="date" class="form-control" id="expDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại vấn đề</label>
+                        <select class="form-select" id="expType" required>
+                            <option value="">-- Chọn vấn đề --</option>
+                            <option value="MISSING_CHECKOUT">Quên Check-out</option>
+                            <option value="MISSING_CHECKIN">Quên Check-in</option>
+                            <option value="LATE">Giải trình đi muộn</option>
+                            <option value="OTHER">Khác</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Giờ Check-out đề xuất (nếu quên)</label>
+                        <input type="time" class="form-control" id="expTime">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Lý do giải trình</label>
+                        <textarea class="form-control" id="expReason" rows="3" required placeholder="Nhập lý do chi tiết..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary px-4" id="btnSubmitExp">Gửi yêu cầu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Load FullCalendar -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/vi.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        document.getElementById('current-date-subtitle').innerText = `Hôm nay, ngày ${today.toLocaleDateString('vi-VN')}`;
+
+        loadTodayData();
+        loadMonthlySummary(today.getFullYear(), today.getMonth() + 1);
+        loadRecentRequests();
+
+        // Init Calendar
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'vi',
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,listMonth'
+            },
+            themeSystem: 'bootstrap5',
+            events: function(info, successCallback, failureCallback) {
+                let d = info.start;
+                // Add approx 15 days to get middle of month because start can be prev month
+                let midDate = new Date(d.getTime() + 15*24*60*60*1000);
+                
+                fetch(`/Attendance/GetMyMonthlyCalendar?year=${midDate.getFullYear()}&month=${midDate.getMonth() + 1}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if(data.success) {
+                            let evts = data.data.map(item => {
+                                let color = '#10b981'; // Green
+                                if(item.primaryStatus === 'Đi muộn') color = '#f59e0b';
+                                else if(item.primaryStatus === 'Thiếu Check-out') color = '#ef4444';
+                                else if(item.primaryStatus === 'Có Tăng ca') color = '#a855f7';
+                                
+                                return {
+                                    title: item.primaryStatus + (item.hasExplanation ? ' (Đang giải trình)' : ''),
+                                    start: item.date,
+                                    color: color,
+                                    allDay: true,
+                                    extendedProps: item
+                                };
+                            });
+                            successCallback(evts);
+                        }
+                    });
+            },
+            dateClick: function(info) {
+                loadDayDetail(info.dateStr);
+            },
+            eventClick: function(info) {
+                loadDayDetail(info.event.startStr);
+            }
+        });
+        calendar.render();
+
+        // Submit Explanation
+        document.getElementById('btnSubmitExp').addEventListener('click', function() {
+            const date = document.getElementById('expDate').value;
+            const time = document.getElementById('expTime').value;
+            const reason = document.getElementById('expReason').value;
+
+            if(!date || !reason) {
+                Swal.fire('Lỗi', 'Vui lòng nhập đầy đủ Ngày và Lý do', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('dateStr', date);
+            if(time) formData.append('proposedCheckOut', time);
+            formData.append('reason', reason);
+            formData.append('__RequestVerificationToken', document.querySelector('#frmExplanation input[name="__RequestVerificationToken"]').value);
+
+            fetch('/Attendance/SubmitExplanation', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire('Thành công', data.message, 'success');
+                    let modal = bootstrap.Modal.getInstance(document.getElementById('explanationModal'));
+                    modal.hide();
+                    document.getElementById('frmExplanation').reset();
+                    loadRecentRequests();
+                } else {
+                    Swal.fire('Lỗi', data.message, 'error');
+                }
+            });
+        });
+
+
+    });
+
+    let serverTimeOffset = 0;
+    let liveClockInterval = null;
+    let workedDurationInterval = null;
+    let isAttendanceActionPending = false;
+    let currentAttendanceData = null;
+
+    function initServerClock(serverIsoString) {
+        if (serverIsoString) {
+            const serverDate = new Date(serverIsoString);
+            serverTimeOffset = serverDate.getTime() - Date.now();
+        }
+        
+        if (liveClockInterval) clearInterval(liveClockInterval);
+
+        function tickClock() {
+            const now = new Date(Date.now() + serverTimeOffset);
+            const clockEl = document.getElementById('liveServerClock');
+            if (clockEl) {
+                clockEl.innerText = now.toLocaleTimeString('vi-VN', { hour12: false });
+            }
+            const dateEl = document.getElementById('todayDateStr');
+            if (dateEl) {
+                dateEl.innerText = now.toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' });
+            }
+        }
+
+        tickClock();
+        liveClockInterval = setInterval(tickClock, 1000);
+    }
+
+    function startWorkedDurationTimer(checkInIsoString) {
+        if (workedDurationInterval) clearInterval(workedDurationInterval);
+        const durationEl = document.getElementById('todayWorkedTime');
+        if (!durationEl) return;
+
+        if (!checkInIsoString) {
+            durationEl.innerText = '0h 0m 00s';
+            return;
+        }
+
+        const checkInTime = new Date(checkInIsoString).getTime();
+
+        function updateDuration() {
+            const now = Date.now() + serverTimeOffset;
+            const diffMs = Math.max(0, now - checkInTime);
+            const totalSec = Math.floor(diffMs / 1000);
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            durationEl.innerText = `${h}h ${m}m ${(s < 10 ? '0' : '') + s}s`;
+        }
+
+        updateDuration();
+        workedDurationInterval = setInterval(updateDuration, 1000);
+    }
+
+    function stopWorkedDurationTimer(staticWorkedHours) {
+        if (workedDurationInterval) clearInterval(workedDurationInterval);
+        const durationEl = document.getElementById('todayWorkedTime');
+        if (!durationEl) return;
+
+        const hours = staticWorkedHours || 0;
+        const h = Math.floor(hours);
+        const m = Math.round((hours - h) * 60);
+        durationEl.innerText = `${h}h ${m}m`;
+    }
+
+    function renderAttendanceAction(data) {
+        const container = document.getElementById('attendanceActionContainer');
+        if (!container) return;
+
+        if (data.statusCode === 'NOT_CHECKED_IN') {
+            container.innerHTML = `
+                <button type="button" id="btnCheckIn" class="btn btn-light text-primary w-100 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="performCheckIn()">
+                    <i class="fa-solid fa-right-to-bracket fs-5"></i>
+                    <span>CHECK-IN (VÀO CA)</span>
+                </button>
+            `;
+        } else if (data.statusCode === 'CHECKED_IN') {
+            container.innerHTML = `
+                <button type="button" id="btnCheckOut" class="btn btn-warning text-dark w-100 py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" onclick="performCheckOut(${data.attendanceId})">
+                    <i class="fa-solid fa-right-from-bracket fs-5"></i>
+                    <span>CHECK-OUT (HẾT CA)</span>
+                </button>
+            `;
+        } else if (data.statusCode === 'CHECKED_OUT') {
+            container.innerHTML = `
+                <div class="p-2 rounded bg-white bg-opacity-25 text-center mb-2">
+                    <div class="small fw-semibold text-white"><i class="fa-solid fa-circle-check me-1"></i>Phiên làm việc đã hoàn thành</div>
+                </div>
+                <button type="button" id="btnCheckInNext" class="btn btn-outline-light w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2" onclick="performCheckIn()">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>Vào ca mới / Check-in tiếp</span>
+                </button>
+            `;
+        }
+    }
+
+    function performCheckIn() {
+        if (isAttendanceActionPending) return;
+
+        const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+        const token = tokenEl ? tokenEl.value : '';
+
+        const btn = document.getElementById('btnCheckIn') || document.getElementById('btnCheckInNext');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang ghi nhận Check-in...';
+        }
+        isAttendanceActionPending = true;
+
+        const formData = new FormData();
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        fetch('/Attendance/CheckIn', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: formData
+        })
+        .then(async res => {
+            const isJson = res.headers.get('content-type')?.includes('application/json');
+            if (res.ok) {
+                const data = isJson ? await res.json() : { success: true, message: 'Check-in thành công!' };
+                return data;
+            } else if (res.status === 403) {
+                throw new Error('Bạn không có quyền thực hiện Check-in.');
+            } else {
+                const data = isJson ? await res.json() : null;
+                throw new Error(data?.message || 'Check-in không thành công.');
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Check-in thành công!',
+                    text: data.message || 'Đã ghi nhận lượt vào ca của bạn.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cảnh báo',
+                    text: data.message || 'Không thể thực hiện Check-in.'
+                });
+            }
+            loadTodayData();
+            const now = new Date();
+            loadMonthlySummary(now.getFullYear(), now.getMonth() + 1);
+        })
+        .catch(err => {
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: err.message || 'Đã xảy ra lỗi khi kết nối tới máy chủ.'
+            });
+            loadTodayData();
+        })
+        .finally(() => {
+            isAttendanceActionPending = false;
+        });
+    }
+
+    function performCheckOut(attendanceId) {
+        if (isAttendanceActionPending) return;
+
+        Swal.fire({
+            title: 'Xác nhận Check-out?',
+            text: 'Bạn có chắc chắn muốn kết thúc ca làm việc hiện tại không?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#d97706',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Đồng ý, Check-out',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+
+            const tokenEl = document.querySelector('input[name="__RequestVerificationToken"]');
+            const token = tokenEl ? tokenEl.value : '';
+
+            const btn = document.getElementById('btnCheckOut');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i>Đang ghi nhận Check-out...';
+            }
+            isAttendanceActionPending = true;
+
+            const formData = new FormData();
+            if (attendanceId) formData.append('id', attendanceId);
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            fetch('/Attendance/CheckOut', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(async res => {
+                const isJson = res.headers.get('content-type')?.includes('application/json');
+                if (res.ok) {
+                    const data = isJson ? await res.json() : { success: true, message: 'Check-out thành công!' };
+                    return data;
+                } else if (res.status === 403) {
+                    throw new Error('Bạn không có quyền Check-out bản ghi này.');
+                } else {
+                    const data = isJson ? await res.json() : null;
+                    throw new Error(data?.message || 'Check-out không thành công.');
+                }
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Check-out thành công!',
+                        text: data.message || 'Đã ghi nhận kết thúc ca làm việc.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Cảnh báo',
+                        text: data.message || 'Không thể thực hiện Check-out.'
+                    });
+                }
+                loadTodayData();
+                const now = new Date();
+                loadMonthlySummary(now.getFullYear(), now.getMonth() + 1);
+            })
+            .catch(err => {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: err.message || 'Đã xảy ra lỗi khi kết nối tới máy chủ.'
+                });
+                loadTodayData();
+            })
+            .finally(() => {
+                isAttendanceActionPending = false;
+            });
+        });
+    }
+
+    function loadTodayData() {
+        fetch('/Attendance/GetMyAttendanceToday')
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const d = data.data;
+                    currentAttendanceData = d;
+
+                    if (d.serverTime) {
+                        initServerClock(d.serverTime);
+                    }
+
+                    document.getElementById('todayCheckIn').innerText = d.checkIn || '--:--:--';
+                    document.getElementById('todayCheckOut').innerText = d.checkOut || '--:--:--';
+                    document.getElementById('todayShift').innerText = d.shiftName || '--';
+                    
+                    if (d.statusCode === 'CHECKED_IN' && d.checkInRaw) {
+                        startWorkedDurationTimer(d.checkInRaw);
+                    } else if (d.statusCode === 'CHECKED_OUT') {
+                        stopWorkedDurationTimer(d.workedHours);
+                    } else {
+                        stopWorkedDurationTimer(0);
+                    }
+
+                    let badgeClass = 'bg-light text-dark';
+                    let iconClass = 'fa-circle-question';
+                    if (d.statusCode === 'CHECKED_IN') {
+                        badgeClass = 'bg-success text-white';
+                        iconClass = 'fa-business-time';
+                    } else if (d.statusCode === 'CHECKED_OUT') {
+                        badgeClass = 'bg-primary text-white';
+                        iconClass = 'fa-check';
+                    }
+                    document.getElementById('todayStatusBadge').innerHTML = `<span class="badge ${badgeClass} shadow-sm px-2 py-1"><i class="fa-solid ${iconClass} me-1"></i>${d.status}</span>`;
+
+                    const noteWrapper = document.getElementById('todayStatusNoteWrapper');
+                    const noteEl = document.getElementById('todayStatusNote');
+                    if (d.statusNote) {
+                        noteWrapper.classList.remove('d-none');
+                        noteEl.innerText = d.statusNote;
+                    } else {
+                        noteWrapper.classList.add('d-none');
+                    }
+
+                    renderAttendanceAction(d);
+                }
+            })
+            .catch(err => {
+                console.error('Lỗi khi tải dữ liệu chấm công hôm nay:', err);
+                const actionContainer = document.getElementById('attendanceActionContainer');
+                if (actionContainer) {
+                    actionContainer.innerHTML = `
+                        <div class="alert alert-danger p-2 small mb-0 text-center text-dark">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>Không thể kết nối máy chủ.
+                            <button class="btn btn-sm btn-light mt-1 w-100" onclick="loadTodayData()">Thử lại</button>
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    function loadMonthlySummary(year, month) {
+        fetch(`/Attendance/GetMyMonthlySummary?year=${year}&month=${month}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const d = data.data;
+                    document.getElementById('kpiStandard').innerText = d.standardWorkDays;
+                    document.getElementById('kpiActual').innerText = d.actualWorkDays;
+                    document.getElementById('kpiLate').innerText = d.lateCount;
+                    document.getElementById('kpiEarly').innerText = d.earlyLeaveCount;
+                    document.getElementById('kpiLeave').innerText = d.leaveDays;
+                    document.getElementById('kpiOT').innerText = d.overtimeHours.toFixed(1);
+                }
+            });
+    }
+
+    function loadRecentRequests() {
+        fetch('/Attendance/GetMyRecentExplanations')
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    const tbody = document.getElementById('requestTableBody');
+                    if(data.data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">Không có yêu cầu giải trình nào gần đây</td></tr>`;
+                        return;
+                    }
+
+                    let html = '';
+                    data.data.forEach(r => {
+                        let badge = 'bg-secondary';
+                        if(r.status === 'APPROVED' || r.status === 'APPLIED') badge = 'bg-success';
+                        else if(r.status === 'PENDING') badge = 'bg-warning text-dark';
+                        else if(r.status === 'REJECTED') badge = 'bg-danger';
+
+                        html += `
+                            <tr>
+                                <td class="fw-medium">${r.attendanceDate}</td>
+                                <td>${r.reason}</td>
+                                <td><span class="badge ${badge}">${r.status}</span></td>
+                                <td>${r.createdAt}</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                }
+            });
+    }
+
+    function loadDayDetail(dateStr) {
+        document.getElementById('detailDateLabel').innerText = new Date(dateStr).toLocaleDateString('vi-VN');
+        const container = document.getElementById('dayDetailContainer');
+        
+        container.innerHTML = `<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2 text-muted">Đang tải...</p></div>`;
+
+        fetch(`/Attendance/GetMyAttendanceDetail?date=${dateStr}`)
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    if(data.data.length === 0) {
+                        container.innerHTML = `<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>Không có dữ liệu chấm công ngày này.</p>
+                        <button class="btn btn-sm btn-outline-primary mt-2" onclick="openExplanation('${dateStr}')">Tạo giải trình bổ sung</button></div>`;
+                        return;
+                    }
+
+                    let d = data.data[0];
+                    let reqsHtml = '';
+                    if(data.requests && data.requests.length > 0) {
+                        let req = data.requests[0];
+                        let b = 'bg-warning text-dark';
+                        if(req.status === 'APPROVED') b = 'bg-success';
+                        else if(req.status === 'REJECTED') b = 'bg-danger';
+                        
+                        reqsHtml = `
+                            <div class="alert alert-info py-2 px-3 mt-3 mb-0" style="font-size: 0.85rem;">
+                                <strong>Yêu cầu giải trình:</strong> ${req.reason}<br/>
+                                Trạng thái: <span class="badge ${b}">${req.status}</span>
+                            </div>
+                        `;
+                    }
+
+                    container.innerHTML = `
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="text-muted">Ca làm</span>
+                            <span class="fw-semibold">${d.shiftName}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="text-muted">Check-in</span>
+                            <span class="fw-bold text-primary">${d.checkIn}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="text-muted">Check-out</span>
+                            <span class="fw-bold ${d.checkOut ? 'text-primary' : 'text-danger'}">${d.checkOut || 'Thiếu log'}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="text-muted">Đi muộn</span>
+                            <span class="${d.lateMinutes > 0 ? 'text-danger fw-bold' : ''}">${d.lateMinutes} phút</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom">
+                            <span class="text-muted">Tăng ca</span>
+                            <span class="fw-semibold text-purple">${d.overtimeHours.toFixed(1)} giờ</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="text-muted d-block mb-1">Ghi chú hệ thống:</span>
+                            <div class="p-2 bg-white rounded border" style="font-size: 0.85rem;">${d.statusNote || 'Không có ghi chú'}</div>
+                        </div>
+                        ${reqsHtml}
+                        <div class="mt-3 text-end">
+                            <button class="btn btn-sm btn-primary" onclick="openExplanation('${dateStr}')">Tạo giải trình</button>
+                        </div>
+                    `;
+                }
+            });
+    }
+
+    function openExplanation(dateStr) {
+        document.getElementById('expDate').value = dateStr;
+        let modal = new bootstrap.Modal(document.getElementById('explanationModal'));
+        modal.show();
+    }
+</script>

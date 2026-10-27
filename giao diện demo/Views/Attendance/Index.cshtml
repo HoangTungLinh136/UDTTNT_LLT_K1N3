@@ -1,84 +1,440 @@
-﻿@model List<giao_dien_demo.Models.Attendance>
+@model giao_dien_demo.Models.HRLiveAttendanceViewModel
 @{
-    ViewData["Title"] = "⏰ Chấm công";
+    ViewData["Title"] = "Chấm công - HR Live Attendance";
+    var currentUser = Context.Session.GetString("User") ?? "";
+    var realName = Context.Session.GetString("RealName") ?? "";
+    var role = ViewBag.Role as string ?? Context.Session.GetString("Role") ?? "HR";
 }
 
 <style>
-    /* Căn giữa bảng dữ liệu */
-    .table th, .table td { text-align: center; vertical-align: middle !important; }
-
-    /* Hệ thống Toast Notification */
-    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
-    .custom-toast {
-        min-width: 280px; padding: 15px 20px; border-radius: 12px; color: white;
-        font-weight: bold; margin-bottom: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        display: none; animation: slideIn 0.5s forwards;
+    .live-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: var(--transition, all 0.3s ease);
     }
-    .toast-success { background: linear-gradient(45deg, #2ecc71, #27ae60); }
-    .toast-error { background: linear-gradient(45deg, #e74c3c, #c0392b); }
-    @@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    .live-status-pill.connected {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .live-status-pill.reconnecting {
+        background: rgba(245, 158, 11, 0.12);
+        color: #d97706;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .live-status-pill.disconnected {
+        background: rgba(239, 68, 68, 0.12);
+        color: #dc2626;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .live-status-pill .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .live-status-pill.connected .status-dot {
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+        animation: pulse-green 2s infinite;
+    }
+    .live-status-pill.reconnecting .status-dot {
+        background: #f59e0b;
+        animation: pulse-yellow 1.5s infinite;
+    }
+    .live-status-pill.disconnected .status-dot {
+        background: #ef4444;
+    }
+    @@keyframes pulse-green {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    @@keyframes pulse-yellow {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+    }
 
-    /* Làm đẹp nút bấm */
-    .btn-action { font-weight: bold; border-radius: 8px; transition: 0.3s; }
-    .btn-action:hover { transform: scale(1.05); }
+    .row-pulse-highlight {
+        animation: flashRow 2s ease-out;
+    }
+    @@keyframes flashRow {
+        0% { background-color: rgba(16, 185, 129, 0.25); }
+        100% { background-color: transparent; }
+    }
 
-    /* Tùy chỉnh FullCalendar */
-    #attendanceCalendar { max-width: 100%; margin: 0 auto; font-family: Arial, sans-serif; }
-    .fc-event { cursor: pointer; border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; border: none !important; font-size: 0.85em; }
-    .fc-toolbar-title { font-weight: bold; color: #2c3e50; text-transform: capitalize; }
-    
-    /* Box tìm kiếm lịch */
-    .search-date-box { background-color: #f8f9fa; padding: 8px 15px; border-radius: 8px; border: 1px solid #dee2e6; }
+    .kpi-card-sub {
+        font-size: 12px;
+        color: var(--hrms-text-secondary, #64748b);
+        margin-top: 4px;
+    }
+
+    .emp-avatar-sm {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 13px;
+        color: #475569;
+        object-fit: cover;
+    }
+
+    .status-badge-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .status-badge-live.working {
+        background: rgba(16, 185, 129, 0.15);
+        color: #059669;
+    }
+    .status-badge-live.completed {
+        background: rgba(37, 99, 235, 0.12);
+        color: #2563eb;
+    }
+    .status-badge-live.not-checked-in {
+        background: rgba(100, 116, 139, 0.12);
+        color: #64748b;
+    }
+    .status-badge-live.late {
+        background: rgba(245, 158, 11, 0.15);
+        color: #d97706;
+    }
 </style>
 
-<div id="toast-container"></div>
-
-<div class="container-fluid mt-3 mb-5">
-    <h2 class="mb-4">⏰ Hệ thống Chấm công Real-time</h2>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">⬅ Quay về</a>
+<div class="hrms-page-container">
+    <!-- 1. TOP HEADER & CONTEXT -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <h2 class="hrms-page-title mb-0" style="font-size: 22px; font-weight: 700;">Giám sát chấm công thời gian thực</h2>
+                <span class="badge bg-primary-subtle text-primary" style="font-size: 11px; padding: 4px 8px;">HR Live</span>
+            </div>
+            <p class="text-muted small mb-0">Theo dõi trạng thái vào ca, ra ca và thời lượng làm việc thực tế của toàn bộ nhân viên trong ngày.</p>
+        </div>
         
-        <button onclick="handleAttendance('CheckIn')" class="btn btn-success btn-lg btn-action shadow-sm">
-            ✅ Bấm Check In Ngay
-        </button>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <div id="liveConnectionBadge" class="live-status-pill connected">
+                <span class="status-dot"></span>
+                <span id="liveStatusText">Đang cập nhật thời gian thực</span>
+            </div>
+            <span class="text-muted small d-none d-md-inline ms-1">
+                <i class="fa-regular fa-clock me-1"></i> Đồng bộ: <span id="lastSyncTime">@Model.Summary.ServerTime.Substring(11, 8)</span>
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-primary ms-2" onclick="refreshLiveSnapshot()" title="Làm mới dữ liệu từ máy chủ">
+                <i class="fa-solid fa-arrows-rotate" id="refreshSpinIcon"></i> Làm mới
+            </button>
+            @if (role == "HR")
+            {
+                <a asp-action="Config" class="btn btn-sm btn-outline-secondary" title="Thiết lập ca và quy tắc chấm công">
+                    <i class="fa-solid fa-sliders me-1"></i> Thiết lập ca
+                </a>
+            }
+        </div>
     </div>
 
-    <div class="card shadow-sm mb-5" style="border-radius: 12px;">
-        <div class="card-body">
-            <h5 class="fw-bold mb-3"><i class="fas fa-list"></i> Danh sách thao tác</h5>
-            <table class="table table-bordered table-hover">
-                <thead style="background:#4CAF50; color:white;">
+    <!-- 2. TODAY SUMMARY CARDS (6 KPIs) -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="hrms-card p-3 h-100 shadow-sm border">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-semibold">Tổng nhân viên</div>
+                        <div class="fs-4 fw-bold mt-1" id="cardTotalEmp">@Model.Summary.TotalEmployees</div>
+                    </div>
+                    <div class="p-2 rounded bg-light text-secondary">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                </div>
+                <div class="kpi-card-sub">Nhân sự hiện tại</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="hrms-card p-3 h-100 shadow-sm border">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-semibold">Đã Check-in</div>
+                        <div class="fs-4 fw-bold text-primary mt-1" id="cardCheckedIn">@Model.Summary.CheckedInCount</div>
+                    </div>
+                    <div class="p-2 rounded bg-primary-subtle text-primary">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                </div>
+                <div class="kpi-card-sub">Có lượt vào ca hôm nay</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="hrms-card p-3 h-100 shadow-sm border">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-semibold">Đang làm việc</div>
+                        <div class="fs-4 fw-bold text-success mt-1" id="cardWorking">@Model.Summary.CurrentlyWorkingCount</div>
+                    </div>
+                    <div class="p-2 rounded bg-success-subtle text-success">
+                        <i class="fa-solid fa-person-digging"></i>
+                    </div>
+                </div>
+                <div class="kpi-card-sub">Phiên mở hiện tại</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="hrms-card p-3 h-100 shadow-sm border">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-semibold">Đi muộn</div>
+                        <div class="fs-4 fw-bold text-warning mt-1" id="cardLate">@Model.Summary.LateCount</div>
+                    </div>
+                    <div class="p-2 rounded bg-warning-subtle text-warning">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                </div>
+                <div class="kpi-card-sub">Vào ca sau giờ chuẩn</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="hrms-card p-3 h-100 shadow-sm border">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-semibold">Đã Check-out</div>
+                        <div class="fs-4 fw-bold text-info mt-1" id="cardCheckedOut">@Model.Summary.CheckedOutCount</div>
+                    </div>
+                    <div class="p-2 rounded bg-info-subtle text-info">
+                        <i class="fa-solid fa-door-open"></i>
+                    </div>
+                </div>
+                <div class="kpi-card-sub">Đã hoàn thành ca</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4 col-xl-2">
+            <div class="hrms-card p-3 h-100 shadow-sm border">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="text-muted small fw-semibold">Chưa Check-in</div>
+                        <div class="fs-4 fw-bold text-danger mt-1" id="cardNotCheckedIn">@Model.Summary.NotCheckedInCount</div>
+                    </div>
+                    <div class="p-2 rounded bg-danger-subtle text-danger">
+                        <i class="fa-solid fa-user-xmark"></i>
+                    </div>
+                </div>
+                <div class="kpi-card-sub">Chưa có lượt vào ca</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. SEARCH & FILTER TOOLBAR -->
+    <div class="hrms-card p-3 mb-4 shadow-sm border">
+        <form method="get" asp-action="Index" id="attendanceFilterForm" class="row g-2 align-items-end">
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">Ngày chấm công</label>
+                <input type="date" name="date" id="filterDate" class="form-control form-control-sm" 
+                       value="@Model.SelectedDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()" />
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">Phòng ban</label>
+                <select name="department" id="filterDepartment" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tất cả phòng ban</option>
+                    @foreach (var dept in Model.Departments)
+                    {
+                        if (Model.SelectedDepartment == dept)
+                        {
+                            <option value="@dept" selected>@dept</option>
+                        }
+                        else
+                        {
+                            <option value="@dept">@dept</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">Trạng thái</label>
+                <select name="status" id="filterStatus" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="CHECKED_IN" selected="@(Model.SelectedStatus == "CHECKED_IN")">Đang làm việc</option>
+                    <option value="LATE" selected="@(Model.SelectedStatus == "LATE")">Đi muộn</option>
+                    <option value="CHECKED_OUT" selected="@(Model.SelectedStatus == "CHECKED_OUT")">Đã check-out</option>
+                    <option value="NOT_CHECKED_IN" selected="@(Model.SelectedStatus == "NOT_CHECKED_IN")">Chưa chấm công</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-sm-6 col-md-3">
+                <label class="form-label small fw-semibold mb-1">Tìm kiếm</label>
+                <div class="input-group input-group-sm">
+                    <input type="text" name="searchTerm" id="filterSearchTerm" class="form-control" 
+                           placeholder="Mã NV, Họ tên..." value="@Model.SearchTerm" />
+                    <button class="btn btn-primary" type="submit">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                    @if (!string.IsNullOrEmpty(Model.SearchTerm) || !string.IsNullOrEmpty(Model.SelectedDepartment) || !string.IsNullOrEmpty(Model.SelectedStatus))
+                    {
+                        <a asp-action="Index" class="btn btn-outline-secondary" title="Bỏ lọc">
+                            <i class="fa-solid fa-xmark"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 4. LIVE ATTENDANCE TABLE -->
+    <div class="hrms-card shadow-sm border mb-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-dark">
+                <i class="fa-solid fa-list-check me-2 text-primary"></i>Danh sách chấm công ngày @Model.SelectedDate.ToString("dd/MM/yyyy")
+            </h6>
+            <span class="badge bg-light text-muted border">Tổng: <span id="totalItemsSpan">@Model.TotalItems</span> lượt</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="liveAttendanceTable">
+                <thead class="table-light text-secondary small text-uppercase">
                     <tr>
-                        <th style="width: 50px;">ID</th>
-                        <th>Nhân viên</th>
-                        <th>Thời gian Check In</th>
-                        <th>Thời gian Check Out</th>
-                        <th>Hành động</th>
+                        <th style="width: 100px;">Mã NV</th>
+                        <th style="min-width: 200px;">Nhân viên</th>
+                        <th style="min-width: 140px;">Phòng ban</th>
+                        <th style="width: 110px;">Giờ vào</th>
+                        <th style="width: 110px;">Giờ ra</th>
+                        <th style="width: 130px;">Thời gian làm</th>
+                        <th style="width: 110px;">Đi muộn</th>
+                        <th style="width: 140px;">Trạng thái</th>
+                        <th style="width: 90px;" class="text-end">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody id="attendanceTableBody">
-                    @if (Model != null && Model.Count > 0)
+                <tbody id="liveAttendanceTbody">
+                    @if (Model.Rows.Any())
                     {
-                        foreach (var item in Model)
+                        @foreach (var row in Model.Rows)
                         {
-                            <tr id="row-@item.Id">
-                                <td>@item.Id</td>
-                                <td><strong>@item.EmployeeName</strong></td>
-                                <td class="text-primary">@item.CheckIn.ToString("HH:mm:ss dd/MM/yyyy")</td>
-                                <td id="checkout-time-@item.Id" class="text-danger">
-                                    @(item.CheckOut.HasValue ? item.CheckOut.Value.ToString("HH:mm:ss dd/MM/yyyy") : "---")
-                                </td>
+                            <tr id="row-att-@row.AttendanceId" 
+                                data-att-id="@row.AttendanceId" 
+                                data-emp-id="@row.EmployeeId"
+                                data-emp-code="@row.EmployeeCode"
+                                data-checkin-raw="@row.CheckInRaw"
+                                data-status="@row.StatusCode">
+                                
+                                <td class="fw-semibold text-secondary font-monospace">@row.EmployeeCode</td>
+                                
                                 <td>
-                                    @if (item.CheckOut == null)
+                                    <div class="d-flex align-items-center gap-2">
+                                        @if (!string.IsNullOrEmpty(row.AvatarUrl))
+                                        {
+                                            <img src="@row.AvatarUrl" class="emp-avatar-sm" onerror="this.src='/images/avatar/default.png'; this.onerror=null;" />
+                                        }
+                                        else
+                                        {
+                                            <div class="emp-avatar-sm">
+                                                @(string.IsNullOrEmpty(row.EmployeeName) ? "NV" : row.EmployeeName.Substring(0, Math.Min(2, row.EmployeeName.Length)).ToUpper())
+                                            </div>
+                                        }
+                                        <div>
+                                            <div class="fw-semibold text-dark emp-name-cell">@row.EmployeeName</div>
+                                            @if (!string.IsNullOrEmpty(row.StatusNote))
+                                            {
+                                                <div class="small text-muted" style="font-size: 11px;">@row.StatusNote</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="text-secondary emp-dept-cell">@row.DepartmentName</td>
+                                
+                                <td class="emp-checkin-cell font-monospace fw-semibold @(row.CheckIn.HasValue ? "text-dark" : "text-muted")">
+                                    @row.CheckInStr
+                                </td>
+                                
+                                <td class="emp-checkout-cell font-monospace fw-semibold @(row.CheckOut.HasValue ? "text-dark" : "text-muted")">
+                                    @row.CheckOutStr
+                                </td>
+                                
+                                <td class="emp-duration-cell font-monospace">
+                                    @if (row.StatusCode == "CHECKED_IN")
                                     {
-                                        <button onclick="handleAttendance('CheckOut', @item.Id)" class="btn btn-danger btn-sm btn-action">
-                                            ❌ Check Out
+                                        <span class="badge bg-success-subtle text-success live-duration-ticker" data-checkin="@row.CheckInRaw">
+                                            <i class="fa-solid fa-stopwatch me-1"></i> <span class="ticker-text">--</span>
+                                        </span>
+                                    }
+                                    else if (row.StatusCode == "CHECKED_OUT")
+                                    {
+                                        <span class="text-dark fw-semibold">@row.WorkingHours.ToString("0.0") giờ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">--</span>
+                                    }
+                                </td>
+
+                                <td class="emp-late-cell">
+                                    @if (row.LateMinutes > 0)
+                                    {
+                                        <span class="badge bg-warning-subtle text-warning">
+                                            <i class="fa-solid fa-triangle-exclamation me-1"></i>+@row.LateMinutes phút
+                                        </span>
+                                    }
+                                    else if (row.StatusCode != "NOT_CHECKED_IN")
+                                    {
+                                        <span class="text-success small"><i class="fa-solid fa-check me-1"></i>Đúng giờ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">--</span>
+                                    }
+                                </td>
+
+                                <td class="emp-status-cell">
+                                    @if (row.StatusCode == "CHECKED_IN")
+                                    {
+                                        <span class="status-badge-live working">
+                                            <span class="status-dot" style="background:#10b981; width:6px; height:6px; border-radius:50%;"></span>
+                                            Đang làm việc
+                                        </span>
+                                    }
+                                    else if (row.StatusCode == "CHECKED_OUT")
+                                    {
+                                        <span class="status-badge-live completed">
+                                            <i class="fa-solid fa-check-double" style="font-size:10px;"></i> Đã check-out
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="status-badge-live not-checked-in">
+                                            <i class="fa-solid fa-minus" style="font-size:10px;"></i> Chưa chấm công
+                                        </span>
+                                    }
+                                </td>
+
+                                <td class="text-end">
+                                    @if (row.AttendanceId > 0)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-light border p-1 px-2" 
+                                                title="Xem chi tiết phiên"
+                                                onclick="showAttendanceDetailModal('@row.EmployeeName', '@row.EmployeeCode', '@row.DepartmentName', '@row.CheckInStr', '@row.CheckOutStr', '@row.WorkingHours', '@row.StatusNote')">
+                                            <i class="fa-solid fa-eye text-primary"></i>
                                         </button>
                                     }
                                     else
                                     {
-                                        <span class="badge bg-secondary">Đã hoàn thành</span>
+                                        <span class="text-muted small">--</span>
                                     }
                                 </td>
                             </tr>
@@ -86,175 +442,567 @@
                     }
                     else
                     {
-                        <tr><td colspan="5" class="text-center text-muted">Hôm nay bạn chưa có dữ liệu chấm công.</td></tr>
+                        <tr id="emptyRow">
+                            <td colspan="9" class="text-center py-5">
+                                <div class="text-muted">
+                                    <i class="fa-regular fa-folder-open fa-3x mb-3 text-secondary" style="opacity: 0.5;"></i>
+                                    <p class="mb-0 fw-semibold">Không tìm thấy dữ liệu chấm công phù hợp bộ lọc.</p>
+                                    <small>Hãy thử thay đổi ngày hoặc phòng ban tìm kiếm.</small>
+                                </div>
+                            </td>
+                        </tr>
                     }
                 </tbody>
             </table>
         </div>
-    </div>
 
-    <div class="card shadow-sm border-0" style="border-radius: 12px;">
-        <div class="card-header bg-white border-bottom-0 pt-4 pb-3 d-flex justify-content-between align-items-center flex-wrap">
-            <div>
-                <h5 class="fw-bold text-dark"><i class="fas fa-calendar-alt text-primary me-2"></i> Lịch sử chấm công tổng hợp</h5>
-                <p class="text-muted small mb-2 mb-md-0">Bấm vào ngày bất kỳ để xem danh sách nhân viên chấm công chi tiết.</p>
+        <!-- 5. PAGINATION -->
+        @if (Model.TotalPages > 1)
+        {
+            <div class="card-footer bg-white py-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <small class="text-muted">Trang @Model.PageNumber / @Model.TotalPages (Hiển thị @Model.Rows.Count / @Model.TotalItems bản ghi)</small>
+                <nav>
+                    <ul class="pagination pagination-sm m-0">
+                        <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" 
+                               asp-route-page="@(Model.PageNumber - 1)" 
+                               asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+                               asp-route-department="@Model.SelectedDepartment"
+                               asp-route-status="@Model.SelectedStatus"
+                               asp-route-searchTerm="@Model.SearchTerm">Trước</a>
+                        </li>
+                        @for (int p = Math.Max(1, Model.PageNumber - 2); p <= Math.Min(Model.TotalPages, Model.PageNumber + 2); p++)
+                        {
+                            <li class="page-item @(p == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" asp-action="Index" 
+                                   asp-route-page="@p"
+                                   asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+                                   asp-route-department="@Model.SelectedDepartment"
+                                   asp-route-status="@Model.SelectedStatus"
+                                   asp-route-searchTerm="@Model.SearchTerm">@p</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" asp-action="Index" 
+                               asp-route-page="@(Model.PageNumber + 1)"
+                               asp-route-date="@Model.SelectedDate.ToString("yyyy-MM-dd")"
+                               asp-route-department="@Model.SelectedDepartment"
+                               asp-route-status="@Model.SelectedStatus"
+                               asp-route-searchTerm="@Model.SearchTerm">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
             </div>
-            
-            <div class="search-date-box d-flex align-items-center shadow-sm">
-                <label for="searchDate" class="fw-bold me-2 mb-0 text-dark"><i class="fas fa-search me-1 text-primary"></i>Đến ngày:</label>
-                <input type="date" id="searchDate" class="form-control form-control-sm me-2 border-primary" style="width: 150px; cursor: pointer;">
-                <button type="button" onclick="jumpToDate()" class="btn btn-primary btn-sm fw-bold">Tra cứu</button>
+        }
+    </div>
+</div>
+
+<!-- MODAL CHI TIẾT PHIÊN CHẤM CÔNG (READ-ONLY) -->
+<div class="modal fade" id="attendanceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold"><i class="fa-solid fa-circle-info text-primary me-2"></i>Chi tiết phiên chấm công</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </div>
-        <div class="card-body">
-            <div id="attendanceCalendar"></div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-3 mb-3 p-2 bg-light rounded">
+                    <div class="emp-avatar-sm" id="modalEmpAvatar">NV</div>
+                    <div>
+                        <div class="fw-bold" id="modalEmpName">Nguyễn Văn A</div>
+                        <div class="small text-muted"><span id="modalEmpCode">NV001</span> - <span id="modalEmpDept">Phòng ban</span></div>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="p-2 border rounded">
+                            <div class="text-muted small">Giờ vào (Check-in)</div>
+                            <div class="fw-bold fs-6 font-monospace" id="modalCheckIn">--:--:--</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded">
+                            <div class="text-muted small">Giờ ra (Check-out)</div>
+                            <div class="fw-bold fs-6 font-monospace" id="modalCheckOut">--:--:--</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-2 border rounded mb-2">
+                    <div class="text-muted small">Tổng thời lượng công</div>
+                    <div class="fw-semibold text-primary" id="modalDuration">--</div>
+                </div>
+                <div class="p-2 border rounded bg-light">
+                    <div class="text-muted small">Ghi chú & Đánh giá</div>
+                    <div class="small" id="modalNote">Đúng giờ</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script>
-        var attendanceCalendar; 
+        const currentPageNumber = @Model.PageNumber;
+        const currentPageSize = @Model.PageSize;
+        let summaryDebounceTimer = null;
+        let refreshSnapshotDebounceTimer = null;
 
-        // --- 1. CẤU HÌNH FULLCALENDAR ---                
-        document.addEventListener('DOMContentLoaded', function () {
-            var calendarEl = document.getElementById('attendanceCalendar');
+        document.addEventListener("DOMContentLoaded", function () {
+            // Khởi động đồng hồ đếm thời gian làm việc trực tiếp
+            initDurationTickers();
+            setInterval(updateDurationTickers, 10000); // 10s tick
 
-            attendanceCalendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: 'dayGridMonth', 
-                locale: 'vi', 
-                firstDay: 1,
-                height: 700,
-                headerToolbar: {
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,timeGridWeek,listWeek' 
-                },
-                buttonText: {
-                    today: 'Hôm nay', month: 'Tháng', week: 'Tuần', list: 'Danh sách'
-                },
-                events: '/Attendance/GetAttendanceHistory',
-                
-                eventClick: function(info) {
-                    showAttendanceDetails(info.event.startStr);
-                },
-                dateClick: function(info) {
-                    showAttendanceDetails(info.dateStr);
-                }
-            });
-
-            attendanceCalendar.render();
+            // Thiết lập kết nối SignalR
+            setupSignalRMonitoring();
         });
 
-        // --- 🔥 2. HÀM HIỂN THỊ POPUP DANH SÁCH CHẤM CÔNG ---
-        function showAttendanceDetails(dateStr) {
-            let d = new Date(dateStr);
-            let displayDate = d.toLocaleDateString('vi-VN');
+        // 1. SIGNALR REALTIME SETUP
+        function setupSignalRMonitoring() {
+            if (typeof globalConnection === "undefined") {
+                console.warn("[HR Live] globalConnection is not defined in _Layout.");
+                setConnectionStatus("disconnected");
+                return;
+            }
 
-            Swal.fire({
-                title: 'Đang tải dữ liệu...',
-                didOpen: () => { Swal.showLoading(); }
+            // Đăng ký sự kiện AttendanceStatusChanged
+            globalConnection.on("AttendanceStatusChanged", function (evt) {
+                console.log("[HR Live Realtime] AttendanceStatusChanged received:", evt);
+                handleAttendanceEvent(evt);
             });
 
-            $.get('/Attendance/GetAttendanceDetailsByDate?date=' + dateStr, function(data) {
-                if(data.length === 0) {
-                    Swal.fire('Trống', 'Không có dữ liệu chấm công trong ngày ' + displayDate, 'info');
-                    return;
-                }
-
-                // Chuyển sang nối chuỗi truyền thống để chống lỗi Razor
-                let html = '<div class="text-end mb-2">' +
-                           '<button class="btn btn-sm btn-outline-success fw-bold shadow-sm" onclick="exportToWord(\'' + displayDate + '\')">' +
-                           '<i class="fas fa-file-word"></i> Xuất file Word</button></div>' +
-                           '<table id="exportTable" class="table table-bordered table-hover text-center mt-2" style="font-size: 15px; width: 100%;" border="1">' +
-                           '<thead style="background-color: #f8f9fa;"><tr><th>Nhân viên</th><th>Giờ vào</th><th>Giờ ra</th><th>Ghi chú</th></tr></thead><tbody>';
-                
-                data.forEach(function(item) {
-                    let textClass = item.isLate ? "color: red; font-weight: bold;" : "color: green;";
-                    let bsClass = item.isLate ? "text-danger fw-bold" : "text-success";
-                    html += '<tr>' +
-                                '<td class="text-start fw-bold">👤 ' + item.empName + '</td>' +
-                                '<td class="text-primary fw-bold">' + item.checkIn + '</td>' +
-                                '<td class="text-secondary">' + item.checkOut + '</td>' +
-                                '<td class="' + bsClass + '" style="' + textClass + '">' + item.note + '</td>' +
-                            '</tr>';
-                });
-                html += '</tbody></table>';
-
-                Swal.fire({
-                    title: '📅 Báo cáo Chấm công',
-                    html: '<p class="text-muted mb-0">Dữ liệu ngày: <strong class="text-dark">' + displayDate + '</strong></p>' + html,
-                    width: '800px',
-                    showConfirmButton: false, 
-                    showCloseButton: true,
-                    focusConfirm: false
-                });
+            // Reconnecting / Reconnected / Close handlers
+            globalConnection.onreconnecting(function (error) {
+                console.warn("[HR Live] SignalR đang kết nối lại...", error);
+                setConnectionStatus("reconnecting");
             });
-        }
 
-        // --- 🔥 HÀM MỚI: XUẤT BẢNG HTML THÀNH FILE WORD ---
-        function exportToWord(dateStr) {
-            var tableHTML = document.getElementById("exportTable").outerHTML;
-            
-            // Cắt nhỏ các thẻ HTML để Visual Studio (Razor) không bị nhầm lẫn
-            var header = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><ti" + "tle>Bao Cao</ti" + "tle></he" + "ad><bo" + "dy>";
-            var title = "<h2 style='text-align: center; color: #333;'>BÁO CÁO CHẤM CÔNG - NGÀY " + dateStr + "</h2>";
-            var footer = "</bo" + "dy></ht" + "ml>";
-            
-            var sourceHTML = header + title + tableHTML + footer;
-            
-            var source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
-            var fileDownload = document.createElement("a");
-            document.body.appendChild(fileDownload);
-            fileDownload.href = source;
-            fileDownload.download = 'Bao_Cao_Cham_Cong_' + dateStr.replace(/\//g, '-') + '.doc';
-            fileDownload.click();
-            document.body.removeChild(fileDownload);
-            
-            showToast("Đã tải xuống file Word thành công!", true);
-        }
+            globalConnection.onreconnected(function (connectionId) {
+                console.log("[HR Live] SignalR đã kết nối lại thành công:", connectionId);
+                setConnectionStatus("connected");
+                // Sau khi kết nối lại: bắt buộc reconcile dữ liệu với máy chủ
+                refreshLiveSnapshot();
+            });
 
-        // --- 3. HÀM XỬ LÝ NHẢY ĐẾN NGÀY CỤ THỂ ---        
-        function jumpToDate() {
-            var selectedDate = document.getElementById("searchDate").value;
-            if (selectedDate) {
-                attendanceCalendar.gotoDate(selectedDate);
-                showToast("Đã chuyển đến ngày: " + selectedDate.split('-').reverse().join('/'), true);
+            globalConnection.onclose(function (error) {
+                console.error("[HR Live] Mất kết nối SignalR:", error);
+                setConnectionStatus("disconnected");
+            });
+
+            // Kiểm tra trạng thái hiện tại
+            if (globalConnection.state === signalR.HubConnectionState.Connected) {
+                setConnectionStatus("connected");
             } else {
-                showToast("Vui lòng chọn ngày để tra cứu!", false);
+                setConnectionStatus("reconnecting");
+                // Kiểm tra lại sau 2s nếu layout đang start
+                setTimeout(() => {
+                    if (globalConnection.state === signalR.HubConnectionState.Connected) {
+                        setConnectionStatus("connected");
+                    }
+                }, 2000);
             }
         }
 
-        // --- 4. KẾT NỐI SIGNALR ĐỂ ĐỒNG BỘ DASHBOARD ---                        
-        const connection = new signalR.HubConnectionBuilder().withUrl("/dashboardHub").withAutomaticReconnect().build();
-        async function startConnection() {
-            try { await connection.start(); console.log("Realtime Connected!"); } 
-            catch (err) { setTimeout(startConnection, 5000); }
-        }
-        startConnection();
+        function setConnectionStatus(status) {
+            const badge = document.getElementById("liveConnectionBadge");
+            const text = document.getElementById("liveStatusText");
+            if (!badge || !text) return;
 
-        // --- 5. HÀM HIỆN THÔNG BÁO TOAST ---                        
-        function showToast(message, isSuccess = true) {
-            const id = 'toast-' + Date.now();
-            $('#toast-container').append(`<div id="${id}" class="custom-toast ${isSuccess ? 'toast-success' : 'toast-error'}">${isSuccess ? '✅' : '❌'} ${message}</div>`);
-            $(`#${id}`).fadeIn();
-            setTimeout(() => { $(`#${id}`).fadeOut(() => $(`#${id}`).remove()); }, 3000);
+            badge.className = "live-status-pill " + status;
+            if (status === "connected") {
+                text.innerText = "Đang cập nhật thời gian thực";
+            } else if (status === "reconnecting") {
+                text.innerText = "Đang kết nối lại...";
+            } else {
+                text.innerText = "Mất kết nối thời gian thực";
+            }
         }
 
-        // --- 6. HÀM XỬ LÝ CHECK-IN / CHECK-OUT BẰNG AJAX ---                        
-        function handleAttendance(action, id = null) {
-            const url = id ? `/Attendance/${action}?id=${id}` : `/Attendance/${action}`;
-            $.post(url, function (data) {
-                showToast(`Thực hiện ${action} thành công!`, true);
-                setTimeout(() => { location.reload(); }, 1000);
-            }).fail(function () {
-                showToast("Bạn đã thực hiện thao tác này rồi hoặc có lỗi xảy ra!", false);
+        // 2. XỬ LÝ SỰ KIỆN CHẤM CÔNG REALTIME TỪ SERVER
+        function handleAttendanceEvent(evt) {
+            if (!evt || !evt.employeeId) return;
+
+            // Kiểm tra xem sự kiện có thuộc ngày đang xem không
+            const filterDateInput = document.getElementById("filterDate");
+            const currentDateFilter = filterDateInput ? filterDateInput.value : "";
+            if (currentDateFilter && evt.attendanceDate && evt.attendanceDate !== currentDateFilter) {
+                // Sự kiện thuộc ngày khác với ngày đang lọc -> chỉ cập nhật summary nếu là hôm nay
+                debounceFetchSummary();
+                return;
+            }
+
+            // Cập nhật hoặc chèn hàng vào bảng
+            updateOrInsertLiveRow(evt);
+
+            // Cập nhật summary có debounce chống spam / double event
+            debounceFetchSummary();
+        }
+
+        function updateOrInsertLiveRow(evt) {
+            const tbody = document.getElementById("liveAttendanceTbody");
+            if (!tbody) return;
+
+            // Kiểm tra bộ lọc phòng ban hiện tại
+            const deptFilter = document.getElementById("filterDepartment")?.value;
+            if (deptFilter && evt.departmentName && !deptFilter.includes(evt.departmentName) && !evt.departmentName.includes(deptFilter)) {
+                return; // Không khớp phòng ban đang lọc
+            }
+
+            // Kiểm tra bộ lọc trạng thái hiện tại
+            const statusFilter = document.getElementById("filterStatus")?.value;
+            if (statusFilter) {
+                if (statusFilter === "CHECKED_IN" && evt.attendanceStatus !== "CHECKED_IN") return;
+                if (statusFilter === "CHECKED_OUT" && evt.attendanceStatus !== "CHECKED_OUT") return;
+                if (statusFilter === "LATE" && (!evt.lateMinutes || evt.lateMinutes <= 0)) return;
+                if (statusFilter === "NOT_CHECKED_IN" && evt.attendanceStatus !== "NOT_CHECKED_IN") return;
+            }
+
+            // Ẩn empty row nếu có
+            const emptyRow = document.getElementById("emptyRow");
+            if (emptyRow) emptyRow.style.display = "none";
+
+            // Tìm hàng tương ứng: theo attendanceId hoặc employeeId (đối với hàng chưa chấm công)
+            let existingRow = document.getElementById("row-att-" + evt.attendanceId);
+            if (!existingRow && evt.employeeId) {
+                existingRow = document.querySelector(`tr[data-emp-id="${evt.employeeId}"]`);
+            }
+
+            if (existingRow) {
+                // CẬP NHẬT HÀNG HIỆN CÓ
+                existingRow.id = "row-att-" + evt.attendanceId;
+                existingRow.setAttribute("data-att-id", evt.attendanceId);
+                existingRow.setAttribute("data-status", evt.attendanceStatus);
+                existingRow.setAttribute("data-checkin-raw", evt.checkInRaw || "");
+
+                const checkInCell = existingRow.querySelector(".emp-checkin-cell");
+                if (checkInCell && evt.checkInTime) {
+                    checkInCell.innerText = evt.checkInTime;
+                    checkInCell.classList.remove("text-muted");
+                    checkInCell.classList.add("text-dark");
+                }
+
+                const checkOutCell = existingRow.querySelector(".emp-checkout-cell");
+                if (checkOutCell) {
+                    if (evt.checkOutTime) {
+                        checkOutCell.innerText = evt.checkOutTime;
+                        checkOutCell.classList.remove("text-muted");
+                        checkOutCell.classList.add("text-dark");
+                    } else {
+                        checkOutCell.innerText = "--:--:--";
+                        checkOutCell.classList.add("text-muted");
+                    }
+                }
+
+                const durationCell = existingRow.querySelector(".emp-duration-cell");
+                if (durationCell) {
+                    if (evt.attendanceStatus === "CHECKED_IN") {
+                        durationCell.innerHTML = `<span class="badge bg-success-subtle text-success live-duration-ticker" data-checkin="${evt.checkInRaw || ''}">
+                            <i class="fa-solid fa-stopwatch me-1"></i> <span class="ticker-text">Vừa vào ca</span>
+                        </span>`;
+                    } else if (evt.attendanceStatus === "CHECKED_OUT") {
+                        const hrs = evt.workingHours ? evt.workingHours.toFixed(1) : "0.0";
+                        durationCell.innerHTML = `<span class="text-dark fw-semibold">${hrs} giờ</span>`;
+                    }
+                }
+
+                const lateCell = existingRow.querySelector(".emp-late-cell");
+                if (lateCell) {
+                    if (evt.lateMinutes > 0) {
+                        lateCell.innerHTML = `<span class="badge bg-warning-subtle text-warning">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i>+${evt.lateMinutes} phút
+                        </span>`;
+                    } else {
+                        lateCell.innerHTML = `<span class="text-success small"><i class="fa-solid fa-check me-1"></i>Đúng giờ</span>`;
+                    }
+                }
+
+                const statusCell = existingRow.querySelector(".emp-status-cell");
+                if (statusCell) {
+                    if (evt.attendanceStatus === "CHECKED_IN") {
+                        statusCell.innerHTML = `<span class="status-badge-live working">
+                            <span class="status-dot" style="background:#10b981; width:6px; height:6px; border-radius:50%;"></span>
+                            Đang làm việc
+                        </span>`;
+                    } else if (evt.attendanceStatus === "CHECKED_OUT") {
+                        statusCell.innerHTML = `<span class="status-badge-live completed">
+                            <i class="fa-solid fa-check-double" style="font-size:10px;"></i> Đã check-out
+                        </span>`;
+                    }
+                }
+
+                // Hiệu ứng nhấp nháy dòng khi có cập nhật
+                existingRow.classList.remove("row-pulse-highlight");
+                void existingRow.offsetWidth; // Trigger reflow
+                existingRow.classList.add("row-pulse-highlight");
+
+            } else {
+                // CHECKPOINT 4: PAGINATION BOUNDARY PROTECTION
+                const isPageOne = (currentPageNumber === 1);
+                const currentRowsCount = tbody.querySelectorAll("tr:not(#emptyRow)").length;
+
+                if (isPageOne && currentRowsCount < currentPageSize) {
+                    // Safe to insert into Page 1 without exceeding PageSize
+                    const newRow = document.createElement("tr");
+                    newRow.id = "row-att-" + evt.attendanceId;
+                    newRow.setAttribute("data-att-id", evt.attendanceId);
+                    newRow.setAttribute("data-emp-id", evt.employeeId);
+                    newRow.setAttribute("data-emp-code", evt.employeeCode || "");
+                    newRow.setAttribute("data-checkin-raw", evt.checkInRaw || "");
+                    newRow.setAttribute("data-status", evt.attendanceStatus);
+                    newRow.className = "row-pulse-highlight";
+
+                    const isWorking = evt.attendanceStatus === "CHECKED_IN";
+                    const checkInVal = evt.checkInTime || "--:--:--";
+                    const checkOutVal = evt.checkOutTime || "--:--:--";
+                    const durationHtml = isWorking 
+                        ? `<span class="badge bg-success-subtle text-success live-duration-ticker" data-checkin="${evt.checkInRaw || ''}"><i class="fa-solid fa-stopwatch me-1"></i> <span class="ticker-text">Vừa vào ca</span></span>`
+                        : `<span class="text-dark fw-semibold">${evt.workingHours ? evt.workingHours.toFixed(1) : "0.0"} giờ</span>`;
+
+                    const lateHtml = (evt.lateMinutes > 0)
+                        ? `<span class="badge bg-warning-subtle text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>+${evt.lateMinutes} phút</span>`
+                        : `<span class="text-success small"><i class="fa-solid fa-check me-1"></i>Đúng giờ</span>`;
+
+                    const statusBadgeHtml = isWorking
+                        ? `<span class="status-badge-live working"><span class="status-dot" style="background:#10b981; width:6px; height:6px; border-radius:50%;"></span> Đang làm việc</span>`
+                        : `<span class="status-badge-live completed"><i class="fa-solid fa-check-double" style="font-size:10px;"></i> Đã check-out</span>`;
+
+                    const avatarHtml = evt.avatarUrl 
+                        ? `<img src="${evt.avatarUrl}" class="emp-avatar-sm" onerror="this.src='/images/avatar/default.png'; this.onerror=null;" />`
+                        : `<div class="emp-avatar-sm">${(evt.employeeName || "NV").substring(0, 2).toUpperCase()}</div>`;
+
+                    newRow.innerHTML = `
+                        <td class="fw-semibold text-secondary font-monospace">${evt.employeeCode || ""}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                ${avatarHtml}
+                                <div>
+                                    <div class="fw-semibold text-dark emp-name-cell">${evt.employeeName || "Nhân viên"}</div>
+                                    ${evt.statusNote ? `<div class="small text-muted" style="font-size: 11px;">${evt.statusNote}</div>` : ""}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-secondary emp-dept-cell">${evt.departmentName || ""}</td>
+                        <td class="emp-checkin-cell font-monospace fw-semibold text-dark">${checkInVal}</td>
+                        <td class="emp-checkout-cell font-monospace fw-semibold ${evt.checkOutTime ? "text-dark" : "text-muted"}">${checkOutVal}</td>
+                        <td class="emp-duration-cell font-monospace">${durationHtml}</td>
+                        <td class="emp-late-cell">${lateHtml}</td>
+                        <td class="emp-status-cell">${statusBadgeHtml}</td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-light border p-1 px-2" title="Xem chi tiết"
+                                    onclick="showAttendanceDetailModal('${evt.employeeName || ''}', '${evt.employeeCode || ''}', '${evt.departmentName || ''}', '${checkInVal}', '${checkOutVal}', '${evt.workingHours || 0}', '${evt.statusNote || ''}')">
+                                <i class="fa-solid fa-eye text-primary"></i>
+                            </button>
+                        </td>
+                    `;
+
+                    tbody.insertBefore(newRow, tbody.firstChild);
+
+                    const totalSpan = document.getElementById("totalItemsSpan");
+                    if (totalSpan) {
+                        const cur = parseInt(totalSpan.innerText) || 0;
+                        totalSpan.innerText = cur + 1;
+                    }
+                } else if (isPageOne) {
+                    // Page 1 is full: refresh snapshot in debounced manner to preserve server sort & limit
+                    debounceRefreshSnapshot();
+                }
+                // If on Page > 1: do not insert new row to Page 2/3. Summary cards are already updated.
+            }
+
+            updateDurationTickers();
+        }
+
+        // 3. DEBOUNCE RE-FETCH SUMMARY CARDS
+        function debounceFetchSummary() {
+            clearTimeout(summaryDebounceTimer);
+            summaryDebounceTimer = setTimeout(function () {
+                const filterDate = document.getElementById("filterDate")?.value || "";
+                fetch(`/Attendance/GetLiveSummary?date=${encodeURIComponent(filterDate)}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success && res.data) {
+                            applySummaryData(res.data);
+                        }
+                    })
+                    .catch(err => console.error("[HR Live] Error fetching summary:", err));
+            }, 600); // 600ms debounce
+        }
+
+        // 3.1 DEBOUNCE REFRESH SNAPSHOT (Khi Page 1 đầy hoặc có thay đổi cấu trúc bảng)
+        function debounceRefreshSnapshot() {
+            clearTimeout(refreshSnapshotDebounceTimer);
+            refreshSnapshotDebounceTimer = setTimeout(function () {
+                refreshLiveSnapshot();
+            }, 600);
+        }
+
+        function applySummaryData(s) {
+            if (!s) return;
+            if (document.getElementById("cardTotalEmp")) document.getElementById("cardTotalEmp").innerText = s.totalEmployees;
+            if (document.getElementById("cardCheckedIn")) document.getElementById("cardCheckedIn").innerText = s.checkedInCount;
+            if (document.getElementById("cardWorking")) document.getElementById("cardWorking").innerText = s.currentlyWorkingCount;
+            if (document.getElementById("cardLate")) document.getElementById("cardLate").innerText = s.lateCount;
+            if (document.getElementById("cardCheckedOut")) document.getElementById("cardCheckedOut").innerText = s.checkedOutCount;
+            if (document.getElementById("cardNotCheckedIn")) document.getElementById("cardNotCheckedIn").innerText = s.notCheckedInCount;
+            if (s.serverTime && document.getElementById("lastSyncTime")) {
+                document.getElementById("lastSyncTime").innerText = s.serverTime.substring(11, 8);
+            }
+        }
+
+        // 4. REFRESH AUTHORITATIVE SNAPSHOT (SAU KHI RECONNECT HOẶC BẤM NÚT)
+        function refreshLiveSnapshot() {
+            const spin = document.getElementById("refreshSpinIcon");
+            if (spin) spin.classList.add("fa-spin");
+
+            const filterDate = document.getElementById("filterDate")?.value || "";
+            const filterDept = document.getElementById("filterDepartment")?.value || "";
+            const filterStatus = document.getElementById("filterStatus")?.value || "";
+            const filterSearch = document.getElementById("filterSearchTerm")?.value || "";
+
+            const url = `/Attendance/GetLiveAttendanceSnapshot?date=${encodeURIComponent(filterDate)}&department=${encodeURIComponent(filterDept)}&status=${encodeURIComponent(filterStatus)}&searchTerm=${encodeURIComponent(filterSearch)}`;
+
+            fetch(url)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.success) {
+                        if (res.summary) applySummaryData(res.summary);
+                        if (res.rows) renderSnapshotRows(res.rows);
+                        if (document.getElementById("totalItemsSpan")) {
+                            document.getElementById("totalItemsSpan").innerText = res.totalItems || res.rows.length;
+                        }
+                    }
+                })
+                .catch(err => console.error("[HR Live] Reconcile error:", err))
+                .finally(() => {
+                    if (spin) spin.classList.remove("fa-spin");
+                });
+        }
+
+        function renderSnapshotRows(rows) {
+            const tbody = document.getElementById("liveAttendanceTbody");
+            if (!tbody) return;
+
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = `<tr id="emptyRow">
+                    <td colspan="9" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="fa-regular fa-folder-open fa-3x mb-3 text-secondary" style="opacity: 0.5;"></i>
+                            <p class="mb-0 fw-semibold">Không tìm thấy dữ liệu chấm công phù hợp bộ lọc.</p>
+                        </div>
+                    </td>
+                </tr>`;
+                return;
+            }
+
+            let html = "";
+            rows.forEach(row => {
+                const isWorking = row.statusCode === "CHECKED_IN";
+                const checkInVal = row.checkInStr || "--:--:--";
+                const checkOutVal = row.checkOutStr || "--:--:--";
+
+                const durationHtml = isWorking
+                    ? `<span class="badge bg-success-subtle text-success live-duration-ticker" data-checkin="${row.checkInRaw || ''}"><i class="fa-solid fa-stopwatch me-1"></i> <span class="ticker-text">--</span></span>`
+                    : (row.statusCode === "CHECKED_OUT" ? `<span class="text-dark fw-semibold">${(row.workingHours || 0).toFixed(1)} giờ</span>` : `<span class="text-muted">--</span>`);
+
+                const lateHtml = (row.lateMinutes > 0)
+                    ? `<span class="badge bg-warning-subtle text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>+${row.lateMinutes} phút</span>`
+                    : (row.statusCode !== "NOT_CHECKED_IN" ? `<span class="text-success small"><i class="fa-solid fa-check me-1"></i>Đúng giờ</span>` : `<span class="text-muted">--</span>`);
+
+                let statusBadgeHtml = `<span class="status-badge-live not-checked-in"><i class="fa-solid fa-minus" style="font-size:10px;"></i> Chưa chấm công</span>`;
+                if (row.statusCode === "CHECKED_IN") {
+                    statusBadgeHtml = `<span class="status-badge-live working"><span class="status-dot" style="background:#10b981; width:6px; height:6px; border-radius:50%;"></span> Đang làm việc</span>`;
+                } else if (row.statusCode === "CHECKED_OUT") {
+                    statusBadgeHtml = `<span class="status-badge-live completed"><i class="fa-solid fa-check-double" style="font-size:10px;"></i> Đã check-out</span>`;
+                }
+
+                const avatarHtml = row.avatarUrl
+                    ? `<img src="${row.avatarUrl}" class="emp-avatar-sm" onerror="this.src='/images/avatar/default.png'; this.onerror=null;" />`
+                    : `<div class="emp-avatar-sm">${(row.employeeName || "NV").substring(0, 2).toUpperCase()}</div>`;
+
+                html += `<tr id="row-att-${row.attendanceId}" data-att-id="${row.attendanceId}" data-emp-id="${row.employeeId}" data-emp-code="${row.employeeCode}" data-checkin-raw="${row.checkInRaw || ''}" data-status="${row.statusCode}">
+                    <td class="fw-semibold text-secondary font-monospace">${row.employeeCode || ""}</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            ${avatarHtml}
+                            <div>
+                                <div class="fw-semibold text-dark emp-name-cell">${row.employeeName || "Nhân viên"}</div>
+                                ${row.statusNote ? `<div class="small text-muted" style="font-size: 11px;">${row.statusNote}</div>` : ""}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-secondary emp-dept-cell">${row.departmentName || ""}</td>
+                    <td class="emp-checkin-cell font-monospace fw-semibold ${row.checkIn ? 'text-dark' : 'text-muted'}">${checkInVal}</td>
+                    <td class="emp-checkout-cell font-monospace fw-semibold ${row.checkOut ? 'text-dark' : 'text-muted'}">${checkOutVal}</td>
+                    <td class="emp-duration-cell font-monospace">${durationHtml}</td>
+                    <td class="emp-late-cell">${lateHtml}</td>
+                    <td class="emp-status-cell">${statusBadgeHtml}</td>
+                    <td class="text-end">
+                        ${row.attendanceId > 0 ? `<button type="button" class="btn btn-sm btn-light border p-1 px-2" title="Xem chi tiết"
+                                onclick="showAttendanceDetailModal('${row.employeeName || ''}', '${row.employeeCode || ''}', '${row.departmentName || ''}', '${checkInVal}', '${checkOutVal}', '${row.workingHours || 0}', '${row.statusNote || ''}')">
+                            <i class="fa-solid fa-eye text-primary"></i>
+                        </button>` : `<span class="text-muted small">--</span>`}
+                    </td>
+                </tr>`;
             });
+
+            tbody.innerHTML = html;
+            initDurationTickers();
+        }
+
+        // 5. RUNNING WORKING DURATION TICKERS
+        function initDurationTickers() {
+            updateDurationTickers();
+        }
+
+        function updateDurationTickers() {
+            const tickers = document.querySelectorAll(".live-duration-ticker");
+            const now = new Date();
+
+            tickers.forEach(el => {
+                const checkInRaw = el.getAttribute("data-checkin");
+                if (!checkInRaw) return;
+
+                const checkInDate = new Date(checkInRaw);
+                if (isNaN(checkInDate.getTime())) return;
+
+                const diffMs = now.getTime() - checkInDate.getTime();
+                if (diffMs < 0) {
+                    el.querySelector(".ticker-text").innerText = "Vừa vào ca";
+                    return;
+                }
+
+                const totalMins = Math.floor(diffMs / 60000);
+                const hrs = Math.floor(totalMins / 60);
+                const mins = totalMins % 60;
+
+                const textSpan = el.querySelector(".ticker-text");
+                if (textSpan) {
+                    if (hrs > 0) {
+                        textSpan.innerText = `${hrs}h ${mins}m`;
+                    } else {
+                        textSpan.innerText = `${mins} phút`;
+                    }
+                }
+            });
+        }
+
+        // 6. POPUP CHI TIẾT PHIÊN CHẤM CÔNG (READ-ONLY)
+        function showAttendanceDetailModal(name, code, dept, inTime, outTime, hrs, note) {
+            document.getElementById("modalEmpName").innerText = name || "Nhân viên";
+            document.getElementById("modalEmpCode").innerText = code || "";
+            document.getElementById("modalEmpDept").innerText = dept || "";
+            document.getElementById("modalCheckIn").innerText = inTime || "--:--:--";
+            document.getElementById("modalCheckOut").innerText = outTime || "--:--:--";
+            document.getElementById("modalDuration").innerText = (hrs && hrs > 0) ? `${hrs} giờ` : "Đang làm việc / Chưa xác định";
+            document.getElementById("modalNote").innerText = note || "Không có ghi chú bất thường";
+
+            const initials = (name || "NV").substring(0, 2).toUpperCase();
+            document.getElementById("modalEmpAvatar").innerText = initials;
+
+            const modal = new bootstrap.Modal(document.getElementById("attendanceDetailModal"));
+            modal.show();
         }
     </script>
 }

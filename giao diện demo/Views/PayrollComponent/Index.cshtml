@@ -1,0 +1,540 @@
+@{
+    ViewData["Title"] = "Thành phần lương";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1 fw-bold text-dark">Thành phần lương</h3>
+        <p class="text-muted mb-0">Quản lý các khoản thu nhập, khấu trừ và công thức tính lương.</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-secondary" onclick="alert('Tính năng xuất Excel sẽ có trong phiên bản tới.')">
+            <i class="fas fa-file-export me-2"></i>Xuất danh sách
+        </button>
+        <button class="btn btn-primary" onclick="openDrawer('CREATE')">
+            <i class="fas fa-plus me-2"></i>Tạo thành phần
+        </button>
+    </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 rounded-3 p-3 me-3 text-primary">
+                    <i class="fas fa-layer-group fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Tổng thành phần</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiTotal">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 rounded-3 p-3 me-3 text-success">
+                    <i class="fas fa-arrow-up fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Thu nhập</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiIncome">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-danger bg-opacity-10 rounded-3 p-3 me-3 text-danger">
+                    <i class="fas fa-arrow-down fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Khấu trừ</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiDeduction">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4 d-flex align-items-center">
+                <div class="bg-info bg-opacity-10 rounded-3 p-3 me-3 text-info">
+                    <i class="fas fa-check-circle fs-4"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Đang áp dụng</h6>
+                    <h3 class="mb-0 fw-bold" id="kpiActive">...</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters & Table -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4 bg-light border-bottom rounded-top-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <input type="text" class="form-control" id="searchKeyword" placeholder="Tìm theo mã, tên..." onkeyup="applyFilters()">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterType" onchange="applyFilters()">
+                    <option value="">Tất cả loại</option>
+                    <option value="Lương">Lương</option>
+                    <option value="Công">Công</option>
+                    <option value="OT">OT</option>
+                    <option value="Phụ cấp">Phụ cấp</option>
+                    <option value="Thưởng">Thưởng</option>
+                    <option value="Khấu trừ">Khấu trừ</option>
+                    <option value="Điều chỉnh">Điều chỉnh</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterSource" onchange="applyFilters()">
+                    <option value="">Tất cả nguồn</option>
+                    <option value="SYSTEM">Hệ thống</option>
+                    <option value="SYNCED">Đồng bộ</option>
+                    <option value="MANUAL">Nhập tay</option>
+                    <option value="FORMULA">Công thức</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" id="filterStatus" onchange="applyFilters()">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="ACTIVE">Đang áp dụng</option>
+                    <option value="INACTIVE">Ngừng áp dụng</option>
+                </select>
+            </div>
+            <div class="col-md-3 text-end">
+                <button class="btn btn-outline-secondary" onclick="resetFilters()">
+                    <i class="fas fa-undo me-2"></i>Làm mới
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="white-space: nowrap;">
+            <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-4 py-3">Mã</th>
+                    <th class="py-3">Tên thành phần</th>
+                    <th class="py-3 text-center">Loại</th>
+                    <th class="py-3 text-center">Nguồn</th>
+                    <th class="py-3">Công thức / Nguồn tính</th>
+                    <th class="py-3 text-center">Tính thuế</th>
+                    <th class="py-3 text-center">Trạng thái</th>
+                    <th class="pe-4 py-3 text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="componentTableBody">
+                <!-- Rows will be injected here via JS -->
+            </tbody>
+        </table>
+        
+        <div id="tableEmptyState" class="text-center py-5 text-muted d-none">
+            <i class="fas fa-layer-group fs-1 mb-3"></i>
+            <p>Chưa có thành phần lương nào được khai báo.</p>
+        </div>
+
+        <div id="tableLoadingState" class="text-center py-5 text-primary">
+            <div class="spinner-border mb-3" role="status"></div>
+            <p>Đang tải dữ liệu...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Offcanvas Drawer: Tạo/Sửa thành phần -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="componentDrawer" style="width: 500px;">
+  <div class="offcanvas-header border-bottom bg-light">
+    <h5 class="offcanvas-title fw-bold" id="drawerTitle">Tạo thành phần lương</h5>
+    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas"></button>
+  </div>
+  <div class="offcanvas-body">
+      <form id="componentForm" onsubmit="submitComponent(event)">
+          
+          <div class="row mb-3">
+              <div class="col-md-5">
+                  <label class="form-label fw-semibold">Mã thành phần <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control fw-bold text-uppercase" id="drawerCode" required placeholder="VD: BASE_SALARY">
+                  <div class="form-text">Viết hoa, không dấu, không khoảng trắng.</div>
+              </div>
+              <div class="col-md-7">
+                  <label class="form-label fw-semibold">Tên thành phần <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="drawerName" required placeholder="Lương cơ bản">
+              </div>
+          </div>
+
+          <div class="row mb-3">
+              <div class="col-md-6">
+                  <label class="form-label fw-semibold">Loại (Category) <span class="text-danger">*</span></label>
+                  <select class="form-select" id="drawerCategory" required>
+                      <option value="">-- Chọn loại --</option>
+                      <option value="Lương">Lương</option>
+                      <option value="Công">Công</option>
+                      <option value="OT">OT</option>
+                      <option value="Phụ cấp">Phụ cấp</option>
+                      <option value="Thưởng">Thưởng</option>
+                      <option value="Khấu trừ">Khấu trừ</option>
+                      <option value="Điều chỉnh">Điều chỉnh</option>
+                  </select>
+              </div>
+              <div class="col-md-6">
+                  <label class="form-label fw-semibold">Nguồn dữ liệu <span class="text-danger">*</span></label>
+                  <select class="form-select" id="drawerSource" required onchange="handleSourceChange()">
+                      <option value="">-- Chọn nguồn --</option>
+                      <option value="SYSTEM">Hệ thống (Hồ sơ)</option>
+                      <option value="SYNCED">Đồng bộ (Chấm công)</option>
+                      <option value="MANUAL">Nhập tay (Manual)</option>
+                      <option value="FORMULA">Công thức tính (Formula)</option>
+                  </select>
+              </div>
+          </div>
+
+          <div class="mb-4" id="formulaContainer" style="display: none;">
+              <label class="form-label fw-semibold">Công thức tính <span class="text-danger">*</span></label>
+              <textarea class="form-control font-monospace" id="drawerFormula" rows="3" placeholder="VD: BASE_SALARY / 26 * WORKING_DAYS"></textarea>
+              <div class="form-text text-muted"><i class="fas fa-info-circle me-1"></i>Sử dụng Mã thành phần (Code) làm biến trong công thức. Tuyệt đối không tạo vòng lặp (Circular Dependency).</div>
+          </div>
+
+          <div class="row mb-4">
+              <div class="col-md-6">
+                  <label class="form-label fw-semibold">Kiểu dữ liệu <span class="text-danger">*</span></label>
+                  <select class="form-select" id="drawerDataType" required>
+                      <option value="MONEY">Tiền tệ (VNĐ)</option>
+                      <option value="NUMBER">Số lượng / Hệ số</option>
+                      <option value="HOURS">Số giờ</option>
+                      <option value="DAYS">Số ngày</option>
+                  </select>
+              </div>
+              <div class="col-md-6">
+                  <label class="form-label fw-semibold">Làm tròn</label>
+                  <select class="form-select" id="drawerRounding">
+                      <option value="NONE">Không làm tròn</option>
+                      <option value="ROUND">Làm tròn chuẩn</option>
+                      <option value="FLOOR">Làm tròn xuống</option>
+                      <option value="CEIL">Làm tròn lên</option>
+                  </select>
+              </div>
+          </div>
+
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Thứ tự tính toán (Order)</label>
+              <input type="number" class="form-control" id="drawerOrder" value="0">
+              <div class="form-text">Số càng nhỏ ưu tiên tính trước (Dùng cho Formula resolution).</div>
+          </div>
+
+          <hr>
+
+          <div class="mb-3 d-flex justify-content-between align-items-center">
+              <div>
+                  <div class="fw-semibold text-dark">Thuế TNCN</div>
+                  <div class="text-muted small">Cấu phần này có tính vào Thu nhập chịu thuế không?</div>
+              </div>
+              <div class="form-check form-switch fs-4 mb-0">
+                  <input class="form-check-input cursor-pointer" type="checkbox" id="drawerTax">
+              </div>
+          </div>
+
+          <div class="mb-4 d-flex justify-content-between align-items-center">
+              <div>
+                  <div class="fw-semibold text-dark">Bảo hiểm</div>
+                  <div class="text-muted small">Cấu phần này có tham gia tính BHXH không?</div>
+              </div>
+              <div class="form-check form-switch fs-4 mb-0">
+                  <input class="form-check-input cursor-pointer" type="checkbox" id="drawerInsurance">
+              </div>
+          </div>
+
+          <hr>
+
+          <div class="mb-4">
+              <label class="form-label fw-semibold">Trạng thái áp dụng</label>
+              <select class="form-select" id="drawerStatus">
+                  <option value="ACTIVE">Đang áp dụng (ACTIVE)</option>
+                  <option value="INACTIVE">Ngừng áp dụng (INACTIVE)</option>
+              </select>
+          </div>
+
+      </form>
+  </div>
+  <div class="offcanvas-footer border-top bg-light p-3 d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary flex-grow-1" data-bs-dismiss="offcanvas">Huỷ</button>
+      <button type="button" class="btn btn-primary flex-grow-1" onclick="submitComponent(event)" id="btnSubmitDrawer">Lưu thành phần</button>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        let allComponents = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadData();
+        });
+
+        async function loadData() {
+            showLoading();
+            await loadKPI();
+            
+            try {
+                let res = await fetch('/PayrollComponent/GetComponents');
+                let result = await res.json();
+                if (result.success) {
+                    allComponents = result.data;
+                    applyFilters();
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function loadKPI() {
+            try {
+                let res = await fetch('/PayrollComponent/GetKPI');
+                let result = await res.json();
+                if (result.success) {
+                    let k = result.data;
+                    document.getElementById('kpiTotal').innerText = k.total;
+                    document.getElementById('kpiIncome').innerText = k.thuNhap;
+                    document.getElementById('kpiDeduction').innerText = k.khauTru;
+                    document.getElementById('kpiActive').innerText = k.active;
+                }
+            } catch(e) {}
+        }
+
+        function showLoading() {
+            document.getElementById('componentTableBody').innerHTML = '';
+            document.getElementById('tableLoadingState').classList.remove('d-none');
+            document.getElementById('tableEmptyState').classList.add('d-none');
+        }
+
+        function resetFilters() {
+            document.getElementById('searchKeyword').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('filterSource').value = '';
+            document.getElementById('filterStatus').value = '';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            let kw = document.getElementById('searchKeyword').value.toLowerCase();
+            let cat = document.getElementById('filterType').value;
+            let src = document.getElementById('filterSource').value;
+            let status = document.getElementById('filterStatus').value;
+
+            let filtered = allComponents.filter(c => {
+                let matchCat = (cat === '') || (c.category === cat);
+                let matchSrc = (src === '') || (c.sourceType === src);
+                let matchStatus = (status === '') || (c.status === status);
+                let matchKw = c.code.toLowerCase().includes(kw) || c.name.toLowerCase().includes(kw);
+                return matchCat && matchSrc && matchStatus && matchKw;
+            });
+
+            renderTable(filtered);
+        }
+
+        function renderTable(data) {
+            document.getElementById('tableLoadingState').classList.add('d-none');
+            let tbody = document.getElementById('componentTableBody');
+            
+            if (data.length === 0) {
+                document.getElementById('tableEmptyState').classList.remove('d-none');
+                tbody.innerHTML = '';
+                return;
+            }
+
+            document.getElementById('tableEmptyState').classList.add('d-none');
+            
+            let html = '';
+            data.forEach(c => {
+                // Category badge
+                let catBadgeClass = 'bg-secondary';
+                if (['Lương', 'Phụ cấp', 'Thưởng'].includes(c.category)) catBadgeClass = 'bg-success';
+                else if (c.category === 'Khấu trừ') catBadgeClass = 'bg-danger';
+                
+                // Source badge
+                let srcBadge = '';
+                if (c.sourceType === 'SYSTEM') srcBadge = '<span class="badge bg-secondary bg-opacity-10 text-secondary border">Hệ thống</span>';
+                else if (c.sourceType === 'SYNCED') srcBadge = '<span class="badge bg-primary bg-opacity-10 text-primary border">Đồng bộ</span>';
+                else if (c.sourceType === 'MANUAL') srcBadge = '<span class="badge bg-warning bg-opacity-10 text-warning border">Nhập tay</span>';
+                else if (c.sourceType === 'FORMULA') srcBadge = '<span class="badge bg-info bg-opacity-10 text-info border">Công thức</span>';
+
+                // Status badge
+                let statusBadge = c.status === 'ACTIVE' 
+                    ? '<span class="badge bg-success bg-opacity-10 text-success border">Đang áp dụng</span>' 
+                    : '<span class="badge bg-secondary bg-opacity-10 text-secondary border">Ngừng</span>';
+                
+                // Tax & Insurance
+                let taxIcon = c.isTaxable ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-minus text-muted"></i>';
+                let insIcon = c.isInsuranceApplicable ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-minus text-muted"></i>';
+
+                let formulaDisplay = (c.sourceType === 'FORMULA' && c.formula) ? `<span class="font-monospace small text-primary">${c.formula}</span>` : `<span class="text-muted small">Từ ${c.sourceType}</span>`;
+
+                html += `
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark font-monospace">${c.code}</div>
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-dark">${c.name}</div>
+                            <div class="text-muted small">Thứ tự: ${c.calculationOrder}</div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge ${catBadgeClass} bg-opacity-10 text-dark border border-${catBadgeClass.replace('bg-','')}">${c.category}</span>
+                        </td>
+                        <td class="text-center">
+                            ${srcBadge}
+                        </td>
+                        <td>
+                            ${formulaDisplay}
+                        </td>
+                        <td class="text-center">
+                            <span title="Tính thuế TNCN" class="me-2">${taxIcon}</span>
+                            <span title="Đóng BHXH">${insIcon}</span>
+                        </td>
+                        <td class="text-center">
+                            ${statusBadge}
+                        </td>
+                        <td class="pe-4 text-center">
+                            <button class="btn btn-sm btn-light text-primary" onclick="openDrawer('EDIT', '${c.code}')"><i class="fas fa-pen"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function handleSourceChange() {
+            let src = document.getElementById('drawerSource').value;
+            let container = document.getElementById('formulaContainer');
+            let formulaInput = document.getElementById('drawerFormula');
+            if (src === 'FORMULA') {
+                container.style.display = 'block';
+                formulaInput.required = true;
+            } else {
+                container.style.display = 'none';
+                formulaInput.required = false;
+                formulaInput.value = '';
+            }
+        }
+
+        function openDrawer(mode, code = null) {
+            document.getElementById('componentForm').reset();
+            handleSourceChange();
+
+            let codeInput = document.getElementById('drawerCode');
+            let title = document.getElementById('drawerTitle');
+
+            if (mode === 'CREATE') {
+                title.innerText = 'Tạo thành phần lương';
+                codeInput.readOnly = false;
+                codeInput.classList.remove('bg-light');
+            } else {
+                title.innerText = 'Cập nhật thành phần';
+                codeInput.readOnly = true;
+                codeInput.classList.add('bg-light');
+                
+                let comp = allComponents.find(c => c.code === code);
+                if (comp) {
+                    codeInput.value = comp.code;
+                    document.getElementById('drawerName').value = comp.name;
+                    document.getElementById('drawerCategory').value = comp.category;
+                    document.getElementById('drawerSource').value = comp.sourceType;
+                    
+                    handleSourceChange();
+                    if (comp.sourceType === 'FORMULA') {
+                        document.getElementById('drawerFormula').value = comp.formula;
+                    }
+
+                    document.getElementById('drawerDataType').value = comp.dataType;
+                    document.getElementById('drawerRounding').value = comp.roundingMode || 'NONE';
+                    document.getElementById('drawerOrder').value = comp.calculationOrder || 0;
+                    
+                    document.getElementById('drawerTax').checked = comp.isTaxable;
+                    document.getElementById('drawerInsurance').checked = comp.isInsuranceApplicable;
+                    document.getElementById('drawerStatus').value = comp.status || 'ACTIVE';
+                }
+            }
+
+            var myOffcanvas = new bootstrap.Offcanvas(document.getElementById('componentDrawer'));
+            myOffcanvas.show();
+        }
+
+        async function submitComponent(e) {
+            e.preventDefault();
+            
+            let btn = document.getElementById('btnSubmitDrawer');
+            let code = document.getElementById('drawerCode').value.trim().toUpperCase();
+            let name = document.getElementById('drawerName').value.trim();
+            let cat = document.getElementById('drawerCategory').value;
+            let src = document.getElementById('drawerSource').value;
+            let formula = document.getElementById('drawerFormula').value.trim();
+            let dataType = document.getElementById('drawerDataType').value;
+            let rounding = document.getElementById('drawerRounding').value;
+            let order = parseInt(document.getElementById('drawerOrder').value || "0");
+            let isTax = document.getElementById('drawerTax').checked;
+            let isIns = document.getElementById('drawerInsurance').checked;
+            let status = document.getElementById('drawerStatus').value;
+
+            if (!code || !name || !cat || !src || !dataType) {
+                alert("Vui lòng nhập đủ các trường bắt buộc.");
+                return;
+            }
+            if (src === 'FORMULA' && !formula) {
+                alert("Nguồn Công thức yêu cầu phải nhập Công thức tính.");
+                return;
+            }
+            if (code.includes(' ')) {
+                alert("Mã thành phần không được chứa khoảng trắng.");
+                return;
+            }
+
+            let payload = {
+                code: code,
+                name: name,
+                category: cat,
+                sourceType: src,
+                formula: formula,
+                dataType: dataType,
+                roundingMode: rounding,
+                calculationOrder: order,
+                isTaxable: isTax,
+                isInsuranceApplicable: isIns,
+                status: status
+            };
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang lưu...';
+
+            try {
+                let res = await fetch('/PayrollComponent/SaveComponent', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                let result = await res.json();
+                if (result.success) {
+                    alert("Lưu thành phần lương thành công!");
+                    bootstrap.Offcanvas.getInstance(document.getElementById('componentDrawer')).hide();
+                    await loadData();
+                } else {
+                    alert("Lỗi: " + result.message);
+                }
+            } catch(err) {
+                alert("Đã xảy ra lỗi kết nối");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Lưu thành phần';
+            }
+        }
+    </script>
+    
+    <style>
+        .cursor-pointer { cursor: pointer; }
+    </style>
+}

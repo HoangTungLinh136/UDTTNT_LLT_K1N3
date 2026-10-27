@@ -1,0 +1,542 @@
+@model giao_dien_demo.Models.HolidayViewModel
+@using System.Text.Json;
+
+@{
+    ViewData["Title"] = "Ngày nghỉ lễ";
+}
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon text-primary"><i class="fa-solid fa-calendar-star"></i></span>
+            Ngày nghỉ lễ
+        </h1>
+        <p class="text-muted mb-0" style="font-size: 14px; margin-top: 4px;">Quản lý và thiết lập các ngày nghỉ lễ theo phạm vi áp dụng.</p>
+        <div class="hrms-breadcrumb mt-2">
+            <a href="#">Cấu hình</a>
+            <i class="fa-solid fa-chevron-right separator"></i>
+            <span>Ngày nghỉ lễ</span>
+        </div>
+    </div>
+    <div class="hrms-page-header-actions">
+        <button class="hrms-btn hrms-btn-secondary" onclick="alert('Tính năng xuất Excel đang được tích hợp.')">
+            <i class="fa-solid fa-file-excel text-success"></i> Xuất Excel
+        </button>
+        <button class="hrms-btn hrms-btn-primary ms-2" onclick="openHolidayDrawer()">
+            <i class="fa-solid fa-plus"></i> Thêm ngày lễ
+        </button>
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="hrms-kpi-value">@Model.TotalHolidays</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng ngày lễ (năm @Model.FilterYear)</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="hrms-kpi-value">@Model.ActiveHolidays</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đang áp dụng</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-red">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-ban"></i></div>
+            <div class="hrms-kpi-value">@Model.InactiveHolidays</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Ngừng áp dụng</div>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER AREA -->
+<div class="hrms-filter-section mb-4">
+    <form method="get" action="@Url.Action("Index")" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Năm áp dụng</label>
+            <select name="year" class="form-select" onchange="this.form.submit()">
+                @foreach (var y in Model.AvailableYears)
+                {
+                    if (y == Model.FilterYear) {
+                        <option value="@y" selected>Năm @y</option>
+                    } else {
+                        <option value="@y">Năm @y</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Phạm vi áp dụng</label>
+            <select name="scope" class="form-select">
+                <option value="">Tất cả</option>
+                <option value="GLOBAL" selected="@(Model.FilterScope == "GLOBAL")">Toàn hệ thống</option>
+                <option value="DEPARTMENT" selected="@(Model.FilterScope == "DEPARTMENT")">Phòng ban</option>
+                <option value="EMPLOYEE" selected="@(Model.FilterScope == "EMPLOYEE")">Nhân sự cụ thể</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Trạng thái</label>
+            <select name="status" class="form-select">
+                <option value="">Tất cả</option>
+                <option value="ACTIVE" selected="@(Model.FilterStatus == "ACTIVE")">Đang áp dụng</option>
+                <option value="INACTIVE" selected="@(Model.FilterStatus == "INACTIVE")">Ngừng áp dụng</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="hrms-btn hrms-btn-primary flex-grow-1">
+                <i class="fa-solid fa-filter"></i> Lọc
+            </button>
+            <a href="@Url.Action("Index", new { year = Model.FilterYear })" class="hrms-btn hrms-btn-secondary">
+                <i class="fa-solid fa-rotate-right"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="row">
+    <!-- CALENDAR (LEFT COL) -->
+    <div class="col-lg-4 mb-4">
+        <div class="hrms-card h-100">
+            <div class="hrms-card-header d-flex justify-content-between align-items-center">
+                <h5 class="hrms-card-title mb-0">Lịch năm @Model.FilterYear</h5>
+            </div>
+            <div class="hrms-card-body">
+                <div class="alert alert-primary-subtle text-primary border-primary-subtle mb-3 d-flex align-items-center">
+                    <i class="fa-solid fa-circle-info fs-5 me-2"></i>
+                    <div class="small">Lịch hiển thị các ngày lễ được cấu hình trong năm <strong>@Model.FilterYear</strong>.</div>
+                </div>
+
+                <div class="holiday-calendar-container" style="max-height: 500px; overflow-y: auto;">
+                    @{
+                        // Build a visual representation of months that have holidays
+                        var activeHolidays = Model.Holidays.Where(h => h.Status == "ACTIVE").ToList();
+                        var monthsWithHolidays = activeHolidays
+                            .SelectMany(h => {
+                                var months = new List<int>();
+                                for(var m = h.FromDate; m <= h.ToDate; m = m.AddDays(1)) {
+                                    if(m.Year == Model.FilterYear && !months.Contains(m.Month)) months.Add(m.Month);
+                                }
+                                return months;
+                            })
+                            .Distinct()
+                            .OrderBy(m => m)
+                            .ToList();
+                    }
+
+                    @if(monthsWithHolidays.Any())
+                    {
+                        @foreach(var month in monthsWithHolidays)
+                        {
+                            <div class="mb-4">
+                                <h6 class="fw-bold text-dark border-bottom pb-2">Tháng @month</h6>
+                                <div class="d-grid gap-2" style="grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; margin-top: 10px;">
+                                    <div class="text-muted fw-bold">T2</div>
+                                    <div class="text-muted fw-bold">T3</div>
+                                    <div class="text-muted fw-bold">T4</div>
+                                    <div class="text-muted fw-bold">T5</div>
+                                    <div class="text-muted fw-bold">T6</div>
+                                    <div class="text-danger fw-bold">T7</div>
+                                    <div class="text-danger fw-bold">CN</div>
+                                </div>
+                                <div class="d-grid gap-2 mt-2" style="grid-template-columns: repeat(7, 1fr); text-align: center;">
+                                    @{
+                                        var firstDay = new DateTime(Model.FilterYear, month, 1);
+                                        var daysInMonth = DateTime.DaysInMonth(Model.FilterYear, month);
+                                        var startDayOfWeek = (int)firstDay.DayOfWeek;
+                                        if (startDayOfWeek == 0) startDayOfWeek = 7; // Sunday is 7
+
+                                        // Render empty cells
+                                        for(int i = 1; i < startDayOfWeek; i++) {
+                                            <div></div>
+                                        }
+
+                                        // Render days
+                                        for(int day = 1; day <= daysInMonth; day++) {
+                                            var currentDate = new DateTime(Model.FilterYear, month, day);
+                                            var isHoliday = activeHolidays.Any(h => currentDate >= h.FromDate && currentDate <= h.ToDate);
+                                            
+                                            var cellClass = "p-1 rounded ";
+                                            if (isHoliday) {
+                                                cellClass += "bg-primary text-white fw-bold shadow-sm";
+                                            } else {
+                                                cellClass += "text-dark bg-light";
+                                            }
+
+                                            <div class="@cellClass" style="font-size: 13px;" title="@(isHoliday ? "Ngày lễ" : "")">
+                                                @day
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted p-4">
+                            <i class="fa-solid fa-calendar-xmark mb-2" style="font-size: 32px;"></i>
+                            <div class="small">Chưa có ngày nghỉ lễ nào trong năm này.</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOLIDAY LIST (RIGHT COL) -->
+    <div class="col-lg-8 mb-4">
+        <div class="hrms-card h-100">
+            <div class="hrms-card-body p-0">
+                @if (Model.Holidays != null && Model.Holidays.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="hrms-table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Tên ngày nghỉ</th>
+                                    <th>Thời gian</th>
+                                    <th>Phạm vi</th>
+                                    <th class="text-center">Tính công</th>
+                                    <th class="text-center">Trạng thái</th>
+                                    <th class="text-center">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var h in Model.Holidays)
+                                {
+                                    <tr>
+                                        <td class="fw-bold">@h.HolidayName</td>
+                                        <td>
+                                            @if(h.FromDate == h.ToDate) {
+                                                <div class="text-primary fw-bold">@h.FromDate.ToString("dd/MM/yyyy")</div>
+                                                <div class="small text-muted">1 ngày</div>
+                                            } else {
+                                                <div class="text-primary fw-bold">@h.FromDate.ToString("dd/MM") - @h.ToDate.ToString("dd/MM/yyyy")</div>
+                                                <div class="small text-muted">@((h.ToDate - h.FromDate).Days + 1) ngày</div>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (h.ScopeType == "GLOBAL") {
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Toàn hệ thống</span>
+                                            } else if (h.ScopeType == "DEPARTMENT") {
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle" title="@h.ScopeValue">Phòng ban</span>
+                                                <div class="small fw-bold mt-1">@h.ScopeValue</div>
+                                            } else {
+                                                <span class="badge bg-dark-subtle text-dark border border-dark-subtle" title="@h.ScopeValue">Nhân sự</span>
+                                                <div class="small fw-bold mt-1">@h.ScopeValue</div>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if(h.IsPaidHoliday) {
+                                                <i class="fa-solid fa-check text-success fs-5"></i>
+                                            } else {
+                                                <i class="fa-solid fa-xmark text-danger fs-5"></i>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if(h.Status == "ACTIVE")
+                                            {
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">Đang áp dụng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1">Ngừng áp dụng</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <button class="btn btn-sm btn-outline-primary hrms-btn-icon me-1" title="Chỉnh sửa" onclick="openHolidayDrawer(@h.Id)">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            @if(h.Status == "ACTIVE")
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger hrms-btn-icon" title="Ngừng áp dụng" onclick="toggleStatus(@h.Id, 'INACTIVE')">
+                                                    <i class="fa-solid fa-ban"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-success hrms-btn-icon" title="Kích hoạt lại" onclick="toggleStatus(@h.Id, 'ACTIVE')">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="hrms-empty-state p-5">
+                        <div class="empty-icon"><i class="fa-solid fa-calendar-xmark text-muted"></i></div>
+                        <div class="empty-title">Chưa có ngày nghỉ lễ.</div>
+                        <div class="empty-desc">Hiện tại chưa có ngày nghỉ lễ nào được thiết lập.</div>
+                        <button class="hrms-btn hrms-btn-primary mt-3" onclick="openHolidayDrawer()"><i class="fa-solid fa-plus"></i> Thêm ngày lễ</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CREATE/EDIT DRAWER (OFFCANVAS) -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="holidayDrawer" aria-labelledby="holidayDrawerLabel" style="width: 500px;">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title fw-bold" id="holidayDrawerLabel">Thêm ngày lễ</h5>
+        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div id="drawerLoadingState" class="p-5 text-center d-none">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted">Đang tải thông tin...</div>
+    </div>
+    
+    <div id="drawerErrorState" class="p-5 text-center d-none">
+        <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size: 32px;"></i>
+        <div class="text-danger fw-bold">Không thể tải thông tin ngày nghỉ lễ.</div>
+        <button class="btn btn-sm btn-outline-secondary mt-3" onclick="closeDrawer()">Đóng</button>
+    </div>
+    
+    <div class="offcanvas-body" id="drawerFormArea">
+        <form id="holidayForm">
+            <input type="hidden" id="holidayId" value="0" />
+            
+            <div class="mb-3">
+                <label class="form-label fw-bold">Tên ngày nghỉ <span class="text-danger">*</span></label>
+                <input type="text" id="holidayName" class="form-control" required maxlength="200" placeholder="VD: Tết Nguyên Đán" />
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Từ ngày <span class="text-danger">*</span></label>
+                    <input type="date" id="fromDate" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Đến ngày <span class="text-danger">*</span></label>
+                    <input type="date" id="toDate" class="form-control" required />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Phạm vi áp dụng <span class="text-danger">*</span></label>
+                <select id="scopeType" class="form-select" onchange="toggleScopeInputs()">
+                    <option value="GLOBAL">Toàn hệ thống</option>
+                    <option value="DEPARTMENT">Phòng ban</option>
+                    <option value="EMPLOYEE">Nhân sự cụ thể</option>
+                </select>
+            </div>
+
+            <div class="mb-3 d-none" id="scopeDeptDiv">
+                <label class="form-label text-muted small">Chọn Phòng ban <span class="text-danger">*</span></label>
+                <select id="scopeDeptVal" class="form-select">
+                    <option value="">-- Chọn --</option>
+                    @foreach(var d in Model.Departments) {
+                        <option value="@d.Value">@d.Text</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3 d-none" id="scopeEmpDiv">
+                <label class="form-label text-muted small">Chọn Nhân sự <span class="text-danger">*</span></label>
+                <select id="scopeEmpVal" class="form-select">
+                    <option value="">-- Chọn --</option>
+                    @foreach(var e in Model.Employees) {
+                        <option value="@e.Value">@e.Text</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-check form-switch mb-3 mt-4">
+                <input class="form-check-input" type="checkbox" id="isPaidHoliday" checked>
+                <label class="form-check-label fw-bold" for="isPaidHoliday">Có tính công (Paid Holiday)</label>
+                <div class="form-text mt-1">Bật nếu hệ thống vẫn trả nguyên lương/tính công cho ngày nghỉ này theo cấu hình.</div>
+            </div>
+
+            <div class="mb-4 mt-4">
+                <label class="form-label fw-bold">Ghi chú</label>
+                <textarea id="holidayNotes" class="form-control" rows="3" maxlength="500"></textarea>
+            </div>
+            
+            <div id="formErrorMsg" class="alert alert-danger d-none py-2 mb-4"></div>
+
+            <div class="d-flex justify-content-end gap-2 pt-3 border-top mt-auto pb-3">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="offcanvas">Hủy</button>
+                <button type="button" class="hrms-btn hrms-btn-primary" id="btnSaveHoliday" onclick="saveHoliday()">
+                    <span id="saveSpinner" class="spinner-border spinner-border-sm d-none me-1" role="status" aria-hidden="true"></span>
+                    <i class="fa-solid fa-save me-1" id="saveIcon"></i> Áp dụng
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        var holidayOffcanvas;
+        
+        document.addEventListener("DOMContentLoaded", function() {
+            holidayOffcanvas = new bootstrap.Offcanvas(document.getElementById('holidayDrawer'));
+        });
+
+        function toggleScopeInputs() {
+            let type = document.getElementById('scopeType').value;
+            document.getElementById('scopeDeptDiv').classList.add('d-none');
+            document.getElementById('scopeEmpDiv').classList.add('d-none');
+            
+            if (type === 'DEPARTMENT') document.getElementById('scopeDeptDiv').classList.remove('d-none');
+            if (type === 'EMPLOYEE') document.getElementById('scopeEmpDiv').classList.remove('d-none');
+        }
+
+        function openHolidayDrawer(id = 0) {
+            document.getElementById('holidayId').value = id;
+            document.getElementById('formErrorMsg').classList.add('d-none');
+            
+            if (id === 0) {
+                document.getElementById('holidayDrawerLabel').innerText = "Thêm ngày lễ";
+                document.getElementById('holidayForm').reset();
+                document.getElementById('scopeType').value = 'GLOBAL';
+                toggleScopeInputs();
+                
+                showDrawerState('form');
+                holidayOffcanvas.show();
+            } else {
+                document.getElementById('holidayDrawerLabel').innerText = "Chỉnh sửa ngày lễ";
+                showDrawerState('loading');
+                holidayOffcanvas.show();
+                
+                fetch('@Url.Action("GetHoliday")?id=' + id)
+                    .then(res => res.ok ? res.json() : Promise.reject())
+                    .then(data => {
+                        document.getElementById('holidayName').value = data.holidayName;
+                        document.getElementById('fromDate').value = data.fromDate;
+                        document.getElementById('toDate').value = data.toDate;
+                        document.getElementById('scopeType').value = data.scopeType;
+                        document.getElementById('isPaidHoliday').checked = data.isPaidHoliday;
+                        document.getElementById('holidayNotes').value = data.notes;
+                        
+                        toggleScopeInputs();
+                        if (data.scopeType === 'DEPARTMENT') document.getElementById('scopeDeptVal').value = data.scopeValue;
+                        if (data.scopeType === 'EMPLOYEE') document.getElementById('scopeEmpVal').value = data.scopeValue;
+                        
+                        showDrawerState('form');
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showDrawerState('error');
+                    });
+            }
+        }
+        
+        function showDrawerState(state) {
+            document.getElementById('drawerLoadingState').classList.add('d-none');
+            document.getElementById('drawerErrorState').classList.add('d-none');
+            document.getElementById('drawerFormArea').classList.add('d-none');
+            
+            if(state === 'loading') document.getElementById('drawerLoadingState').classList.remove('d-none');
+            if(state === 'error') document.getElementById('drawerErrorState').classList.remove('d-none');
+            if(state === 'form') document.getElementById('drawerFormArea').classList.remove('d-none');
+        }
+        
+        function closeDrawer() {
+            holidayOffcanvas.hide();
+        }
+
+        function saveHoliday() {
+            var form = document.getElementById('holidayForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            var fromD = document.getElementById('fromDate').value;
+            var toD = document.getElementById('toDate').value;
+            if (fromD > toD) {
+                showError("Từ ngày không được lớn hơn Đến ngày.");
+                return;
+            }
+
+            var scopeType = document.getElementById('scopeType').value;
+            var scopeVal = "";
+            if (scopeType === 'DEPARTMENT') {
+                scopeVal = document.getElementById('scopeDeptVal').value;
+                if(!scopeVal) { showError("Vui lòng chọn phòng ban."); return; }
+            }
+            if (scopeType === 'EMPLOYEE') {
+                scopeVal = document.getElementById('scopeEmpVal').value;
+                if(!scopeVal) { showError("Vui lòng chọn nhân sự."); return; }
+            }
+
+            setLoading(true);
+
+            var payload = {
+                id: parseInt(document.getElementById('holidayId').value),
+                holidayName: document.getElementById('holidayName').value.trim(),
+                fromDate: fromD,
+                toDate: toD,
+                scopeType: scopeType,
+                scopeValue: scopeVal,
+                isPaidHoliday: document.getElementById('isPaidHoliday').checked,
+                notes: document.getElementById('holidayNotes').value
+            };
+
+            fetch('@Url.Action("SaveHoliday")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.ok ? res.json() : res.text().then(text => Promise.reject(text)))
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(err => {
+                console.error(err);
+                showError(typeof err === 'string' ? err : "Đã có lỗi xảy ra từ máy chủ.");
+                setLoading(false);
+            });
+        }
+        
+        function toggleStatus(id, newStatus) {
+            let msg = newStatus === 'ACTIVE' 
+                ? "Bạn có chắc chắn muốn Kích hoạt lại ngày lễ này?" 
+                : "Bạn có chắc chắn muốn Ngừng áp dụng ngày lễ này? (Các kỳ lương cũ không bị ảnh hưởng)";
+                
+            if(!confirm(msg)) return;
+            
+            fetch('@Url.Action("ToggleStatus")?id=' + id + '&newStatus=' + newStatus, {
+                method: 'POST'
+            })
+            .then(res => res.ok ? window.location.reload() : res.text().then(t => alert(t)))
+            .catch(err => alert('Lỗi kết nối'));
+        }
+
+        function showError(msg) {
+            var el = document.getElementById('formErrorMsg');
+            el.innerText = msg;
+            el.classList.remove('d-none');
+        }
+
+        function setLoading(isLoading) {
+            var btn = document.getElementById('btnSaveHoliday');
+            if (isLoading) {
+                btn.disabled = true;
+                document.getElementById('saveSpinner').classList.remove('d-none');
+                document.getElementById('saveIcon').classList.add('d-none');
+            } else {
+                btn.disabled = false;
+                document.getElementById('saveSpinner').classList.add('d-none');
+                document.getElementById('saveIcon').classList.remove('d-none');
+            }
+        }
+    </script>
+}

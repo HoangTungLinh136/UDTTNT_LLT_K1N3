@@ -1,0 +1,331 @@
+﻿@using Microsoft.AspNetCore.Http
+@{
+    ViewData["Title"] = "Tạo đợt thanh toàn lương";
+    var role = Context.Session.GetString("Role");
+
+    // Dynamic list từ ViewBag
+    var salaryWithBankInfo = ViewBag.SalaryWithBankInfo as dynamic;
+    var alreadyPaidIds = ViewBag.AlreadyPaidIds as List<int> ?? new List<int>();
+    var allDepts = ViewBag.AllDepts as List<string> ?? new List<string>();
+    var currentPeriod = ViewBag.CurrentPeriod as string ?? "";
+    var currentDept = ViewBag.CurrentDept as string ?? "";
+}
+
+<style>
+    .create-header { background: linear-gradient(135deg, #1a2236 0%, #243048 100%); color: white; border-radius: 12px; padding: 24px 28px; margin-bottom: 24px; }
+    .step-badge { background: rgba(255,255,255,0.15); border-radius: 6px; padding: 4px 12px; font-size: 0.8rem; margin-bottom: 8px; display: inline-block; }
+    .period-input-group { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .filter-row { background: white; border-radius: 12px; padding: 16px 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 16px; }
+    .table-create thead th { background: #f8fafc; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; }
+    .net-col { font-weight: 700; color: #166534; }
+    .warn-nào-bank { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: #92400e; display: inline-block; }
+    .warn-duplicate { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: #991b1b; display: inline-block; }
+    .ok-badge { background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; padding: 4px 10px; font-size: 0.75rem; color: #166534; display: inline-block; }
+    .summary-create { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; }
+</style>
+
+<div class="container-fluid mt-3">
+
+    <!-- Header -->
+    <div class="create-header">
+        <span class="step-badge">🔹 Module Thanh Toàn Lương</span>
+        <h4 class="mb-1 fw-bold">Tạo đợt thanh toàn lương</h4>
+        <p class="mb-0 opacity-75 small">
+            Chọn nhân viên cần thanh toàn. Net Salary được lấy trực tiếp từ bảng lương hiện tại — không tính lại.
+        </p>
+    </div>
+
+    <!-- Bước 1: Nhập kỳ lương + lọc -->
+    <div class="period-input-group">
+        <h6 class="fw-bold mb-3"><span class="badge bg-primary me-2">1</span>Chọn kỳ lương & phòng ban</h6>
+        <form method="get" asp-action="Create" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Kỳ lương <span class="text-danger">*</span></label>
+                <input type="text" name="period" value="@currentPeriod"
+                       class="form-control" placeholder="Và dụ: T08/2026" required
+                       id="periodInput">
+
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-bold">Phòng ban</label>
+                <select name="department" class="form-select">
+                    <option value="">-- Tất cả phòng ban --</option>
+                    @foreach (var d in allDepts)
+                    {
+                        <option value="@d" selected="@(d == currentDept ? "selected" : null)">@d</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-search me-1"></i> Xem danh sách nhân viên
+                </button>
+            </div>
+        </form>
+    </div>
+
+    @if (salaryWithBankInfo != null)
+    {
+        var list = salaryWithBankInfo as System.Collections.IEnumerable;
+        var listObj = new List<dynamic>();
+        if (list != null) foreach (var item in list) listObj.Add(item);
+
+        int totalCount = listObj.Count;
+        int noBankCount = listObj.Count(x => !(bool)x.HasBankInfo);
+        int dupCount = listObj.Count(x => alreadyPaidIds.Contains((int)x.EmployeeId));
+        int okCount = listObj.Count(x => (bool)x.HasBankInfo && !alreadyPaidIds.Contains((int)x.EmployeeId));
+
+        <!-- Bước 2: Danh sách nhân viên -->
+        <div class="period-input-group">
+            <h6 class="fw-bold mb-3">
+                <span class="badge bg-primary me-2">2</span>
+                Chọn nhân viên thanh toàn
+                @if (!string.IsNullOrEmpty(currentPeriod))
+                {
+                    <span class="badge bg-info text-dark ms-2">Kỳ: @currentPeriod</span>
+                }
+            </h6>
+
+            @if (noBankCount > 0)
+            {
+                <div class="alert alert-warning py-2 px-3 small">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>@noBankCount nhân viên</strong> chưa có thông tin tài khoản ngân hàng và sẽ không thể đưa vào file chuyển khoản.
+                    <a asp-controller="Employee" asp-action="Index" class="alert-link">Cập nhật hồ sơ →</a>
+                </div>
+            }
+            @if (dupCount > 0)
+            {
+                <div class="alert alert-danger py-2 px-3 small">
+                    <i class="fas fa-ban me-1"></i>
+                    <strong>@dupCount nhân viên</strong> đã có payment trong kỳ <strong>@currentPeriod</strong> — sẽ không tạo trắng.
+                </div>
+            }
+
+            <!-- Tâm tắt -->
+            <div class="summary-create d-flex justify-content-between flex-wrap gap-2">
+                <div><span class="text-muted small">Tổng nhân viên:</span> <strong>@totalCount</strong></div>
+                <div><span class="text-muted small">Có thể tạo payment:</span> <strong class="text-success">@okCount</strong></div>
+                <div><span class="text-muted small">Thiếu ngân hàng:</span> <strong class="text-warning">@noBankCount</strong></div>
+                <div><span class="text-muted small">Đã có trong kỳ này:</span> <strong class="text-danger">@dupCount</strong></div>
+            </div>
+
+            <form id="createPaymentForm" method="post" asp-action="CreatePayment">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="payrollPeriod" value="@currentPeriod" id="hiddenPeriod">
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Ghi chA thanh toàn (tây chọn)</label>
+                    <input type="text" name="paymentNote" class="form-control form-control-sm" 
+                           placeholder="Và dụ: Thanh toán tháng 8/2026 đợt 1">
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm table-create mb-3">
+                        <thead>
+                            <tr>
+                                <th style="width:40px" class="text-center">
+                                    <input type="checkbox" id="selectAllCreate" class="form-check-input" style="cursor: pointer;" title="Chọn tất cả khả dụng">
+                                </th>
+                                <th>Mã NV</th>
+                                <th>Họ tên</th>
+                                <th>Phòng ban</th>
+                                <th>Ngân hàng</th>
+                                <th>Số tài khoản</th>
+                                <th class="text-end">Lương thực nhận (Net)</th>
+                                <th>Tính trạng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in listObj)
+                            {
+                                bool hasBankInfo = (bool)item.HasBankInfo;
+                                bool isDuplicate = alreadyPaidIds.Contains((int)item.EmployeeId);
+                                bool canCreate = hasBankInfo && !isDuplicate && !string.IsNullOrEmpty(currentPeriod);
+
+                                // Che số tài khoản
+                                string acct = (string)(item.BankAccountNumber ?? "");
+                                string maskedAcct = acct.Length > 4
+                                    ? new string('*', acct.Length - 4) + acct.Substring(acct.Length - 4)
+                                    : acct;
+
+                                <tr class="@(canCreate ? "" : "table-light opacity-75")">
+                                    <td class="text-center">
+                                        @if (canCreate)
+                                        {
+                                            <input type="checkbox" name="selectedEmployeeIds" 
+                                                   value="@item.EmployeeId" 
+                                                   class="form-check-input row-check-create"
+                                                   data-net="@((double)item.NetSalary)"
+                                                   style="cursor: pointer;"
+                                                   checked>
+                                        }
+                                        else
+                                        {
+                                            <input type="checkbox" class="form-check-input" disabled title="Không đủ điều kiện thanh toàn">
+                                        }
+                                    </td>
+                                    <td><span class="badge bg-secondary">@item.EmployeeCode</span></td>
+                                    <td class="fw-semibold">@item.EmployeeName</td>
+                                    <td><small class="text-muted">@item.Department</small></td>
+                                    <td>
+                                        @if (hasBankInfo)
+                                        {
+                                            @item.BankName
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (hasBankInfo)
+                                        {
+                                            <span class="font-monospace">@maskedAcct</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic">—</span>
+                                        }
+                                    </td>
+                                    @{ string netFormatted = ((double)item.NetSalary).ToString("N0"); }
+                                    <td class="text-end net-col">@netFormatted ₫</td>
+                                    <td>
+                                        @if (isDuplicate)
+                                        {
+                                            <span class="warn-duplicate">
+                                                <i class="fas fa-ban me-1"></i>Đã có trong kỳ này
+                                            </span>
+                                        }
+                                        else if (!hasBankInfo)
+                                        {
+                                            <span class="warn-nào-bank">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Chưa có STK ngân hàng
+                                            </span>
+                                        }
+                                        else if (string.IsNullOrEmpty(currentPeriod))
+                                        {
+                                            <span class="text-muted small">Nhập kỳ lương để tạo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="ok-badge">
+                                                <i class="fas fa-check me-1"></i>Sẵn sáng
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Tổng kết đang chọn -->
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-2">
+                    <div class="text-muted small">
+                        Đã chọn: <strong id="createSelectedCount">@okCount</strong> nhân viên |
+                        Tổng tiền: <strong id="createTotalAmount" class="text-success">0 ₫</strong>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại
+                        </a>
+                        @if (!string.IsNullOrEmpty(currentPeriod))
+                        {
+                            <button type="submit" class="btn btn-primary" id="btnSubmitCreate" onclick="return confirmCreate()" @(okCount > 0 ? "" : "disabled")>
+                                <i class="fas fa-plus-circle me-1"></i> Tạo đợt thanh toàn
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" class="btn btn-secondary" disabled title="Nhập kỳ lương trước">
+                                <i class="fas fa-plus-circle me-1"></i> Tạo đợt thanh toàn
+                            </button>
+                        }
+                    </div>
+                </div>
+            </form>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-1"></i>
+            Nhập kỳ lương và nhấn "Xem danh sách nhân viên" để bắt đầu tạo đợt thanh toàn.
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        // Chọn tất cả khả dụng
+        const selectAllCreate = document.getElementById('selectAllCreate');
+        if (selectAllCreate) {
+            selectAllCreate.addEventListener('change', function () {
+                document.querySelectorAll('.row-check-create:not(:disabled)').forEach(cb => cb.checked = this.checked);
+                updateCreateSummary();
+            });
+        }
+
+        document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('row-check-create')) updateCreateSummary();
+        });
+
+        function updateCreateSummary() {
+            const allEnabledChecks = document.querySelectorAll('.row-check-create:not(:disabled)');
+            const checkedChecks = document.querySelectorAll('.row-check-create:checked:not(:disabled)');
+            
+            let total = 0;
+            checkedChecks.forEach(cb => total += parseFloat(cb.dataset.net || 0));
+            
+            const countEl = document.getElementById('createSelectedCount');
+            const totalEl = document.getElementById('createTotalAmount');
+            if (countEl) countEl.textContent = checkedChecks.length;
+            if (totalEl) totalEl.textContent = new Intl.NumberFormat('vi-VN').format(total) + ' ₫';
+            
+            // Cập nhật trạng thái checkbox "Chọn tất cả"
+            const selectAll = document.getElementById('selectAllCreate');
+            if (selectAll && allEnabledChecks.length > 0) {
+                selectAll.disabled = false;
+                if (checkedChecks.length === 0) {
+                    selectAll.checked = false;
+                    selectAll.indeterminate = false;
+                } else if (checkedChecks.length === allEnabledChecks.length) {
+                    selectAll.checked = true;
+                    selectAll.indeterminate = false;
+                } else {
+                    selectAll.checked = false;
+                    selectAll.indeterminate = true;
+                }
+            } else if (selectAll) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+                selectAll.disabled = true;
+            }
+
+            // Bật/tắt nút submit
+            const btnSubmit = document.getElementById('btnSubmitCreate');
+            if (btnSubmit) {
+                btnSubmit.disabled = checkedChecks.length === 0;
+            }
+        }
+
+        // Khởi tạo tổng ban đầu
+        setTimeout(updateCreateSummary, 100);
+
+        function confirmCreate() {
+            const checks = document.querySelectorAll('.row-check-create:checked');
+            if (checks.length === 0) {
+                Swal.fire('Chưa chọn nhân viên', 'Vui lòng chọn Ít nhất một nhân viên.', 'warning');
+                return false;
+            }
+            const period = document.getElementById('hiddenPeriod').value;
+            if (!period || period.trim() === '') {
+                Swal.fire('Thiếu kỳ lương', 'Vui lòng nhập kỳ lương trước khi tạo.', 'warning');
+                return false;
+            }
+            return true;
+        }
+    </script>
+}
+

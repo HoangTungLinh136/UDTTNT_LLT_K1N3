@@ -21,8 +21,8 @@ namespace giao_dien_demo.Controllers
         // --- CẬP NHẬT TRANG CHỦ DASHBOARD ---
         public async Task<IActionResult> Index()
         {
-            // 1. Đếm số nhân viên đã duyệt (Chính thức)
-            ViewBag.EmployeeCount = await _context.Employees.CountAsync(e => e.Position == "Chính thức");
+            // 1. Đếm số nhân viên đã duyệt (Đang hoạt động)
+            ViewBag.EmployeeCount = await _context.Employees.CountAsync(e => e.Status == "Active" || e.Status == "Probation");
 
             // 2. Đếm tổng số hợp đồng hiện có
             ViewBag.ContractCount = await _context.Contracts.CountAsync();

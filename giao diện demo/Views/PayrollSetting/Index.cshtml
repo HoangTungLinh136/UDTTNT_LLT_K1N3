@@ -1,0 +1,532 @@
+@{
+    ViewData["Title"] = "Thiết lập tính lương";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="mb-1 fw-bold text-dark">Thiết lập tính lương</h3>
+        <p class="text-muted mb-0">Cấu hình chu kỳ lương, ngày trả lương và các quy tắc áp dụng trong quá trình tính lương.</p>
+    </div>
+    
+    <div class="d-flex align-items-center gap-3">
+        <button class="btn btn-outline-secondary" onclick="alert('Tính năng khôi phục mặc định sẽ có trong phiên bản tới.')">
+            <i class="fas fa-undo me-2"></i>Mặc định
+        </button>
+        <button class="btn btn-primary" onclick="createNewVersion()" id="btnCreateNew">
+            <i class="fas fa-plus me-2"></i>Tạo phiên bản mới
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Configuration Form -->
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <!-- Tabs -->
+            <div class="card-header bg-white border-bottom p-0">
+                <ul class="nav nav-tabs border-0 px-4 pt-3" id="settingTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active fw-semibold pb-3 border-0 text-dark" href="#" onclick="switchTab('tab-ky-luong', this)">Kỳ lương</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="switchTab('tab-ngay-tra', this)">Ngày trả lương</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="switchTab('tab-lam-tron', this)">Làm tròn</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="switchTab('tab-khoa-ky', this)">Khóa kỳ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold pb-3 border-0 text-muted" href="#" onclick="switchTab('tab-thue-bh', this)">Thuế & BHXH</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body p-4 bg-light rounded-bottom-4 position-relative" id="formContainer">
+                
+                <!-- Overlay Readonly State -->
+                <div id="readonlyOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-50 d-none" style="z-index: 10; cursor: not-allowed;">
+                    <div class="d-flex justify-content-center align-items-center h-100">
+                        <span class="badge bg-secondary px-3 py-2 fs-6 shadow-sm"><i class="fas fa-lock me-2"></i>Chế độ xem (Read-only)</span>
+                    </div>
+                </div>
+
+                <form id="settingForm" onsubmit="saveDraft(event)">
+                    <input type="hidden" id="VersionId">
+                    <input type="hidden" id="VersionStatus">
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-primary">Tên phiên bản cấu hình <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-lg fw-semibold" id="VersionName" required>
+                    </div>
+
+                    <!-- TAB 1: KỲ LƯƠNG -->
+                    <div class="setting-tab-content" id="tab-ky-luong">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-calendar-alt text-primary me-2"></i>Chu kỳ tính lương</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Loại chu kỳ</label>
+                            <select class="form-select" id="CycleType">
+                                <option value="MONTHLY">Hàng tháng (Monthly)</option>
+                                <option value="WEEKLY">Hàng tuần (Weekly)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Quy tắc Ngày bắt đầu</label>
+                                <select class="form-select" id="PeriodStartRule">
+                                    <option value="01">Ngày 01 đầu tháng</option>
+                                    <option value="21">Ngày 21 tháng trước</option>
+                                    <option value="26">Ngày 26 tháng trước</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Quy tắc Ngày kết thúc</label>
+                                <select class="form-select" id="PeriodEndRule">
+                                    <option value="CUOI_THANG">Ngày cuối tháng</option>
+                                    <option value="20">Ngày 20</option>
+                                    <option value="25">Ngày 25</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: NGÀY TRẢ LƯƠNG -->
+                    <div class="setting-tab-content d-none" id="tab-ngay-tra">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-money-check-alt text-success me-2"></i>Lịch chi trả lương</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Ngày chi trả (dự kiến)</label>
+                            <select class="form-select" id="PayDateRule">
+                                <option value="05">Ngày mùng 5 hàng tháng</option>
+                                <option value="10">Ngày mùng 10 hàng tháng</option>
+                                <option value="15">Ngày 15 hàng tháng</option>
+                                <option value="CUOI_THANG">Ngày cuối tháng</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Xử lý nếu trùng ngày nghỉ/Lễ</label>
+                            <select class="form-select" id="HolidayHandlingRule">
+                                <option value="PREVIOUS_WORKING_DAY">Dời lên ngày làm việc trước đó</option>
+                                <option value="NEXT_WORKING_DAY">Lùi xuống ngày làm việc tiếp theo</option>
+                                <option value="KEEP_DATE">Giữ nguyên ngày chi trả</option>
+                            </select>
+                            <div class="form-text">Hệ thống sẽ dựa vào Cấu hình Ngày lễ (Holiday Calendar) để xác định ngày làm việc hợp lệ.</div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: LÀM TRÒN -->
+                    <div class="setting-tab-content d-none" id="tab-lam-tron">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-coins text-warning me-2"></i>Quy tắc làm tròn (Net Salary)</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Phương thức làm tròn</label>
+                                <select class="form-select" id="SalaryRoundingMode">
+                                    <option value="ROUND">Làm tròn chuẩn (Nearest)</option>
+                                    <option value="FLOOR">Làm tròn xuống (Floor)</option>
+                                    <option value="CEIL">Làm tròn lên (Ceil)</option>
+                                    <option value="NONE">Không làm tròn</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Bước làm tròn (Đơn vị VNĐ)</label>
+                                <select class="form-select" id="SalaryRoundingStep">
+                                    <option value="1">1đ</option>
+                                    <option value="100">100đ</option>
+                                    <option value="1000">1.000đ</option>
+                                    <option value="10000">10.000đ</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="alert alert-info py-2 small">
+                            <i class="fas fa-info-circle me-1"></i> Quy tắc này áp dụng ở bước cuối cùng (Total Payment). Làm tròn của từng Component được cấu hình riêng ở Module Thành phần lương.
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: KHÓA KỲ -->
+                    <div class="setting-tab-content d-none" id="tab-khoa-ky">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-lock text-danger me-2"></i>Khóa dữ liệu tính lương</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Tự động khóa kỳ (Auto Lock)</label>
+                            <select class="form-select" id="AutoLockDays">
+                                <option value="0">Không tự động khóa (Chỉ khóa thủ công)</option>
+                                <option value="3">Khóa sau 3 ngày kể từ Ngày kết thúc kỳ</option>
+                                <option value="5">Khóa sau 5 ngày kể từ Ngày kết thúc kỳ</option>
+                                <option value="10">Khóa sau 10 ngày kể từ Ngày kết thúc kỳ</option>
+                            </select>
+                            <div class="form-text text-danger mt-2">Kỳ lương đã bị khóa sẽ không cho phép sửa đổi Chấm công hay cập nhật Thành phần lương, trừ khi có thao tác Reopen từ Admin.</div>
+                        </div>
+                    </div>
+                    
+                    <!-- TAB 5: THUẾ & BHXH -->
+                    <div class="setting-tab-content d-none" id="tab-thue-bh">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-file-invoice-dollar text-primary me-2"></i>Liên kết Thuế & Bảo hiểm</h5>
+                        <p class="text-muted small">Cấu hình Thuế và BHXH được quản lý ở Module riêng. Dưới đây là tham chiếu đang được áp dụng.</p>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Phiên bản Biểu thuế TNCN</label>
+                            <input type="text" class="form-control bg-light" value="Biểu thuế lũy tiến từng phần 2024" readonly>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Phiên bản Tỷ lệ đóng BHXH</label>
+                            <input type="text" class="form-control bg-light" value="Tỷ lệ đóng BH 2024 (10.5% - 21.5%)" readonly>
+                        </div>
+                    </div>
+
+                    <hr>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div id="draftActions" class="d-none">
+                            <button type="submit" class="btn btn-warning px-4 fw-semibold shadow-sm" id="btnSaveDraft">
+                                <i class="fas fa-save me-2"></i>Lưu Bản Nháp
+                            </button>
+                            <button type="button" class="btn btn-success px-4 ms-2 fw-semibold shadow-sm" id="btnActivate" onclick="activateVersion()">
+                                <i class="fas fa-check-double me-2"></i>Áp Dụng Cấu Hình Này
+                            </button>
+                        </div>
+                        <div id="activeNotice" class="text-success fw-bold d-none">
+                            <i class="fas fa-check-circle me-1"></i> Đây là phiên bản đang có hiệu lực. Bạn không thể sửa đổi nó. Hãy "Tạo phiên bản mới".
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Version Summary & History -->
+    <div class="col-lg-4">
+        
+        <!-- Current View Status -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary bg-opacity-10 text-primary" id="statusCard">
+            <div class="card-body p-3">
+                <div class="d-flex align-items-center">
+                    <div class="me-3 fs-3"><i class="fas fa-info-circle"></i></div>
+                    <div>
+                        <div class="small fw-semibold text-uppercase" id="lblStatusTitle">Trạng thái cấu hình đang xem</div>
+                        <h5 class="mb-0 fw-bold" id="lblStatusValue">Đang tải...</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-header bg-white border-bottom p-3">
+                <h6 class="mb-0 fw-bold"><i class="fas fa-history text-muted me-2"></i>Lịch sử cấu hình</h6>
+            </div>
+            <div class="card-body p-4" style="max-height: 600px; overflow-y: auto;">
+                
+                <div id="historyLoading" class="text-center py-4 text-primary">
+                    <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+                    <p class="small">Đang tải lịch sử...</p>
+                </div>
+                
+                <div id="historyEmpty" class="text-center py-4 text-muted d-none">
+                    <i class="fas fa-inbox fs-3 mb-2"></i>
+                    <p class="small">Chưa có lịch sử cấu hình.</p>
+                </div>
+
+                <div class="timeline position-relative ps-3 border-start border-2 border-primary" id="historyTimeline">
+                    <!-- Injected by JS -->
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Activate -->
+<div class="modal fade" id="activateModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow rounded-4">
+      <div class="modal-header border-bottom bg-light">
+        <h5 class="modal-title fw-bold text-success"><i class="fas fa-check-double me-2"></i>Áp dụng cấu hình</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p>Phiên bản DRAFT này sẽ trở thành ACTIVE. Phiên bản ACTIVE hiện tại sẽ chuyển sang trạng thái <strong>SUPERSEDED (Đã bị thay thế)</strong> để bảo vệ dữ liệu lịch sử.</p>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Ngày bắt đầu có hiệu lực (Effective From) <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" id="modalEffectiveDate" required>
+        </div>
+        <div class="alert alert-warning small">
+            <i class="fas fa-exclamation-triangle me-1"></i> Lưu ý: Không áp dụng hiệu lực vào khoảng thời gian của Kỳ lương đã bị khóa (Locked Period).
+        </div>
+      </div>
+      <div class="modal-footer border-top bg-light">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+        <button type="button" class="btn btn-success px-4" onclick="confirmActivate()">Xác nhận áp dụng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentVersions = {
+            active: null,
+            draft: null,
+            history: []
+        };
+        let currentViewingId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set default date to today for modal
+            document.getElementById('modalEffectiveDate').valueAsDate = new Date();
+            await loadData();
+        });
+
+        function switchTab(tabId, elm) {
+            // UI Switch
+            document.querySelectorAll('#settingTabs .nav-link').forEach(link => {
+                link.classList.remove('active', 'text-dark');
+                link.classList.add('text-muted');
+                link.style.borderBottom = "none";
+            });
+            elm.classList.remove('text-muted');
+            elm.classList.add('active', 'text-dark');
+            
+            // Content Switch
+            document.querySelectorAll('.setting-tab-content').forEach(content => {
+                content.classList.add('d-none');
+            });
+            document.getElementById(tabId).classList.remove('d-none');
+        }
+
+        async function loadData() {
+            try {
+                let res = await fetch('/PayrollSetting/GetSettings');
+                let result = await res.json();
+                if (result.success) {
+                    currentVersions = result;
+                    renderHistory(result.history);
+                    
+                    // Priority load: Draft if exists, otherwise Active
+                    if (result.draft) {
+                        loadForm(result.draft);
+                    } else if (result.active) {
+                        loadForm(result.active);
+                    }
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        function loadForm(version) {
+            if (!version) return;
+            currentViewingId = version.versionId;
+            
+            document.getElementById('VersionId').value = version.versionId;
+            document.getElementById('VersionStatus').value = version.status;
+            document.getElementById('VersionName').value = version.versionName;
+            
+            document.getElementById('CycleType').value = version.cycleType;
+            document.getElementById('PeriodStartRule').value = version.periodStartRule;
+            document.getElementById('PeriodEndRule').value = version.periodEndRule;
+            
+            document.getElementById('PayDateRule').value = version.payDateRule;
+            document.getElementById('HolidayHandlingRule').value = version.holidayHandlingRule;
+            
+            document.getElementById('SalaryRoundingMode').value = version.salaryRoundingMode;
+            document.getElementById('SalaryRoundingStep').value = version.salaryRoundingStep;
+            
+            document.getElementById('AutoLockDays').value = version.autoLockDays;
+            
+            updateUIState(version.status);
+        }
+
+        function updateUIState(status) {
+            let overlay = document.getElementById('readonlyOverlay');
+            let draftActions = document.getElementById('draftActions');
+            let activeNotice = document.getElementById('activeNotice');
+            let statusCard = document.getElementById('statusCard');
+            let statusValue = document.getElementById('lblStatusValue');
+            
+            if (status === 'DRAFT') {
+                overlay.classList.add('d-none');
+                draftActions.classList.remove('d-none');
+                activeNotice.classList.add('d-none');
+                
+                statusCard.className = 'card border-0 shadow-sm rounded-4 mb-4 bg-warning bg-opacity-10 text-warning';
+                statusValue.innerText = 'BẢN NHÁP (DRAFT)';
+                document.getElementById('btnCreateNew').disabled = true;
+            } else {
+                overlay.classList.remove('d-none');
+                draftActions.classList.add('d-none');
+                activeNotice.classList.remove('d-none');
+                
+                document.getElementById('btnCreateNew').disabled = false;
+                
+                if (status === 'ACTIVE') {
+                    statusCard.className = 'card border-0 shadow-sm rounded-4 mb-4 bg-success bg-opacity-10 text-success';
+                    statusValue.innerText = 'ĐANG HIỆU LỰC (ACTIVE)';
+                    activeNotice.innerHTML = '<i class="fas fa-check-circle me-1"></i> Đây là phiên bản đang có hiệu lực. Bạn không thể sửa đổi nó.';
+                    activeNotice.className = 'text-success fw-bold';
+                } else {
+                    statusCard.className = 'card border-0 shadow-sm rounded-4 mb-4 bg-secondary bg-opacity-10 text-secondary';
+                    statusValue.innerText = 'LỊCH SỬ (SUPERSEDED)';
+                    activeNotice.innerHTML = '<i class="fas fa-history me-1"></i> Đây là phiên bản lịch sử. Bạn không thể sửa đổi nó.';
+                    activeNotice.className = 'text-secondary fw-bold';
+                }
+            }
+        }
+
+        function renderHistory(history) {
+            document.getElementById('historyLoading').classList.add('d-none');
+            
+            if (!history || history.length === 0) {
+                document.getElementById('historyEmpty').classList.remove('d-none');
+                return;
+            }
+            
+            document.getElementById('historyEmpty').classList.add('d-none');
+            
+            let html = '';
+            history.forEach((h, index) => {
+                let badge = '';
+                let dotColor = '';
+                
+                if (h.status === 'ACTIVE') {
+                    badge = '<span class="badge bg-success ms-2">ACTIVE</span>';
+                    dotColor = 'bg-success';
+                } else if (h.status === 'DRAFT') {
+                    badge = '<span class="badge bg-warning ms-2">DRAFT</span>';
+                    dotColor = 'bg-warning';
+                } else {
+                    badge = '<span class="badge bg-secondary ms-2">SUPERSEDED</span>';
+                    dotColor = 'bg-secondary';
+                }
+
+                let dt = new Date(h.createdAt);
+                let timeStr = dt.toLocaleDateString('vi-VN');
+                
+                let activeStyle = currentViewingId === h.versionId ? 'bg-light border' : '';
+
+                html += `
+                    <div class="position-relative mb-4 cursor-pointer p-2 rounded ${activeStyle}" onclick="viewHistoricalVersion('${h.versionId}')">
+                        <span class="position-absolute translate-middle p-2 rounded-circle ${dotColor} border border-2 border-white" style="left: -17px; top: 15px;"></span>
+                        <div class="fw-bold text-dark">${h.versionName} ${badge}</div>
+                        <div class="text-muted small mb-1">Tạo: ${timeStr} bởi ${h.createdBy}</div>
+                        ${h.effectiveFrom ? `<div class="text-success small fw-semibold"><i class="fas fa-calendar-check me-1"></i>Hiệu lực từ: ${new Date(h.effectiveFrom).toLocaleDateString('vi-VN')}</div>` : ''}
+                    </div>
+                `;
+            });
+            document.getElementById('historyTimeline').innerHTML = html;
+        }
+        
+        async function viewHistoricalVersion(versionId) {
+            try {
+                let res = await fetch(`/PayrollSetting/GetVersionDetail?versionId=${versionId}`);
+                let result = await res.json();
+                if (result.success) {
+                    loadForm(result.data);
+                    renderHistory(currentVersions.history); // re-render to highlight active item
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function createNewVersion() {
+            if (!confirm("Hệ thống sẽ tạo một Bản Nháp mới dựa trên Cấu hình hiện tại để bạn chỉnh sửa. Tiếp tục?")) return;
+            
+            try {
+                let res = await fetch('/PayrollSetting/CreateNewVersion', { method: 'POST' });
+                let result = await res.json();
+                if (result.success) {
+                    await loadData();
+                } else {
+                    alert("Lỗi: " + result.message);
+                }
+            } catch(e) { alert("Lỗi kết nối."); }
+        }
+
+        async function saveDraft(e) {
+            e.preventDefault();
+            let btn = document.getElementById('btnSaveDraft');
+            
+            let payload = {
+                versionId: document.getElementById('VersionId').value,
+                versionName: document.getElementById('VersionName').value,
+                cycleType: document.getElementById('CycleType').value,
+                periodStartRule: document.getElementById('PeriodStartRule').value,
+                periodEndRule: document.getElementById('PeriodEndRule').value,
+                payDateRule: document.getElementById('PayDateRule').value,
+                holidayHandlingRule: document.getElementById('HolidayHandlingRule').value,
+                salaryRoundingMode: document.getElementById('SalaryRoundingMode').value,
+                salaryRoundingStep: parseInt(document.getElementById('SalaryRoundingStep').value),
+                autoLockDays: parseInt(document.getElementById('AutoLockDays').value)
+            };
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang lưu...';
+
+            try {
+                let res = await fetch('/PayrollSetting/SaveVersion', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                let result = await res.json();
+                if (result.success) {
+                    // Update cache silently
+                    await loadData();
+                    alert("Đã lưu bản nháp thành công!");
+                } else {
+                    alert("Lỗi: " + result.message);
+                }
+            } catch(err) {
+                alert("Đã xảy ra lỗi kết nối");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save me-2"></i>Lưu Bản Nháp';
+            }
+        }
+
+        function activateVersion() {
+            var myModal = new bootstrap.Modal(document.getElementById('activateModal'));
+            myModal.show();
+        }
+
+        async function confirmActivate() {
+            let effDate = document.getElementById('modalEffectiveDate').value;
+            let versionId = document.getElementById('VersionId').value;
+            if (!effDate) {
+                alert("Vui lòng chọn ngày hiệu lực.");
+                return;
+            }
+
+            try {
+                let res = await fetch(`/PayrollSetting/ActivateVersion?versionId=${versionId}&effectiveFrom=${effDate}`, { method: 'POST' });
+                let result = await res.json();
+                if (result.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('activateModal')).hide();
+                    alert("Áp dụng cấu hình thành công!");
+                    await loadData();
+                } else {
+                    alert("Lỗi: " + result.message);
+                }
+            } catch(e) { alert("Lỗi kết nối."); }
+        }
+    </script>
+    <style>
+        .cursor-pointer { cursor: pointer; }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10px;
+            bottom: 0;
+            width: 2px;
+            background: #e9ecef;
+        }
+        .nav-tabs .nav-link { margin-bottom: -1px; background: transparent; border-bottom: 2px solid transparent !important; }
+        .nav-tabs .nav-link.active { border-bottom-color: #0d6efd !important; }
+    </style>
+}

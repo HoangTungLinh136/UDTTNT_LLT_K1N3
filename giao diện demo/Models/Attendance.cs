@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace giao_dien_demo.Models
 {
@@ -6,9 +6,19 @@ namespace giao_dien_demo.Models
     {
         // --- CÁC TRƯỜNG DỮ LIỆU CŨ (GIỮ NGUYÊN) ---
         public int Id { get; set; }
-        public string? EmployeeName { get; set; }
+        public string? EmployeeNameSnapshot { get; set; }
+        
+        public int? EmployeeId { get; set; }
+        [System.ComponentModel.DataAnnotations.Schema.ForeignKey("EmployeeId")]
+        public Employee? Employee { get; set; }
+        
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? EmployeeName { get => EmployeeNameSnapshot; set => EmployeeNameSnapshot = value; }
         public DateTime CheckIn { get; set; }
         public DateTime? CheckOut { get; set; }
+
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string? EmployeeCode { get; set; }
 
         // =========================================================
         // 🔥 CÁC TRƯỜNG MỚI ĐỂ XỬ LÝ CHẤM CÔNG CHUYÊN SÂU (GIỜ HÀNH CHÍNH / TĂNG CA)
@@ -25,5 +35,13 @@ namespace giao_dien_demo.Models
 
         // Ghi chú trạng thái (VD: Đi muộn sáng, Đi muộn chiều, Làm thêm Chủ Nhật, Đúng giờ...)
         public string? StatusNote { get; set; }
+
+        // =========================================================
+        // 🔥 WORKFLOW YÊU CẦU ĐIỀU CHỈNH CHẤM CÔNG (PENDING -> APPROVED -> APPLIED)
+        // =========================================================
+        
+        public string? AdjustmentStatus { get; set; } // PENDING, APPROVED, REJECTED, APPLIED
+        public TimeSpan? RequestedCheckOutTime { get; set; }
+        public string? AdjustmentReason { get; set; }
     }
 }

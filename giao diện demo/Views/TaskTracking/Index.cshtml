@@ -1,0 +1,610 @@
+@{
+    ViewData["Title"] = "Công việc HR";
+    var employees = ViewBag.Employees as IEnumerable<dynamic>;
+}
+
+<form id="taskTrackingCsrf" hidden>@Html.AntiForgeryToken()</form>
+
+<style>
+/* --- PAGE WRAPPER --- */
+.ob-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* --- PAGE HEADER --- */
+.ob-page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.ob-page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 10px; }
+.ob-page-title .ob-icon { width: 36px; height: 36px; border-radius: 10px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; color: #0284c7; font-size: 17px; flex-shrink: 0; }
+.ob-header-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+.ob-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* --- STATISTICS CARDS --- */
+.ob-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.ob-stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.ob-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ob-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+.ob-stat-icon.red    { background: #fef2f2; color: #ef4444; }
+.ob-stat-icon.green  { background: #ecfdf5; color: #059669; }
+.ob-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.ob-stat-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+.ob-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+/* --- TOOLBAR --- */
+.ob-filter-bar { background: #fff; border-radius: 12px; padding: 14px 18px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ob-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 340px; }
+.ob-search-wrap .sicon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+.ob-search-input { width: 100%; padding: 9px 12px 9px 34px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; outline: none; }
+.ob-filter-select { padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; min-width: 140px; outline: none; }
+.view-switch { display: flex; background: #f1f5f9; border-radius: 8px; padding: 4px; }
+.view-switch button { border: none; background: transparent; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; }
+.view-switch button.active { background: #fff; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+/* --- BUTTONS --- */
+.btn-ob-primary { background: #3b82f6; color: #fff; border: none; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.btn-ob-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+
+/* --- TABLE CARD --- */
+.ob-table-card { background: #fff; border-radius: 14px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-table-wrap { overflow-x: auto; }
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ob-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; padding: 11px 14px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; text-align: left; }
+.ob-table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+.ob-table tbody tr:hover td { background: #f8fafc; cursor: pointer; }
+
+/* --- KANBAN BOARD --- */
+.kanban-board { display: none; grid-template-columns: repeat(4, 1fr); gap: 16px; overflow-x: auto; min-height: 400px;}
+.kanban-column { background: #f1f5f9; border-radius: 12px; display: flex; flex-direction: column; max-height: 800px; }
+.kanban-header { padding: 14px; font-weight: 700; color: #0f172a; font-size: 14px; border-bottom: 2px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;}
+.kanban-body { padding: 12px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.kanban-card { background: #fff; border-radius: 8px; padding: 14px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; transition: box-shadow 0.2s; }
+.kanban-card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.k-card-title { font-weight: 600; color: #0f172a; font-size: 14px; margin-bottom: 6px; }
+.k-card-module { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+.k-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 10px; margin-top: 10px;}
+.k-card-assignee { font-size: 12px; color: #475569; display: flex; align-items: center; gap: 6px; }
+
+/* --- BADGES & PROGRESS --- */
+.badge { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+.bg-low { background: #f1f5f9; color: #475569; }
+.bg-medium { background: #eff6ff; color: #3b82f6; }
+.bg-high { background: #fffbeb; color: #d97706; }
+.bg-urgent { background: #fef2f2; color: #ef4444; }
+
+.status-open { color: #3b82f6; }
+.status-prog { color: #d97706; }
+.status-comp { color: #10b981; }
+
+.dl-near { color: #d97706; font-weight: 600; }
+.dl-over { color: #ef4444; font-weight: 600; }
+
+.progress-wrap { background: #e2e8f0; border-radius: 4px; height: 6px; width: 100%; overflow: hidden; margin-top: 4px; }
+.progress-bar { height: 100%; background: #3b82f6; }
+
+/* --- DRAWERS --- */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s; }
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer-panel { position: fixed; top: 0; right: -700px; width: 100%; max-width: 650px; height: 100%; background: #fff; z-index: 9999; box-shadow: -4px 0 24px rgba(0,0,0,0.1); transition: right 0.3s ease; display: flex; flex-direction: column; }
+.drawer-panel.open { right: 0; }
+.drawer-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+.drawer-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; }
+.drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff; color: #64748b; font-size: 16px; cursor: pointer; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; justify-content: flex-end; gap: 12px; }
+
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+</style>
+
+<div class="ob-page">
+    <div class="ob-page-header">
+        <div>
+            <h1 class="ob-page-title">
+                <div class="ob-icon"><i class="fa-solid fa-list-check"></i></div>
+                Công việc HR
+            </h1>
+            <div class="ob-header-subtitle">Theo dõi công việc HR, deadline, tiến độ và nhắc việc.</div>
+        </div>
+        <div class="ob-header-actions">
+            <div class="view-switch">
+                <button id="btnViewTable" class="active" onclick="switchView('table')"><i class="fas fa-list"></i> Bảng</button>
+                <button id="btnViewKanban" onclick="switchView('kanban')"><i class="fas fa-columns"></i> Kanban</button>
+            </div>
+            <button class="btn-ob-primary" onclick="openCreateDrawer()"><i class="fas fa-plus"></i> Tạo công việc</button>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="ob-stats-grid">
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon blue"><i class="fas fa-folder-open"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đang mở</div>
+                <div class="ob-stat-value" id="statOpen">0</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon amber"><i class="fas fa-clock"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Sắp hết hạn</div>
+                <div class="ob-stat-value" id="statNearDue">0</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Quá hạn</div>
+                <div class="ob-stat-value" id="statOverdue">0</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Hoàn thành</div>
+                <div class="ob-stat-value" id="statCompleted">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="ob-filter-bar">
+        <div class="ob-search-wrap">
+            <i class="fas fa-search sicon"></i>
+            <input type="text" id="searchInput" class="ob-search-input" placeholder="Tìm công việc, nghiệp vụ...">
+        </div>
+        <select id="assigneeFilter" class="ob-filter-select" onchange="loadTasks()">
+            <option value="">Người phụ trách</option>
+            @if(employees != null) {
+                foreach(var emp in employees) {
+                    <option value="@emp.Id">@emp.Name</option>
+                }
+            }
+        </select>
+        <select id="priorityFilter" class="ob-filter-select" onchange="loadTasks()">
+            <option value="">Ưu tiên</option>
+            <option value="LOW">Low</option>
+            <option value="MEDIUM">Medium</option>
+            <option value="HIGH">High</option>
+            <option value="URGENT">Urgent</option>
+        </select>
+        <select id="statusFilter" class="ob-filter-select" onchange="loadTasks()">
+            <option value="">Trạng thái</option>
+            <option value="OPEN">Open</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+        </select>
+        <button class="btn-ob-outline" onclick="resetFilter()"><i class="fas fa-undo"></i></button>
+    </div>
+
+    <!-- TABLE VIEW -->
+    <div class="ob-table-card" id="tableView">
+        <div class="ob-table-wrap">
+            <table class="ob-table">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>Nghiệp vụ liên quan</th>
+                        <th>Người phụ trách</th>
+                        <th>Deadline</th>
+                        <th>Ưu tiên</th>
+                        <th>Tiến độ</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="tasksTableBody">
+                    <tr><td colspan="7" class="text-center">Đang tải...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- KANBAN VIEW -->
+    <div class="kanban-board" id="kanbanView">
+        <!-- OPEN -->
+        <div class="kanban-column">
+            <div class="kanban-header">OPEN <span class="badge bg-low" id="kbOpenCount">0</span></div>
+            <div class="kanban-body" id="kbOpen"></div>
+        </div>
+        <!-- IN_PROGRESS -->
+        <div class="kanban-column">
+            <div class="kanban-header">IN PROGRESS <span class="badge bg-medium" id="kbProgCount">0</span></div>
+            <div class="kanban-body" id="kbProg"></div>
+        </div>
+        <!-- COMPLETED -->
+        <div class="kanban-column">
+            <div class="kanban-header">COMPLETED <span class="badge bg-high" id="kbCompCount">0</span></div>
+            <div class="kanban-body" id="kbComp"></div>
+        </div>
+        <!-- CANCELLED -->
+        <div class="kanban-column">
+            <div class="kanban-header">CANCELLED <span class="badge bg-urgent" id="kbCancCount">0</span></div>
+            <div class="kanban-body" id="kbCanc"></div>
+        </div>
+    </div>
+</div>
+
+<!-- OVERLAYS & DRAWERS -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeAllDrawers()"></div>
+
+<!-- CREATE DRAWER -->
+<div class="drawer-panel" id="createDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title">Tạo công việc</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="frmCreate">
+            <div class="form-group">
+                <label>Tiêu đề *</label>
+                <input type="text" name="Title" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Mô tả</label>
+                <textarea name="Description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nghiệp vụ liên quan</label>
+                    <select name="RelatedModule" class="form-control">
+                        <option value="">-- Không --</option>
+                        <option value="Hội nhập">Hội nhập</option>
+                        <option value="Nghỉ việc">Nghỉ việc</option>
+                        <option value="Thuyên chuyển">Thuyên chuyển</option>
+                        <option value="Quy hoạch">Quy hoạch</option>
+                        <option value="Sự cố">Sự cố</option>
+                        <option value="Khen thưởng">Khen thưởng</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mã Record (nếu có)</label>
+                    <input type="text" name="RelatedRecordCode" class="form-control" placeholder="Ví dụ: OFF-2023-001">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Người phụ trách *</label>
+                <select name="AssigneeEmployeeId" class="form-control" required>
+                    <option value="">-- Chọn người phụ trách --</option>
+                    @if(employees != null) {
+                        foreach(var emp in employees) {
+                            <option value="@emp.Id">@emp.Name (@emp.EmployeeCode)</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Mức ưu tiên *</label>
+                    <select name="Priority" class="form-control" required>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM" selected>Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Deadline *</label>
+                    <input type="datetime-local" name="Deadline" class="form-control" required>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button class="btn-ob-outline" onclick="closeAllDrawers()">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitCreate()">Lưu</button>
+    </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-panel" id="detailDrawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title" id="d_taskCode">Chi tiết công việc</h2>
+        <button class="drawer-close" onclick="closeAllDrawers()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" style="background:#f8fafc;" id="detailBody">
+        <div id="detailContent">Đang tải...</div>
+    </div>
+    <div class="drawer-footer" id="detailFooter" style="display:none;">
+        <button class="btn-ob-outline" onclick="openProgressModal()">Cập nhật Tiến độ</button>
+        <button class="btn-ob-outline" onclick="openExtendModal()">Gia hạn</button>
+        <button class="btn-ob-primary" onclick="completeTask()"><i class="fas fa-check"></i> Hoàn thành</button>
+    </div>
+</div>
+
+<!-- UPDATE PROGRESS MODAL (simplified as another drawer or inner div, but let's use prompt for simplicity in this demo or a small inline form) -->
+<div id="progressBox" style="display:none; position:absolute; bottom:70px; right:24px; background:#fff; padding:16px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); border:1px solid #e2e8f0; z-index:10000; width:300px;">
+    <label style="font-size:13px; font-weight:600; margin-bottom:8px; display:block;">Cập nhật tiến độ (%)</label>
+    <input type="number" id="inpProgress" class="form-control" min="0" max="100" style="margin-bottom:12px;">
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn-ob-outline" onclick="$('#progressBox').hide()" style="padding:6px 12px; font-size:12px;">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitProgress()" style="padding:6px 12px; font-size:12px;">Lưu</button>
+    </div>
+</div>
+
+<!-- EXTEND DEADLINE MODAL -->
+<div id="extendBox" style="display:none; position:absolute; bottom:70px; right:150px; background:#fff; padding:16px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15); border:1px solid #e2e8f0; z-index:10000; width:300px;">
+    <label style="font-size:13px; font-weight:600; margin-bottom:8px; display:block;">Deadline mới</label>
+    <input type="datetime-local" id="inpDeadline" class="form-control" style="margin-bottom:8px;">
+    <input type="text" id="inpReason" class="form-control" placeholder="Lý do gia hạn..." style="margin-bottom:12px;">
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button class="btn-ob-outline" onclick="$('#extendBox').hide()" style="padding:6px 12px; font-size:12px;">Hủy</button>
+        <button class="btn-ob-primary" onclick="submitExtend()" style="padding:6px 12px; font-size:12px;">Lưu</button>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const taskTrackingToken = document.querySelector('#taskTrackingCsrf input[name="__RequestVerificationToken"]').value;
+    $.ajaxSetup({ headers: { 'RequestVerificationToken': taskTrackingToken } });
+    let currentTaskId = 0;
+
+    $(document).ready(function() {
+        loadStats();
+        loadTasks();
+
+        $('#searchInput').on('input', function() {
+            let val = $(this).val().toLowerCase();
+            $('#tasksTableBody tr').each(function() {
+                let text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(val) > -1);
+            });
+            // basic kanban filter
+            $('.kanban-card').each(function() {
+                let text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(val) > -1);
+            });
+        });
+    });
+
+    function switchView(view) {
+        if(view === 'table') {
+            $('#btnViewTable').addClass('active');
+            $('#btnViewKanban').removeClass('active');
+            $('#tableView').show();
+            $('#kanbanView').hide();
+            $('#kanbanView').css('display', 'none');
+        } else {
+            $('#btnViewKanban').addClass('active');
+            $('#btnViewTable').removeClass('active');
+            $('#tableView').hide();
+            $('#kanbanView').css('display', 'grid');
+        }
+    }
+
+    function loadStats() {
+        $.get('/TaskTracking/GetStatistics', function(res) {
+            $('#statOpen').text(res.open);
+            $('#statNearDue').text(res.nearDue);
+            $('#statOverdue').text(res.overdue);
+            $('#statCompleted').text(res.completed);
+        });
+    }
+
+    function loadTasks() {
+        let assignee = $('#assigneeFilter').val();
+        let priority = $('#priorityFilter').val();
+        let status = $('#statusFilter').val();
+        
+        $.get('/TaskTracking/GetTasks', { assignee, priority, status }, function(res) {
+            // Render Table
+            let tHtml = '';
+            
+            // Render Kanban
+            let kOpen='', kProg='', kComp='', kCanc='';
+            let cOpen=0, cProg=0, cComp=0, cCanc=0;
+
+            if (res.length === 0) {
+                tHtml = '<tr><td colspan="7" class="text-center">Chưa có công việc đôn đốc.</td></tr>';
+            } else {
+                res.forEach(t => {
+                    // Table Row
+                    let badgePri = getPriBadge(t.priority);
+                    let dlHtml = formatDl(t.deadline, t.deadlineState);
+                    let stText = t.status;
+                    
+                    tHtml += `<tr onclick="openDetail(${t.id})">
+                        <td><strong>${t.title}</strong><br><small style="color:#64748b">${t.taskCode}</small></td>
+                        <td>${t.relatedModule||''} <small>${t.relatedRecordCode||''}</small></td>
+                        <td>${t.assignee}</td>
+                        <td>${dlHtml}</td>
+                        <td>${badgePri}</td>
+                        <td>
+                            <div style="font-size:11px; font-weight:600">${t.progress}%</div>
+                            <div class="progress-wrap"><div class="progress-bar" style="width:${t.progress}%"></div></div>
+                        </td>
+                        <td><strong>${stText}</strong></td>
+                    </tr>`;
+
+                    // Kanban Card
+                    let kCard = `<div class="kanban-card" onclick="openDetail(${t.id})">
+                        <div class="k-card-title">${t.title}</div>
+                        <div class="k-card-module">${t.relatedModule||''} ${t.relatedRecordCode ? '('+t.relatedRecordCode+')' : ''}</div>
+                        <div style="margin-bottom:10px;">${badgePri} ${dlHtml}</div>
+                        <div class="progress-wrap" style="margin-bottom:10px;"><div class="progress-bar" style="width:${t.progress}%"></div></div>
+                        <div class="k-card-footer">
+                            <div class="k-card-assignee"><i class="fas fa-user-circle"></i> ${t.assignee}</div>
+                            <div style="font-size:11px; font-weight:700; color:#64748b">${t.progress}%</div>
+                        </div>
+                    </div>`;
+
+                    if(t.status == 'OPEN') { kOpen += kCard; cOpen++; }
+                    else if(t.status == 'IN_PROGRESS') { kProg += kCard; cProg++; }
+                    else if(t.status == 'COMPLETED') { kComp += kCard; cComp++; }
+                    else if(t.status == 'CANCELLED') { kCanc += kCard; cCanc++; }
+                });
+            }
+            $('#tasksTableBody').html(tHtml);
+            $('#kbOpen').html(kOpen); $('#kbOpenCount').text(cOpen);
+            $('#kbProg').html(kProg); $('#kbProgCount').text(cProg);
+            $('#kbComp').html(kComp); $('#kbCompCount').text(cComp);
+            $('#kbCanc').html(kCanc); $('#kbCancCount').text(cCanc);
+        });
+    }
+
+    function getPriBadge(pri) {
+        if(pri=='LOW') return '<span class="badge bg-low">LOW</span>';
+        if(pri=='MEDIUM') return '<span class="badge bg-medium">MED</span>';
+        if(pri=='HIGH') return '<span class="badge bg-high">HIGH</span>';
+        if(pri=='URGENT') return '<span class="badge bg-urgent">URGENT</span>';
+        return '';
+    }
+
+    function formatDl(dl, state) {
+        if(state == 'OVERDUE') return `<span class="dl-over"><i class="fas fa-exclamation-circle"></i> ${dl}</span>`;
+        if(state == 'NEAR_DUE') return `<span class="dl-near"><i class="fas fa-clock"></i> ${dl}</span>`;
+        return dl;
+    }
+
+    function resetFilter() {
+        $('#assigneeFilter').val('');
+        $('#priorityFilter').val('');
+        $('#statusFilter').val('');
+        $('#searchInput').val('');
+        loadTasks();
+    }
+
+    function closeAllDrawers() {
+        $('#drawerOverlay').removeClass('open');
+        $('.drawer-panel').removeClass('open');
+        $('#progressBox').hide();
+        $('#extendBox').hide();
+    }
+
+    function openCreateDrawer() {
+        $('#frmCreate')[0].reset();
+        $('#drawerOverlay').addClass('open');
+        $('#createDrawer').addClass('open');
+    }
+
+    function submitCreate() {
+        let data = {};
+        $('#frmCreate').serializeArray().map(x => data[x.name] = x.value);
+        if(!data.Title || !data.AssigneeEmployeeId || !data.Deadline) {
+            alert('Vui lòng nhập đủ thông tin bắt buộc'); return;
+        }
+        $.ajax({
+            url: '/TaskTracking/CreateTask', type: 'POST', contentType: 'application/json', data: JSON.stringify(data),
+            success: function(res) {
+                if(res.success) {
+                    closeAllDrawers();
+                    loadStats();
+                    loadTasks();
+                } else alert(res.message);
+            }
+        });
+    }
+
+    function openDetail(id) {
+        currentTaskId = id;
+        $('#detailContent').html('Đang tải...');
+        $('#detailFooter').hide();
+        $('#drawerOverlay').addClass('open');
+        $('#detailDrawer').addClass('open');
+        $('#progressBox').hide();
+        $('#extendBox').hide();
+
+        $.get('/TaskTracking/GetTaskDetail', { id }, function(res) {
+            let t = res.task;
+            $('#d_taskCode').text(t.taskCode + " - " + t.status);
+            
+            let badgePri = getPriBadge(t.priority);
+            let dlHtml = formatDl(t.deadline, t.deadlineState);
+
+            let html = `
+                <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:16px;">
+                    <h3 style="margin:0 0 10px 0; color:#0f172a; font-size:18px;">${t.title}</h3>
+                    <p style="font-size:13px; color:#475569; margin-bottom:12px;">${t.description || 'Không có mô tả'}</p>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px; color:#334155;">
+                        <div><strong>Người tạo:</strong> ${t.createdBy}</div>
+                        <div><strong>Ngày tạo:</strong> ${t.createdAt}</div>
+                        <div><strong>Phụ trách:</strong> ${t.assignee}</div>
+                        <div><strong>Deadline:</strong> ${dlHtml}</div>
+                        <div><strong>Ưu tiên:</strong> ${badgePri}</div>
+                        <div><strong>Nghiệp vụ:</strong> ${t.relatedModule||'-'} ${t.relatedRecordCode ? '('+t.relatedRecordCode+')':''}</div>
+                    </div>
+                </div>
+                
+                <div style="background:#fff; padding:16px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:24px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                        <span style="font-weight:600; font-size:13.5px;">Tiến độ</span>
+                        <span style="font-weight:700; font-size:13.5px; color:#3b82f6;">${t.progress}%</span>
+                    </div>
+                    <div class="progress-wrap" style="height:8px;"><div class="progress-bar" style="width:${t.progress}%"></div></div>
+                </div>
+
+                <h4 style="font-size:14px; font-weight:700; margin-bottom:12px; color:#0f172a;">LỊCH SỬ HOẠT ĐỘNG</h4>
+            `;
+
+            res.history.forEach(h => {
+                html += `
+                <div style="background:#fff; padding:12px 16px; border-left:3px solid #3b82f6; border-radius:4px; border-right:1px solid #e2e8f0; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
+                        <span style="font-weight:600; color:#0f172a;">${h.actor}</span>
+                        <span style="color:#64748b;">${h.timestamp}</span>
+                    </div>
+                    <div style="font-size:13px; color:#334155;">${h.details}</div>
+                </div>`;
+            });
+
+            $('#detailContent').html(html);
+            if(t.status != 'COMPLETED' && t.status != 'CANCELLED') {
+                $('#detailFooter').show();
+            }
+        });
+    }
+
+    function openProgressModal() {
+        $('#extendBox').hide();
+        $('#progressBox').toggle();
+    }
+    
+    function submitProgress() {
+        let p = parseInt($('#inpProgress').val());
+        if(isNaN(p)) return;
+        $.ajax({
+            url: '/TaskTracking/UpdateProgress', type: 'POST', contentType: 'application/json', data: JSON.stringify({ id: currentTaskId, progress: p }),
+            success: function(res) {
+                if(res.success) {
+                    $('#progressBox').hide();
+                    openDetail(currentTaskId);
+                    loadStats(); loadTasks();
+                } else alert(res.message);
+            }
+        });
+    }
+
+    function openExtendModal() {
+        $('#progressBox').hide();
+        $('#extendBox').toggle();
+    }
+
+    function submitExtend() {
+        let dl = $('#inpDeadline').val();
+        let r = $('#inpReason').val();
+        if(!dl || !r) { alert('Vui lòng nhập ngày và lý do'); return; }
+        $.ajax({
+            url: '/TaskTracking/ExtendDeadline', type: 'POST', contentType: 'application/json', data: JSON.stringify({ id: currentTaskId, deadline: dl, reason: r }),
+            success: function(res) {
+                if(res.success) {
+                    $('#extendBox').hide();
+                    openDetail(currentTaskId);
+                    loadStats(); loadTasks();
+                } else alert(res.message);
+            }
+        });
+    }
+
+    function completeTask() {
+        if(!confirm('Bạn xác nhận hoàn thành công việc này?')) return;
+        $.ajax({
+            url: '/TaskTracking/ChangeStatus', type: 'POST', contentType: 'application/json', data: JSON.stringify({ id: currentTaskId, status: 'COMPLETED' }),
+            success: function(res) {
+                if(res.success) {
+                    openDetail(currentTaskId);
+                    loadStats(); loadTasks();
+                } else alert(res.message);
+            }
+        });
+    }
+</script>
+}

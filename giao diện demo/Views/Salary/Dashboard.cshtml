@@ -1,0 +1,54 @@
+@{
+    ViewData["Title"] = "Tổng quan tiền lương";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-money-bill-wave"></i></span>
+            Tổng quan tiền lương
+        </h1>
+        <p class="hrms-page-subtitle">Thống kê và tình hình chi trả lương kỳ @ViewBag.CyclePeriodName (@(((DateTime)ViewBag.CycleStartDate).ToString("dd/MM/yyyy")) - @(((DateTime)ViewBag.CycleEndDate).ToString("dd/MM/yyyy")))</p>
+    </div>
+</div>
+
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="hrms-kpi-label">Tổng quỹ lương</span>
+            <i class="fa-solid fa-money-bill-wave text-primary"></i>
+        </div>
+        <div class="hrms-kpi-value text-primary">@string.Format("{0:N0}", ViewBag.TotalFund) đ</div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="hrms-kpi-label">Lương trung bình</span>
+            <i class="fa-solid fa-chart-bar text-success"></i>
+        </div>
+        <div class="hrms-kpi-value text-success">@string.Format("{0:N0}", ViewBag.AvgSalary) đ</div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="hrms-kpi-label">Số nhân viên nhận lương</span>
+            <i class="fa-solid fa-users text-warning"></i>
+        </div>
+        <div class="hrms-kpi-value text-warning">@ViewBag.TotalEmployees</div>
+    </div>
+    <div class="hrms-kpi-card">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="hrms-kpi-label">Trạng thái hệ thống</span>
+            <i class="fa-solid fa-check-circle text-info"></i>
+        </div>
+        <div class="hrms-kpi-value text-info">Sẵn sàng</div>
+    </div>
+</div>
+
+<div class="hrms-card">
+    <div class="hrms-empty-state py-5 text-center">
+        <div class="hrms-empty-state-icon mb-3">
+            <i class="fa-solid fa-chart-pie text-muted" style="font-size: 3rem;"></i>
+        </div>
+        <h5 class="hrms-empty-state-title fw-bold">Giao diện phân tích đang được cập nhật</h5>
+        <p class="hrms-empty-state-text text-muted">Các biểu đồ thống kê chi phí, quỹ lương theo phòng ban sẽ sớm xuất hiện tại đây.</p>
+    </div>
+</div>

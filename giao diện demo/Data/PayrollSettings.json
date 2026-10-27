@@ -1,0 +1,22 @@
+[
+  {
+    "VersionId": "42838c19-8e2e-44c4-8133-6c1214ccd242",
+    "VersionName": "C\u1EA5u h\u00ECnh M\u1EB7c \u0111\u1ECBnh H\u1EC7 th\u1ED1ng",
+    "Status": "ACTIVE",
+    "EffectiveFrom": "2025-01-01T00:00:00",
+    "CycleType": "MONTHLY",
+    "PeriodStartRule": "01",
+    "PeriodEndRule": "CUOI_THANG",
+    "PayDateRule": "05",
+    "HolidayHandlingRule": "PREVIOUS_WORKING_DAY",
+    "SalaryRoundingMode": "ROUND",
+    "SalaryRoundingStep": 1000,
+    "TaxConfigVersionId": null,
+    "InsuranceConfigVersionId": null,
+    "AutoLockDays": 5,
+    "CreatedBy": "System",
+    "CreatedAt": "2026-09-06T18:29:16.4884151+07:00",
+    "ActivatedBy": "System",
+    "ActivatedAt": "2026-09-06T18:29:16.4884777+07:00"
+  }
+]

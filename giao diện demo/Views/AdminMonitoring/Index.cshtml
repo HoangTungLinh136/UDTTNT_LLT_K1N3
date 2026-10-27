@@ -1,0 +1,488 @@
+@{
+    ViewData["Title"] = "System Monitoring";
+}
+@Html.AntiForgeryToken()
+
+<style>
+/* Detail Drawer scoped */
+#detail-drawer { position: fixed; right: -540px; top: 0; bottom: 0; width: 500px; max-width: 100%; background: var(--hrms-surface, #ffffff); box-shadow: -4px 0 20px rgba(0,0,0,0.12); z-index: 1001; transition: right 0.3s cubic-bezier(0.16, 1, 0.3, 1); padding: 24px; overflow-y: auto; }
+#detail-drawer.open { right: 0; }
+.drawer-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 1000; display: none; }
+
+.auto-refresh-control { display: flex; align-items: center; gap: 8px; font-size: 13px; background: white; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--hrms-border, #e2e8f0); }
+.auto-refresh-control select { border: none; outline: none; font-weight: 600; color: var(--hrms-primary, #2563eb); cursor: pointer; background: transparent; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>System Monitoring</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-chart-line"></i></span>
+            System Monitoring
+        </h1>
+        <p class="hrms-page-subtitle">Giám sát tài nguyên máy chủ, sức khỏe cơ sở dữ liệu và hiệu năng API (Telemetry thực tế)</p>
+    </div>
+    <div class="hrms-page-header-actions">
+        <div class="auto-refresh-control">
+            <i class="fa-solid fa-rotate" style="color: var(--hrms-text-muted, #94a3b8);"></i>
+            <span>Tự động tải lại:</span>
+            <select id="sel-refresh" onchange="changeRefreshInterval()">
+                <option value="5000">5 giây</option>
+                <option value="10000" selected>10 giây</option>
+                <option value="30000">30 giây</option>
+                <option value="0">Tắt</option>
+            </select>
+            <span id="last-updated" style="margin-left:8px; color:var(--hrms-text-muted, #94a3b8); font-size:12px;"></span>
+        </div>
+    </div>
+</div>
+
+<div class="hrms-tabs mb-4">
+    <button class="hrms-tab active" data-target="tab-server" onclick="switchTab('tab-server')"><i class="fa-solid fa-server me-1"></i> Máy chủ (Server)</button>
+    <button class="hrms-tab" data-target="tab-db" onclick="switchTab('tab-db')"><i class="fa-solid fa-database me-1"></i> Cơ sở dữ liệu (Database)</button>
+    <button class="hrms-tab" data-target="tab-api" onclick="switchTab('tab-api')"><i class="fa-solid fa-network-wired me-1"></i> Hiệu năng API</button>
+    <button class="hrms-tab" data-target="tab-errors" onclick="switchTab('tab-errors')"><i class="fa-solid fa-bug me-1"></i> Lỗi hệ thống</button>
+    <button class="hrms-tab" data-target="tab-alerts" onclick="switchTab('tab-alerts')"><i class="fa-solid fa-bell me-1"></i> Cảnh báo</button>
+</div>
+
+<!-- SERVER TAB -->
+<div id="tab-server" class="tab-pane">
+    <div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+        <div class="hrms-kpi-card kpi-blue">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-microchip"></i></div>
+                <div class="hrms-kpi-value" id="val-cpu">-- %</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Sử dụng CPU</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-indigo">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-memory"></i></div>
+                <div class="hrms-kpi-value" id="val-ram">-- MB</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Sử dụng RAM</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-yellow">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-hard-drive"></i></div>
+                <div class="hrms-kpi-value" id="val-disk">-- %</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Sử dụng ổ đĩa (Disk)</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-cyan">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-arrow-right-arrow-left"></i></div>
+                <div class="hrms-kpi-value" id="val-network" style="font-size: 16px; line-height: 28px;">-- / -- Kbps</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Băng thông In / Out</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="hrms-card">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title"><i class="fa-solid fa-chart-line card-title-icon"></i> Lịch sử sử dụng CPU (20 phút qua)</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <canvas id="cpuChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="hrms-card">
+                <div class="hrms-card-header">
+                    <h3 class="hrms-card-title"><i class="fa-solid fa-chart-line card-title-icon"></i> Lịch sử sử dụng RAM</h3>
+                </div>
+                <div class="hrms-card-body">
+                    <canvas id="ramChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DATABASE TAB -->
+<div id="tab-db" class="tab-pane" style="display:none;">
+    <div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+        <div class="hrms-kpi-card kpi-green">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-heart-pulse"></i></div>
+                <div class="hrms-kpi-value"><span class="hrms-badge hrms-badge-success" id="val-db-status">--</span></div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Trạng thái CSDL</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-blue">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-stopwatch"></i></div>
+                <div class="hrms-kpi-value" id="val-db-latency">-- ms</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Thời gian phản hồi (Latency)</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-purple">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-link"></i></div>
+                <div class="hrms-kpi-value" id="val-db-conn">--</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Kết nối hiện hành (Connections)</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-indigo">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-database"></i></div>
+                <div class="hrms-kpi-value" id="val-db-size">-- MB</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Dung lượng CSDL</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- API TAB -->
+<div id="tab-api" class="tab-pane" style="display:none;">
+    <div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+        <div class="hrms-kpi-card kpi-blue">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-arrow-down-up-across-line"></i></div>
+                <div class="hrms-kpi-value" id="val-api-req">0</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Tổng lượt yêu cầu (Requests)</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-green">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-gauge"></i></div>
+                <div class="hrms-kpi-value" id="val-api-lat">0 ms</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Độ trễ trung bình</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-red">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                <div class="hrms-kpi-value" id="val-api-err">0 %</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Tỷ lệ lỗi (Error Rate)</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-yellow">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-clock"></i></div>
+                <div class="hrms-kpi-value" id="val-api-p95">0 ms</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Độ trễ phân vị P95</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hrms-card">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title"><i class="fa-solid fa-network-wired card-title-icon"></i> Hiệu năng theo Endpoint (Top 50)</h3>
+        </div>
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Phương thức</th>
+                        <th>Đường dẫn Endpoint</th>
+                        <th>Lượt gọi</th>
+                        <th>Độ trễ TB (ms)</th>
+                        <th>P95 (ms)</th>
+                        <th>Lỗi</th>
+                    </tr>
+                </thead>
+                <tbody id="api-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ERRORS TAB -->
+<div id="tab-errors" class="tab-pane" style="display:none;">
+    <div class="hrms-card">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title"><i class="fa-solid fa-bug card-title-icon"></i> Lỗi hệ thống gần đây</h3>
+        </div>
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Mức độ</th>
+                        <th>Dịch vụ</th>
+                        <th>Loại ngoại lệ (Exception)</th>
+                        <th>Request ID</th>
+                        <th class="col-actions" style="text-align: right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="error-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ALERTS TAB -->
+<div id="tab-alerts" class="tab-pane" style="display:none;">
+    <div class="hrms-card">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title"><i class="fa-solid fa-bell card-title-icon"></i> Cảnh báo hệ thống đang hoạt động</h3>
+        </div>
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Mức độ</th>
+                        <th>Tên cảnh báo</th>
+                        <th>Giá trị / Ngưỡng</th>
+                        <th>Trạng thái</th>
+                        <th class="col-actions" style="text-align: right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="alert-table-body">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div id="detail-drawer">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3" style="border-bottom: 1px solid var(--hrms-border, #e2e8f0);">
+        <h3 style="margin:0; font-size:17px; font-weight:700; color:var(--hrms-text-main, #1e293b);">Chi tiết lỗi hệ thống</h3>
+        <button class="hrms-btn hrms-btn-sm hrms-btn-ghost" onclick="closeDrawer()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="drawer-content" style="font-size:13px; line-height:1.6;"></div>
+</div>
+
+@section Scripts {
+<script>
+    const adminMonitoringToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    let refreshTimer = null;
+    let currentTab = 'tab-server';
+    
+    // Charts
+    let cpuChart = new Chart(document.getElementById('cpuChart'), {
+        type: 'line', data: { labels: [], datasets: [{ label: 'CPU %', data: [], borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.05)', tension: 0.2, fill: true }] }, options: { animation: false, scales: { y: { min: 0, max: 100 } } }
+    });
+    let ramChart = new Chart(document.getElementById('ramChart'), {
+        type: 'line', data: { labels: [], datasets: [{ label: 'RAM (MB)', data: [], borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.05)', tension: 0.2, fill: true }] }, options: { animation: false, scales: { y: { min: 0 } } }
+    });
+
+    $(document).ready(function() {
+        startRefresh();
+    });
+
+    function switchTab(tabId) {
+        $('.hrms-tab').removeClass('active');
+        $(`[data-target="${tabId}"]`).addClass('active');
+        $('.tab-pane').hide();
+        $('#' + tabId).show();
+        currentTab = tabId;
+        fetchData();
+    }
+
+    function changeRefreshInterval() {
+        startRefresh();
+    }
+
+    function startRefresh() {
+        if(refreshTimer) clearInterval(refreshTimer);
+        let interval = parseInt($('#sel-refresh').val());
+        fetchData();
+        if(interval > 0) {
+            refreshTimer = setInterval(fetchData, interval);
+        }
+    }
+
+    function fetchData() {
+        if(currentTab === 'tab-server') fetchServer();
+        else if(currentTab === 'tab-db') fetchDb();
+        else if(currentTab === 'tab-api') fetchApi();
+        else if(currentTab === 'tab-errors') fetchErrors();
+        else if(currentTab === 'tab-alerts') fetchAlerts();
+    }
+
+    function fetchServer() {
+        $.get('/AdminMonitoring/GetServerMetrics', function(res) {
+            $('#last-updated').text('Cập nhật: ' + new Date().toLocaleTimeString());
+            if(res.latest) {
+                $('#val-cpu').text(res.latest.cpuUsagePercent.toFixed(1) + ' %');
+                $('#val-ram').text(res.latest.ramUsageMb.toFixed(0) + ' MB');
+                $('#val-disk').text(res.latest.diskUsagePercent.toFixed(1) + ' %');
+                
+                if (res.latest.networkInKbps === 0 && res.latest.networkOutKbps === 0) {
+                    $('#val-network').text('Unavailable');
+                    $('#val-network').css('font-size', '15px');
+                } else {
+                    $('#val-network').text(res.latest.networkInKbps.toFixed(0) + ' / ' + res.latest.networkOutKbps.toFixed(0) + ' Kbps');
+                }
+            }
+            if(res.history) {
+                cpuChart.data.labels = res.history.map(h => new Date(h.timestamp).toLocaleTimeString());
+                cpuChart.data.datasets[0].data = res.history.map(h => h.cpuUsagePercent);
+                cpuChart.update();
+
+                ramChart.data.labels = res.history.map(h => new Date(h.timestamp).toLocaleTimeString());
+                ramChart.data.datasets[0].data = res.history.map(h => h.ramUsageMb);
+                ramChart.update();
+            }
+        });
+    }
+
+    function fetchDb() {
+        $.get('/AdminMonitoring/GetDatabaseHealth', function(res) {
+            $('#last-updated').text('Cập nhật: ' + new Date().toLocaleTimeString());
+            let badgeClass = res.status === 'Healthy' ? 'hrms-badge-success' : 'hrms-badge-danger';
+            $('#val-db-status').removeClass().addClass('hrms-badge ' + badgeClass).text(res.status);
+            $('#val-db-latency').text(res.responseTimeMs + ' ms');
+            
+            $('#val-db-conn').text(res.activeConnections >= 0 ? res.activeConnections : 'Unavailable');
+            $('#val-db-size').text(res.databaseSizeMb >= 0 ? res.databaseSizeMb + ' MB' : 'Unavailable');
+            
+            if (res.activeConnections < 0) $('#val-db-conn').css('font-size', '15px');
+            if (res.databaseSizeMb < 0) $('#val-db-size').css('font-size', '15px');
+        });
+    }
+
+    function fetchApi() {
+        $.get('/AdminMonitoring/GetApiMetrics', function(res) {
+            $('#last-updated').text('Cập nhật: ' + new Date().toLocaleTimeString());
+            $('#val-api-req').text(res.summary.totalRequests);
+            $('#val-api-lat').text(res.summary.avgLatency.toFixed(1) + ' ms');
+            $('#val-api-err').text(res.summary.errorRate.toFixed(2) + ' %');
+            $('#val-api-p95').text(res.summary.p95.toFixed(1) + ' ms');
+
+            let html = '';
+            res.endpoints.forEach(e => {
+                html += `<tr>
+                    <td><span style="font-weight:600; color:var(--hrms-primary, #2563eb);">${e.method}</span></td>
+                    <td><code style="background:var(--hrms-background, #f1f5f9); padding:2px 6px; border-radius:4px;">${e.path}</code></td>
+                    <td>${e.totalRequests}</td>
+                    <td>${e.averageLatencyMs.toFixed(1)}</td>
+                    <td>${e.getP95 ? e.getP95.toFixed(1) : e.averageLatencyMs.toFixed(1)}</td>
+                    <td style="color:${e.totalErrors > 0 ? 'var(--hrms-danger, #ef4444)' : 'var(--hrms-green, #10b981)'}; font-weight:600;">${e.totalErrors}</td>
+                </tr>`;
+            });
+            $('#api-table-body').html(html);
+        });
+    }
+
+    function fetchErrors() {
+        $.get('/AdminMonitoring/GetErrors', function(res) {
+            $('#last-updated').text('Cập nhật: ' + new Date().toLocaleTimeString());
+            let html = '';
+            res.forEach(e => {
+                html += `<tr>
+                    <td style="color:var(--hrms-text-muted, #64748b); font-size:13px;">${new Date(e.timestamp).toLocaleString('vi-VN')}</td>
+                    <td><span class="hrms-badge hrms-badge-danger">${e.level}</span></td>
+                    <td>${e.service}</td>
+                    <td style="font-weight:500; color:var(--hrms-danger, #dc2626);">${e.exceptionType}</td>
+                    <td><code style="font-size:12px;">${e.requestId}</code></td>
+                    <td style="text-align:right;"><button class="hrms-btn hrms-btn-sm hrms-btn-secondary" onclick="viewError(${e.id})">Chi tiết</button></td>
+                </tr>`;
+            });
+            $('#error-table-body').html(html);
+        });
+    }
+
+    function fetchAlerts() {
+        $.get('/AdminMonitoring/GetAlerts', function(res) {
+            $('#last-updated').text('Cập nhật: ' + new Date().toLocaleTimeString());
+            let html = '';
+            res.forEach(a => {
+                let sClass = 'hrms-badge-success';
+                if(a.status === 'Active') sClass = 'hrms-badge-danger';
+                if(a.status === 'Acknowledged') sClass = 'hrms-badge-info';
+                if(a.status === 'Resolved') sClass = 'hrms-badge-success';
+
+                let btn = '';
+                if(a.status === 'Active') {
+                    btn = `<button class="hrms-btn hrms-btn-sm hrms-btn-secondary" onclick="ackAlert(${a.id})">Xác nhận</button>`;
+                }
+
+                html += `<tr>
+                    <td style="color:var(--hrms-text-muted, #64748b); font-size:13px;">${new Date(a.startedAt).toLocaleString('vi-VN')}</td>
+                    <td><span class="hrms-badge hrms-badge-warning">${a.severity}</span></td>
+                    <td style="font-weight:600; color:var(--hrms-text-main, #1e293b);">${a.alertName}</td>
+                    <td>${a.currentValue} / ${a.threshold}</td>
+                    <td><span class="hrms-badge ${sClass}">${a.status}</span></td>
+                    <td style="text-align:right;">${btn}</td>
+                </tr>`;
+            });
+            $('#alert-table-body').html(html);
+        });
+    }
+
+    function viewError(id) {
+        $.get('/AdminMonitoring/GetErrorDetail?id=' + id, function(res) {
+            let html = `
+                <p><strong>Thời gian:</strong> ${new Date(res.timestamp).toLocaleString('vi-VN')}</p>
+                <p><strong>Dịch vụ:</strong> ${res.service}</p>
+                <p><strong>Loại ngoại lệ:</strong> <span style="color:var(--hrms-danger, #ef4444); font-weight:600;">${res.exceptionType}</span></p>
+                <p><strong>Thông điệp:</strong> ${res.message}</p>
+                <p><strong>Request ID:</strong> <code style="font-size:12px;">${res.requestId}</code></p>
+                <p><strong>Correlation ID:</strong> <code style="font-size:12px;">${res.correlationId}</code></p>
+                <p><strong>Tài khoản:</strong> ${res.user}</p>
+                <p><strong>IP:</strong> ${res.ip}</p>
+                <hr style="margin:16px 0; border:none; border-bottom:1px solid var(--hrms-border, #e2e8f0);" />
+                <strong>Stack Trace:</strong>
+                <pre style="background:var(--hrms-background, #f1f5f9); padding:12px; border-radius:8px; overflow-x:auto; font-size:12px; margin-top:8px;">${res.stackTrace}</pre>
+            `;
+            $('#drawer-content').html(html);
+            $('#detail-drawer').addClass('open');
+            $('#drawer-overlay').show();
+        });
+    }
+
+    function closeDrawer() {
+        $('#detail-drawer').removeClass('open');
+        $('#drawer-overlay').hide();
+    }
+
+    function ackAlert(id) {
+        $.post('/AdminMonitoring/AcknowledgeAlert', { id: id, __RequestVerificationToken: adminMonitoringToken }, function(res) {
+            if(res.success) {
+                fetchAlerts();
+            } else {
+                alert(res.message);
+            }
+        });
+    }
+</script>
+}

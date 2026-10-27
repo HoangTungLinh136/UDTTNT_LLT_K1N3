@@ -1,0 +1,972 @@
+@model IEnumerable<giao_dien_demo.Models.IncidentRecord>
+@{
+    ViewData["Title"] = "Sự cố nhân sự";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    
+    var incidentTypes = ViewBag.IncidentTypes as List<string> ?? new List<string>();
+    var severities = ViewBag.Severities as List<string> ?? new List<string>();
+    
+    string currentSearch = ViewBag.CurrentSearch as string ?? "";
+    string currentType = ViewBag.CurrentIncidentType as string ?? "";
+    string currentSeverity = ViewBag.CurrentSeverity as string ?? "";
+    string currentStatus = ViewBag.CurrentStatus as string ?? "";
+
+    bool hasFilter = !string.IsNullOrWhiteSpace(currentSearch) ||
+                     !string.IsNullOrWhiteSpace(currentType) ||
+                     !string.IsNullOrWhiteSpace(currentSeverity) ||
+                     !string.IsNullOrWhiteSpace(currentStatus);
+}
+
+<form id="incidentCsrf" hidden>@Html.AntiForgeryToken()</form>
+
+<style>
+/* --- PAGE WRAPPER --- */
+.ob-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* --- PAGE HEADER --- */
+.ob-page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.ob-page-title { font-size: 22px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 10px; }
+.ob-page-title .ob-icon { width: 36px; height: 36px; border-radius: 10px; background: #fef2f2; display: flex; align-items: center; justify-content: center; color: #ef4444; font-size: 17px; flex-shrink: 0; }
+.ob-header-subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+.ob-header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* --- STATISTICS CARDS --- */
+.ob-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.ob-stat-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-stat-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.ob-stat-icon.blue   { background: #eff6ff; color: #3b82f6; }
+.ob-stat-icon.amber  { background: #fffbeb; color: #d97706; }
+.ob-stat-icon.indigo { background: #eef2ff; color: #6366f1; }
+.ob-stat-icon.red    { background: #fef2f2; color: #ef4444; }
+.ob-stat-icon.green  { background: #ecfdf5; color: #059669; }
+.ob-stat-body { display: flex; flex-direction: column; gap: 2px; }
+.ob-stat-label { font-size: 12.5px; color: #64748b; font-weight: 500; }
+.ob-stat-value { font-size: 26px; font-weight: 800; color: #0f172a; line-height: 1; }
+
+/* --- TOOLBAR --- */
+.ob-filter-bar { background: #fff; border-radius: 12px; padding: 14px 18px; border: 1px solid #f1f5f9; box-shadow: 0 1px 4px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ob-search-wrap { position: relative; flex: 1; min-width: 240px; max-width: 340px; }
+.ob-search-wrap .sicon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
+.ob-search-input { width: 100%; padding: 9px 12px 9px 34px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; outline: none; transition: all 0.2s; }
+.ob-search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.ob-filter-select { padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 9px; font-size: 13.5px; color: #334155; background: #f8fafc; min-width: 140px; outline: none; }
+.ob-filter-select:focus { border-color: #3b82f6; }
+
+/* --- BUTTONS --- */
+.btn-ob-primary { background: #3b82f6; color: #fff; border: none; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; transition: background 0.2s; }
+.btn-ob-primary:hover { background: #2563eb; color: #fff; }
+.btn-ob-outline { background: #fff; color: #475569; border: 1px solid #e2e8f0; padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-outline:hover { background: #f8fafc; color: #0f172a; border-color: #cbd5e1; }
+.btn-ob-reset { background: #fff; color: #64748b; border: 1px solid #e2e8f0; padding: 9px 14px; border-radius: 9px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.btn-ob-reset:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+/* --- TABLE CARD --- */
+.ob-table-card { background: #fff; border-radius: 14px; border: 1px solid #f1f5f9; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+.ob-table-header { padding: 14px 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; }
+.ob-table-title { font-size: 14px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+.count-chip { background: #eff6ff; color: #1d4ed8; font-size: 11px; font-weight: 700; border-radius: 20px; padding: 2px 9px; }
+.ob-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.ob-table thead th { background: #f8fafc; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.4px; padding: 11px 14px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
+.ob-table tbody td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; color: #334155; }
+.ob-table tbody tr:hover td { background: #f8fafc; }
+
+/* --- EMPLOYEE CELL --- */
+.emp-cell { display: flex; align-items: center; gap: 10px; }
+.emp-av { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, #e2e8f0, #cbd5e1); display: flex; align-items: center; justify-content: center; color: #475569; font-weight: 700; font-size: 14px; overflow: hidden; }
+.emp-av img { width: 100%; height: 100%; object-fit: cover; }
+.emp-name { font-weight: 600; color: #0f172a; font-size: 13.5px; display: block; }
+.emp-code { font-size: 11.5px; color: #64748b; display: block; margin-top: 1px; }
+
+/* --- BADGES --- */
+.badge-status { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; display: inline-block; }
+.badge-new { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+.badge-investigating { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.badge-processing { background: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+.badge-resolved { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.badge-closed { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
+.badge-cancelled { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+
+.badge-sev { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+.badge-sev.low { background: #f1f5f9; color: #475569; }
+.badge-sev.medium { background: #fef3c7; color: #b45309; }
+.badge-sev.high { background: #ffedd5; color: #c2410c; }
+.badge-sev.critical { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* --- DRAWER OVERLAY --- */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s ease; backdrop-filter: blur(2px); }
+.drawer-overlay.open { opacity: 1; visibility: visible; }
+.drawer-panel { position: fixed; top: 0; right: -800px; width: 100%; max-width: 700px; height: 100%; background: #fff; z-index: 9999; box-shadow: -4px 0 24px rgba(0,0,0,0.1); transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+.drawer-panel.open { right: 0; }
+.drawer-header { padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; background: #f8fafc; }
+.drawer-title { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0; display: flex; align-items: center; gap: 8px; }
+.drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: #fff; color: #64748b; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.drawer-close:hover { background: #f1f5f9; color: #0f172a; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 24px; }
+.drawer-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #fff; display: flex; justify-content: flex-end; gap: 12px; }
+
+/* --- FORM STYLES --- */
+.form-section { background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; margin-bottom: 24px; }
+.form-section-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13.5px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+.form-group label span.req { color: #ef4444; }
+.form-control { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; color: #334155; background: #fff; transition: all 0.2s; }
+.form-control:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* Employee Search */
+.employee-search-container { position: relative; }
+.employee-dropdown { position: absolute; top: 100%; left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10000; display: none; margin-top: 4px; }
+.employee-dropdown.show { display: block; }
+.emp-item { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; }
+.emp-item:hover { background: #f8fafc; }
+
+/* Selected Employees */
+.selected-emp-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.selected-emp-tag { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 500; color: #0f172a; }
+.selected-emp-tag .del-btn { cursor: pointer; color: #ef4444; }
+
+/* History Timeline */
+.timeline { position: relative; padding-left: 20px; margin-top: 10px; border-left: 2px solid #e2e8f0; }
+.timeline-item { position: relative; margin-bottom: 16px; padding-left: 14px; }
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-dot { position: absolute; left: -25px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid #fff; }
+.timeline-time { font-size: 11.5px; color: #64748b; margin-bottom: 2px; }
+.timeline-content { background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
+.timeline-content strong { color: #0f172a; }
+.timeline-content p { margin: 4px 0 0; font-size: 13px; color: #475569; }
+</style>
+
+<div class="ob-page">
+
+    <!-- HEADER -->
+    <div class="ob-page-header">
+        <div>
+            <h1 class="ob-page-title">
+                <div class="ob-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                Sự cố nhân sự
+            </h1>
+            <div class="ob-header-subtitle">Ghi nhận, xác minh và xử lý sự cố liên quan nhân viên.</div>
+        </div>
+        <div class="ob-header-actions">
+            <button class="btn-ob-primary" onclick="openCreateDrawer()"><i class="fas fa-plus"></i> Ghi nhận sự cố</button>
+        </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="ob-stats-grid">
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon blue"><i class="fas fa-file-alt"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Sự cố mới</div>
+                <div class="ob-stat-value">@ViewBag.StatNew</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon amber"><i class="fas fa-search"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đang xác minh</div>
+                <div class="ob-stat-value">@ViewBag.StatInvestigating</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon indigo"><i class="fas fa-cogs"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Đang xử lý</div>
+                <div class="ob-stat-value">@ViewBag.StatProcessing</div>
+            </div>
+        </div>
+        <div class="ob-stat-card">
+            <div class="ob-stat-icon red"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="ob-stat-body">
+                <div class="ob-stat-label">Nghiêm trọng</div>
+                <div class="ob-stat-value">@ViewBag.StatCritical</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <form method="get" action="/Incident/Index" class="ob-filter-bar">
+        <div class="ob-search-wrap">
+            <i class="fas fa-search sicon"></i>
+            <input type="text" name="searchName" value="@currentSearch" class="ob-search-input" placeholder="Tìm mã sự cố, tiêu đề, nhân viên..." />
+        </div>
+        <select name="incidentType" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Loại sự cố --</option>
+            @foreach(var type in incidentTypes)
+            {
+                if(currentType == type) { <option value="@type" selected>@type</option> }
+                else { <option value="@type">@type</option> }
+            }
+        </select>
+        <select name="severity" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Mức độ --</option>
+            @foreach(var s in severities)
+            {
+                if(currentSeverity == s) { <option value="@s" selected>@s</option> }
+                else { <option value="@s">@s</option> }
+            }
+        </select>
+        <select name="status" class="ob-filter-select" onchange="this.form.submit()">
+            <option value="">-- Trạng thái --</option>
+            <!option value="NEW" @(currentStatus == "NEW" ? "selected" : "")>Mới ghi nhận</!option>
+            <!option value="INVESTIGATING" @(currentStatus == "INVESTIGATING" ? "selected" : "")>Đang xác minh</!option>
+            <!option value="PROCESSING" @(currentStatus == "PROCESSING" ? "selected" : "")>Đang xử lý</!option>
+            <!option value="RESOLVED" @(currentStatus == "RESOLVED" ? "selected" : "")>Đã kết luận</!option>
+            <!option value="CLOSED" @(currentStatus == "CLOSED" ? "selected" : "")>Đã đóng</!option>
+            <!option value="CANCELLED" @(currentStatus == "CANCELLED" ? "selected" : "")>Đã hủy</!option>
+        </select>
+        
+        <button type="submit" class="btn-ob-primary" style="padding: 9px 12px;"><i class="fas fa-filter"></i> Lọc</button>
+        @if(hasFilter)
+        {
+            <a href="@Url.Action("Index", "Incident")" class="btn-ob-reset"><i class="fas fa-times"></i> Xóa lọc</a>
+        }
+    </form>
+
+    <!-- TABLE -->
+    <div class="ob-table-card">
+        <div class="ob-table-header">
+            <div class="ob-table-title">
+                <i class="fas fa-list-ul" style="color:#64748b"></i>
+                Danh sách sự cố
+                <span class="count-chip">@Model.Count()</span>
+            </div>
+        </div>
+        <div class="ob-table-wrap">
+            <table class="ob-table">
+                <thead>
+                    <tr>
+                        <th>Mã sự cố / Tiêu đề</th>
+                        <th>Người liên quan</th>
+                        <th>Loại sự cố</th>
+                        <th>Mức độ</th>
+                        <th>Ngày xảy ra</th>
+                        <th>Trạng thái</th>
+                        <th style="text-align:center; width:80px">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if(!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" style="text-align:center; padding: 30px; color: #94a3b8;">
+                                <i class="fas fa-inbox fa-3x" style="margin-bottom:10px; color:#cbd5e1;"></i><br/>
+                                Chưa có sự cố được ghi nhận.
+                            </td>
+                        </tr>
+                    }
+                    @foreach(var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong style="color:#0f172a;">@item.IncidentCode</strong>
+                                <div style="font-size:12px; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="@item.Title">
+                                    @item.Title
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.Participants != null && item.Participants.Any())
+                                {
+                                    var first = item.Participants.First();
+                                    <div class="emp-cell">
+                                        <div class="emp-av" style="width:28px; height:28px; font-size:11px;">
+                                            <span>@(first.EmployeeNameSnapshot?.Substring(0,1).ToUpper() ?? "?")</span>
+                                        </div>
+                                        <div>
+                                            <span class="emp-name" style="font-size:12.5px;">@first.EmployeeNameSnapshot</span>
+                                            @if(item.Participants.Count > 1) {
+                                                <span style="font-size:11px; color:#3b82f6; font-weight:600;">+@(item.Participants.Count - 1) người khác</span>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span style="color:#94a3b8; font-size:12px;">Không có</span>
+                                }
+                            </td>
+                            <td>@item.IncidentType</td>
+                            <td>
+                                @if (item.Severity == "LOW") { <span class="badge-sev low">Thấp</span> }
+                                else if (item.Severity == "MEDIUM") { <span class="badge-sev medium">Trung bình</span> }
+                                else if (item.Severity == "HIGH") { <span class="badge-sev high">Cao</span> }
+                                else if (item.Severity == "CRITICAL") { <span class="badge-sev critical">Nghiêm trọng</span> }
+                            </td>
+                            <td>@item.OccurredAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if(item.Status == "NEW") { <span class="badge-status badge-new">Mới ghi nhận</span> }
+                                else if(item.Status == "INVESTIGATING") { <span class="badge-status badge-investigating">Đang xác minh</span> }
+                                else if(item.Status == "PROCESSING") { <span class="badge-status badge-processing">Đang xử lý</span> }
+                                else if(item.Status == "RESOLVED") { <span class="badge-status badge-resolved">Đã kết luận</span> }
+                                else if(item.Status == "CLOSED") { <span class="badge-status badge-closed">Đã đóng</span> }
+                                else { <span class="badge-status badge-cancelled">Đã hủy</span> }
+                            </td>
+                            <td style="text-align:center;">
+                                <button class="btn-ob-outline" style="padding: 5px 10px; font-size: 12px;" onclick="viewDetail(@item.Id)" title="Xem chi tiết sự cố">
+                                    <i class="fas fa-eye"></i> Xem
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- DRAWER TẠO MỚI SỰ CỐ -->
+<div class="drawer-overlay" id="createDrawerOverlay" onclick="closeCreateDrawer()"></div>
+<div class="drawer-panel" id="createDrawerPanel">
+    <div class="drawer-header">
+        <h2 class="drawer-title"><i class="fas fa-plus-circle" style="color:#ef4444"></i> Ghi nhận sự cố</h2>
+        <button class="drawer-close" onclick="closeCreateDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body">
+        <form id="createForm">
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-info-circle"></i> A. THÔNG TIN CHUNG</div>
+                <div class="form-group">
+                    <label>Tiêu đề <span class="req">*</span></label>
+                    <input type="text" class="form-control" name="Title" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Loại sự cố <span class="req">*</span></label>
+                        <select class="form-control" name="IncidentType" required>
+                            <option value="">-- Chọn --</option>
+                            @foreach(var type in incidentTypes) { <option value="@type">@type</option> }
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Mức độ <span class="req">*</span></label>
+                        <select class="form-control" name="Severity" required>
+                            <option value="">-- Chọn --</option>
+                            @foreach(var s in severities) { <option value="@s">@s</option> }
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Thời gian xảy ra <span class="req">*</span></label>
+                        <input type="datetime-local" class="form-control" name="OccurredAt" required max="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")">
+                    </div>
+                    <div class="form-group">
+                        <label>Địa điểm</label>
+                        <input type="text" class="form-control" name="Location">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mô tả sự cố <span class="req">*</span></label>
+                    <textarea class="form-control" name="Description" rows="3" required></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-users"></i> B. NGƯỜI LIÊN QUAN</div>
+                <div class="form-group employee-search-container">
+                    <label>Nhân viên liên quan</label>
+                    <div style="position: relative;">
+                        <input type="text" class="form-control" id="empSearchInput" placeholder="Nhập mã hoặc tên NV để tìm..." autocomplete="off" />
+                        <i class="fas fa-search" style="position:absolute; right:12px; top:12px; color:#94a3b8;"></i>
+                    </div>
+                    <div class="employee-dropdown" id="empDropdown"></div>
+                </div>
+                <div class="selected-emp-list" id="selectedEmpList"></div>
+            </div>
+            
+            <div id="createErrorMsg" style="display:none; color:#ef4444; background:#fef2f2; border:1px solid #fecaca; padding:10px; border-radius:8px; font-size:13px; margin-bottom:15px;"></div>
+        </form>
+    </div>
+    <div class="drawer-footer">
+        <button type="button" class="btn-ob-outline" onclick="closeCreateDrawer()">Hủy bỏ</button>
+        <button type="button" class="btn-ob-primary" onclick="submitCreate()"><i class="fas fa-save"></i> Ghi nhận</button>
+    </div>
+</div>
+
+<!-- DRAWER CHI TIẾT SỰ CỐ -->
+<div class="drawer-overlay" id="detailDrawerOverlay" onclick="closeDetailDrawer()"></div>
+<div class="drawer-panel" id="detailDrawerPanel">
+    <div class="drawer-header">
+        <h2 class="drawer-title"><i class="fas fa-file-alt" style="color:#ef4444"></i> Chi tiết sự cố</h2>
+        <button class="drawer-close" onclick="closeDetailDrawer()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="drawer-body" id="detailBody" style="display:none;">
+        <!-- Render from JS -->
+    </div>
+    <div class="drawer-footer" id="detailFooter">
+        <!-- Render from JS -->
+    </div>
+</div>
+
+<!-- Modal Upload Evidence -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-weight:700;">Tải lên bằng chứng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm">
+                    <input type="hidden" id="uploadIncidentId" name="id">
+                    <div class="form-group">
+                        <label>Chọn File <span class="req">*</span></label>
+                        <input type="file" class="form-control" name="file" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mô tả tài liệu</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="border:none;">
+                <button type="button" class="btn-ob-outline" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn-ob-primary" onclick="submitUpload()"><i class="fas fa-upload"></i> Tải lên</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add Witness -->
+<div class="modal fade" id="witnessModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-weight:700;">Thêm người chứng kiến</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="witnessForm">
+                    <input type="hidden" id="witnessIncidentId" name="id">
+                    <div class="form-group">
+                        <label>Họ tên <span class="req">*</span></label>
+                        <input type="text" class="form-control" name="witnessName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Đơn vị / Phòng ban</label>
+                        <input type="text" class="form-control" name="department">
+                    </div>
+                    <div class="form-group">
+                        <label>Ghi chú lời khai</label>
+                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="border:none;">
+                <button type="button" class="btn-ob-outline" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn-ob-primary" onclick="submitWitness()"><i class="fas fa-save"></i> Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Resolve/Cancel -->
+<div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalTitle" style="font-weight:700;">Thao tác</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="actionModalBody">
+                <!-- Nội dung inject từ JS -->
+            </div>
+            <div class="modal-footer" style="border:none;">
+                <button type="button" class="btn-ob-outline" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn-ob-primary" onclick="submitAction()">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+<script>
+    const incidentCsrfToken = document.querySelector('#incidentCsrf input[name="__RequestVerificationToken"]').value;
+    function incidentFetch(url, options = {}) {
+        if ((options.method || 'GET').toUpperCase() === 'POST') {
+            options.headers = { ...(options.headers || {}), 'RequestVerificationToken': incidentCsrfToken };
+        }
+        return window.fetch(url, options);
+    }
+    let selectedEmployees = [];
+
+    // CREATE DRAWER
+    function openCreateDrawer() {
+        document.getElementById('createDrawerOverlay').classList.add('open');
+        document.getElementById('createDrawerPanel').classList.add('open');
+        document.getElementById('createForm').reset();
+        selectedEmployees = [];
+        renderSelectedEmployees();
+    }
+    
+    function closeCreateDrawer() {
+        document.getElementById('createDrawerOverlay').classList.remove('open');
+        document.getElementById('createDrawerPanel').classList.remove('open');
+        document.getElementById('empDropdown').classList.remove('show');
+    }
+
+    // EMPLOYEE SEARCH
+    let searchTimeout;
+    const searchInput = document.getElementById('empSearchInput');
+    const dropdown = document.getElementById('empDropdown');
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        if (query.length < 2) {
+            dropdown.classList.remove('show');
+            return;
+        }
+        searchTimeout = setTimeout(() => {
+            incidentFetch(`/Incident/SearchEmployee?query=${encodeURIComponent(query)}`)
+                .then(r => r.json())
+                .then(data => {
+                    dropdown.innerHTML = '';
+                    if (data.length === 0) {
+                        dropdown.innerHTML = '<div style="padding:10px 14px; color:#64748b; font-size:13px;">Không tìm thấy nhân viên.</div>';
+                    } else {
+                        data.forEach(emp => {
+                            const item = document.createElement('div');
+                            item.className = 'emp-item';
+                            item.innerHTML = `
+                                <div class="emp-item-avatar">${emp.name.charAt(0).toUpperCase()}</div>
+                                <div class="emp-item-info">
+                                    <span class="emp-item-name">${emp.name}</span>
+                                    <span class="emp-item-code">${emp.employeeCode} - ${emp.department}</span>
+                                </div>
+                            `;
+                            item.onclick = () => selectEmployee(emp);
+                            dropdown.appendChild(item);
+                        });
+                    }
+                    dropdown.classList.add('show');
+                });
+        }, 300);
+    });
+
+    function selectEmployee(emp) {
+        if (!selectedEmployees.find(x => x.id === emp.id)) {
+            selectedEmployees.push(emp);
+            renderSelectedEmployees();
+        }
+        searchInput.value = '';
+        dropdown.classList.remove('show');
+    }
+
+    function removeEmployee(id) {
+        selectedEmployees = selectedEmployees.filter(x => x.id !== id);
+        renderSelectedEmployees();
+    }
+
+    function renderSelectedEmployees() {
+        const list = document.getElementById('selectedEmpList');
+        list.innerHTML = '';
+        selectedEmployees.forEach(emp => {
+            list.innerHTML += `
+                <div class="selected-emp-tag">
+                    <div>
+                        <i class="fas fa-user-circle" style="color:#94a3b8; margin-right:6px;"></i> 
+                        ${emp.name} (${emp.employeeCode}) - ${emp.department}
+                    </div>
+                    <i class="fas fa-times del-btn" onclick="removeEmployee(${emp.id})"></i>
+                </div>
+            `;
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    function submitCreate() {
+        const form = document.getElementById('createForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const formData = new FormData(form);
+        selectedEmployees.forEach(emp => {
+            formData.append('employeeIds', emp.id);
+        });
+
+        incidentFetch('/Incident/Create', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                const errDiv = document.getElementById('createErrorMsg');
+                errDiv.textContent = res.message;
+                errDiv.style.display = 'block';
+            }
+        }).catch(err => {
+            alert('Lỗi kết nối.');
+            console.error(err);
+        });
+    }
+
+    // DETAIL DRAWER
+    function openDetailDrawer() {
+        document.getElementById('detailDrawerOverlay').classList.add('open');
+        document.getElementById('detailDrawerPanel').classList.add('open');
+    }
+    
+    function closeDetailDrawer() {
+        document.getElementById('detailDrawerOverlay').classList.remove('open');
+        document.getElementById('detailDrawerPanel').classList.remove('open');
+    }
+
+    function viewDetail(id) {
+        openDetailDrawer();
+        document.getElementById('detailBody').innerHTML = '<div style="text-align:center; padding: 40px; color:#94a3b8;"><i class="fas fa-spinner fa-spin fa-2x"></i><br/>Đang tải...</div>';
+        document.getElementById('detailBody').style.display = 'block';
+        document.getElementById('detailFooter').innerHTML = '';
+
+        incidentFetch(`/Incident/Detail/${id}`)
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success) {
+                    document.getElementById('detailBody').innerHTML = '<div style="color:#ef4444; padding:20px;">Không thể tải chi tiết sự cố. <button class="btn-ob-outline" onclick="viewDetail('+id+')">Thử lại</button></div>';
+                    return;
+                }
+                renderDetail(res.data);
+            }).catch(e => {
+                document.getElementById('detailBody').innerHTML = '<div style="color:#ef4444; padding:20px;">Lỗi kết nối. <button class="btn-ob-outline" onclick="viewDetail('+id+')">Thử lại</button></div>';
+            });
+    }
+
+    function renderDetail(data) {
+        const renderBadge = (status) => {
+            switch(status) {
+                case 'NEW': return `<span class="badge-status badge-new">Mới ghi nhận</span>`;
+                case 'INVESTIGATING': return `<span class="badge-status badge-investigating">Đang xác minh</span>`;
+                case 'PROCESSING': return `<span class="badge-status badge-processing">Đang xử lý</span>`;
+                case 'RESOLVED': return `<span class="badge-status badge-resolved">Đã kết luận</span>`;
+                case 'CLOSED': return `<span class="badge-status badge-closed">Đã đóng</span>`;
+                case 'CANCELLED': return `<span class="badge-status badge-cancelled">Đã hủy</span>`;
+                default: return `<span class="badge-status badge-closed">${status}</span>`;
+            }
+        };
+
+        const renderSeverity = (sev) => {
+            if (sev === "LOW") return `<span class="badge-sev low">Thấp</span>`;
+            if (sev === "MEDIUM") return `<span class="badge-sev medium">Trung bình</span>`;
+            if (sev === "HIGH") return `<span class="badge-sev high">Cao</span>`;
+            if (sev === "CRITICAL") return `<span class="badge-sev critical">Nghiêm trọng</span>`;
+            return sev;
+        };
+
+        let participantsHtml = '';
+        if (data.participants && data.participants.length > 0) {
+            data.participants.forEach(p => {
+                participantsHtml += `
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:8px; display:flex; align-items:center; gap:10px;">
+                        <div class="emp-av" style="width:32px; height:32px; font-size:12px;"><span>${p.employeeNameSnapshot.charAt(0)}</span></div>
+                        <div>
+                            <div style="font-weight:600; color:#0f172a; font-size:13.5px;">${p.employeeNameSnapshot} (${p.employeeCodeSnapshot})</div>
+                            <div style="font-size:12px; color:#64748b;">${p.departmentSnapshot} - ${p.positionSnapshot}</div>
+                        </div>
+                    </div>`;
+            });
+        } else {
+            participantsHtml = '<div style="color:#64748b; font-size:13px; font-style:italic;">Không có.</div>';
+        }
+
+        let witnessesHtml = '';
+        if (data.witnesses && data.witnesses.length > 0) {
+            data.witnesses.forEach(w => {
+                witnessesHtml += `
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:8px;">
+                        <div style="font-weight:600; color:#0f172a; font-size:13.5px;">${w.witnessName} <span style="font-weight:400; color:#64748b; font-size:12px;">- ${w.department || ''}</span></div>
+                        <div style="font-size:13px; color:#475569; margin-top:4px;">${w.notes || ''}</div>
+                    </div>`;
+            });
+        } else {
+            witnessesHtml = '<div style="color:#64748b; font-size:13px; font-style:italic;">Chưa ghi nhận người chứng kiến.</div>';
+        }
+        
+        // Add Witness button if investigating
+        if (data.status === 'NEW' || data.status === 'INVESTIGATING' || data.status === 'PROCESSING') {
+            witnessesHtml += `<button class="btn-ob-outline" style="margin-top:8px;" onclick="openWitnessModal(${data.id})"><i class="fas fa-plus"></i> Thêm người chứng kiến</button>`;
+        }
+
+        let evidencesHtml = '';
+        if (data.evidences && data.evidences.length > 0) {
+            data.evidences.forEach(e => {
+                evidencesHtml += `
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:10px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                        <div style="font-weight:600; color:#3b82f6; font-size:13.5px;"><i class="fas fa-paperclip"></i> <a href="/Incident/DownloadEvidence?evidenceId=${e.id}" target="_blank" style="color:#3b82f6; text-decoration:none;">${e.fileName}</a></div>
+                            <div style="font-size:12px; color:#64748b;">${e.uploadedBy} - ${e.uploadedAt.replace('T', ' ')}</div>
+                        </div>
+                        <a href="/Incident/DownloadEvidence?evidenceId=${e.id}" download class="btn-ob-outline" style="padding:4px 8px;"><i class="fas fa-download"></i></a>
+                    </div>`;
+            });
+        } else {
+            evidencesHtml = '<div style="color:#64748b; font-size:13px; font-style:italic;">Chưa có bằng chứng đính kèm.</div>';
+        }
+
+        if (data.status !== 'CLOSED' && data.status !== 'CANCELLED') {
+            evidencesHtml += `<button class="btn-ob-outline" style="margin-top:8px;" onclick="openUploadModal(${data.id})"><i class="fas fa-upload"></i> Tải lên tài liệu</button>`;
+        }
+
+        let investigationHtml = '';
+        if (data.status === 'RESOLVED' || data.status === 'CLOSED') {
+            investigationHtml = `
+                <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:14px; margin-bottom:16px;">
+                    <div style="font-weight:700; color:#166534; font-size:13.5px; margin-bottom:4px;">Kết luận sự cố</div>
+                    <div style="color:#166534; font-size:14px; margin-bottom:10px;">${data.conclusion}</div>
+                    
+                    <div style="font-weight:700; color:#166534; font-size:13.5px; margin-bottom:4px;">Biện pháp xử lý</div>
+                    <div style="color:#166534; font-size:14px; margin-bottom:10px;">${data.resolution || '---'}</div>
+                    
+                    <div style="font-weight:700; color:#166534; font-size:13.5px; margin-bottom:4px;">Ghi chú quá trình xác minh</div>
+                    <div style="color:#166534; font-size:14px;">${data.investigationSummary || '---'}</div>
+                </div>
+            `;
+        } else if (data.status === 'INVESTIGATING' || data.status === 'PROCESSING') {
+            investigationHtml = `
+                <div style="padding:12px; border:1px dashed #cbd5e1; border-radius:8px; background:#fff;">
+                    <div style="color:#0f172a; font-weight:600; margin-bottom:8px;">Đang trong quá trình xác minh & xử lý</div>
+                    <button class="btn-ob-outline" onclick="openResolveModal(${data.id})"><i class="fas fa-edit"></i> Cập nhật kết luận</button>
+                </div>
+            `;
+        } else {
+            investigationHtml = '<div style="color:#64748b; font-size:13px; font-style:italic;">Chưa bắt đầu xác minh.</div>';
+        }
+
+        let historyHtml = '';
+        if (data.histories && data.histories.length > 0) {
+            data.histories.forEach(h => {
+                historyHtml += `
+                    <div class="timeline-item">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-time">${h.timestamp.replace('T', ' ')} - <strong>${h.actor}</strong></div>
+                        <div class="timeline-content">
+                            <strong>${h.action}</strong>
+                            <p>${h.details || ''}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        const html = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 20px;">
+                <div>
+                    <h3 style="margin:0; font-size:18px; color:#0f172a;">${data.incidentCode}</h3>
+                    <div style="font-size:14px; color:#475569; margin-top:4px; max-width:400px;">${data.title}</div>
+                    <div style="margin-top:8px;">
+                        ${renderSeverity(data.severity)}
+                        <span style="font-size:12px; color:#64748b; margin-left:10px;"><i class="fas fa-tag"></i> ${data.incidentType}</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    ${renderBadge(data.status)}
+                    <div style="font-size:12px; color:#64748b; margin-top:6px;">${data.occurredAt.replace('T', ' ')}</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-align-left"></i> Mô tả sự cố</div>
+                <div style="color:#334155; font-size:14px; white-space:pre-wrap; background:#fff; padding:14px; border:1px solid #e2e8f0; border-radius:8px;">${data.description}</div>
+                <div style="margin-top:10px; font-size:13px; color:#64748b;">
+                    <i class="fas fa-map-marker-alt"></i> Địa điểm: ${data.location || 'Không có'}
+                </div>
+                <div style="margin-top:4px; font-size:13px; color:#64748b;">
+                    <i class="fas fa-user-edit"></i> Người báo cáo: ${data.reportedBy || 'Hệ thống'}
+                </div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-users"></i> Người liên quan</div>
+                ${participantsHtml}
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-eye"></i> Người chứng kiến</div>
+                ${witnessesHtml}
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-file-invoice"></i> Bằng chứng / Tài liệu</div>
+                ${evidencesHtml}
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-balance-scale"></i> Kết quả xử lý</div>
+                ${investigationHtml}
+            </div>
+
+            <div class="form-section">
+                <div class="form-section-title"><i class="fas fa-history"></i> Lịch sử</div>
+                <div class="timeline">
+                    ${historyHtml}
+                </div>
+            </div>
+        `;
+        document.getElementById('detailBody').innerHTML = html;
+
+        // Render Footer Actions
+        let footerHtml = '';
+        if (data.status === 'NEW') {
+            footerHtml += `
+                <button class="btn-ob-outline" style="color:#ef4444; border-color:#fecaca; background:#fef2f2;" onclick="openCancelModal(${data.id})">Hủy</button>
+                <button class="btn-ob-primary" onclick="actionBasic('/Incident/StartInvestigation', ${data.id})"><i class="fas fa-search"></i> Bắt đầu xác minh</button>
+            `;
+        }
+        else if (data.status === 'INVESTIGATING' || data.status === 'PROCESSING') {
+            footerHtml += `
+                <button class="btn-ob-primary" style="background:#10b981;" onclick="openResolveModal(${data.id})"><i class="fas fa-check"></i> Kết luận sự cố</button>
+            `;
+        }
+        else if (data.status === 'RESOLVED') {
+            footerHtml += `
+                <button class="btn-ob-primary" style="background:#334155;" onclick="actionBasic('/Incident/Close', ${data.id})"><i class="fas fa-lock"></i> Đóng hồ sơ</button>
+            `;
+        }
+        
+        footerHtml = `<button class="btn-ob-outline" onclick="closeDetailDrawer()">Đóng</button>` + footerHtml;
+        document.getElementById('detailFooter').innerHTML = footerHtml;
+    }
+
+    // ACTIONS
+    function actionBasic(endpoint, id) {
+        if (!confirm('Bạn có chắc chắn thực hiện thao tác này?')) return;
+        const formData = new FormData();
+        formData.append('id', id);
+
+        incidentFetch(endpoint, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'Có lỗi xảy ra.');
+                }
+            });
+    }
+
+    // Modals
+    let uploadModal, witnessModal, actionModal;
+
+    function openUploadModal(id) {
+        document.getElementById('uploadIncidentId').value = id;
+        document.getElementById('uploadForm').reset();
+        if (!uploadModal) uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+        uploadModal.show();
+    }
+
+    function submitUpload() {
+        const form = document.getElementById('uploadForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        const formData = new FormData(form);
+        incidentFetch('/Incident/UploadEvidence', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(res => {
+            if (res.success) window.location.reload();
+            else alert(res.message);
+        });
+    }
+
+    function openWitnessModal(id) {
+        document.getElementById('witnessIncidentId').value = id;
+        document.getElementById('witnessForm').reset();
+        if (!witnessModal) witnessModal = new bootstrap.Modal(document.getElementById('witnessModal'));
+        witnessModal.show();
+    }
+
+    function submitWitness() {
+        const form = document.getElementById('witnessForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        const formData = new FormData(form);
+        incidentFetch('/Incident/AddWitness', {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(res => {
+            if (res.success) window.location.reload();
+            else alert(res.message);
+        });
+    }
+
+    let currentActionEndpoint = '';
+    function openCancelModal(id) {
+        currentActionEndpoint = '/Incident/Cancel';
+        document.getElementById('actionModalTitle').textContent = 'Hủy hồ sơ sự cố';
+        document.getElementById('actionModalBody').innerHTML = `
+            <input type="hidden" id="actionId" value="${id}">
+            <div class="form-group">
+                <label>Lý do hủy <span class="req">*</span></label>
+                <textarea id="actionReason" class="form-control" rows="3" required></textarea>
+            </div>
+        `;
+        if (!actionModal) actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+        actionModal.show();
+    }
+
+    function openResolveModal(id) {
+        currentActionEndpoint = '/Incident/Resolve';
+        document.getElementById('actionModalTitle').textContent = 'Kết luận sự cố';
+        document.getElementById('actionModalBody').innerHTML = `
+            <input type="hidden" id="actionId" value="${id}">
+            <div class="form-group">
+                <label>Kết luận <span class="req">*</span></label>
+                <textarea id="actionConclusion" class="form-control" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Biện pháp xử lý</label>
+                <textarea id="actionResolution" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ghi chú quá trình xác minh</label>
+                <textarea id="actionSummary" class="form-control" rows="2"></textarea>
+            </div>
+        `;
+        if (!actionModal) actionModal = new bootstrap.Modal(document.getElementById('actionModal'));
+        actionModal.show();
+    }
+
+    function submitAction() {
+        const id = document.getElementById('actionId').value;
+        const formData = new FormData();
+        formData.append('id', id);
+
+        if (currentActionEndpoint === '/Incident/Cancel') {
+            const reason = document.getElementById('actionReason').value;
+            if (!reason) { alert("Vui lòng nhập lý do"); return; }
+            formData.append('reason', reason);
+        }
+        else if (currentActionEndpoint === '/Incident/Resolve') {
+            const conclusion = document.getElementById('actionConclusion').value;
+            const resolution = document.getElementById('actionResolution').value;
+            const summary = document.getElementById('actionSummary').value;
+            if (!conclusion) { alert("Vui lòng nhập kết luận"); return; }
+            formData.append('conclusion', conclusion);
+            formData.append('resolution', resolution);
+            formData.append('investigationSummary', summary);
+        }
+
+        incidentFetch(currentActionEndpoint, {
+            method: 'POST',
+            body: formData
+        }).then(r => r.json()).then(res => {
+            if (res.success) window.location.reload();
+            else alert(res.message);
+        });
+    }
+</script>
+}

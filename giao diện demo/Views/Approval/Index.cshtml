@@ -1,0 +1,423 @@
+@model giao_dien_demo.Models.PendingApprovalViewModel
+
+@{
+    ViewData["Title"] = "Đơn chờ duyệt";
+}
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon text-primary"><i class="fa-solid fa-clipboard-check"></i></span>
+            Đơn chờ duyệt
+        </h1>
+        <p class="text-muted mb-0" style="font-size: 14px; margin-top: 4px;">Quản lý các đơn từ nhân viên đang chờ phê duyệt.</p>
+        <div class="hrms-breadcrumb mt-2">
+            <span>Duyệt đơn</span>
+            <i class="fa-solid fa-chevron-right separator"></i>
+            <span>Đơn chờ duyệt</span>
+        </div>
+    </div>
+    <div class="hrms-page-header-actions">
+    </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-layer-group"></i></div>
+            <div class="hrms-kpi-value">@Model.TotalPending</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng đơn chờ</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-calendar-minus"></i></div>
+            <div class="hrms-kpi-value">@Model.LeavePending</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Nghỉ phép</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-orange">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-clock"></i></div>
+            <div class="hrms-kpi-value">@Model.AdjustmentPending</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Điều chỉnh chấm công</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-file-invoice"></i></div>
+            <div class="hrms-kpi-value">@Model.ProposalPending</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đề xuất</div>
+        </div>
+    </div>
+</div>
+
+<!-- TABS -->
+<ul class="nav nav-tabs hrms-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(string.IsNullOrEmpty(Model.FilterType) ? "active" : "")" href="@Url.Action("Index", new { type = "" })">
+            Tất cả
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.FilterType == "LEAVE" ? "active" : "")" href="@Url.Action("Index", new { type = "LEAVE" })">
+            Nghỉ phép
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.FilterType == "ADJUSTMENT" ? "active" : "")" href="@Url.Action("Index", new { type = "ADJUSTMENT" })">
+            Điều chỉnh chấm công
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.FilterType == "PROPOSAL" ? "active" : "")" href="@Url.Action("Index", new { type = "PROPOSAL" })">
+            Đề xuất
+        </a>
+    </li>
+</ul>
+
+<!-- FILTER AREA -->
+<div class="hrms-filter-section mb-4">
+    <form method="get" action="@Url.Action("Index")" class="row g-3 align-items-end">
+        <input type="hidden" name="type" value="@Model.FilterType" />
+        <div class="col-md-4">
+            <label class="form-label">Tìm kiếm đơn...</label>
+            <input type="text" name="keyword" class="form-control" value="@Model.SearchKeyword" placeholder="Nhập mã đơn, tên nhân viên..." />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Trạng thái</label>
+            <select name="status" class="form-select">
+                <option value="">Tất cả đang chờ</option>
+                <option value="Chờ duyệt" selected="@(Model.FilterStatus == "Chờ duyệt")">Chờ duyệt</option>
+                <option value="Yêu cầu bổ sung" selected="@(Model.FilterStatus == "Yêu cầu bổ sung")">Yêu cầu bổ sung</option>
+            </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="hrms-btn hrms-btn-primary">
+                <i class="fa-solid fa-filter"></i> Lọc
+            </button>
+            <a href="@Url.Action("Index", new { type = Model.FilterType })" class="hrms-btn hrms-btn-secondary">
+                <i class="fa-solid fa-rotate-right"></i> Đặt lại
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- TABLE -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body p-0">
+        @if (Model.Items != null && Model.Items.Any())
+        {
+            <div class="table-responsive">
+                <table class="hrms-table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Nhân viên</th>
+                            <th>Loại đơn</th>
+                            <th>Nội dung tóm tắt</th>
+                            <th>Ngày gửi</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td class="fw-bold">@item.RequestCode</td>
+                                <td>
+                                    <div class="fw-bold text-dark">@item.EmployeeName</div>
+                                    <div class="small text-muted">@item.EmployeeCode</div>
+                                </td>
+                                <td>
+                                    @if(item.RequestTypeKey == "LEAVE") {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="fa-solid fa-calendar-minus me-1"></i> @item.RequestType</span>
+                                    } else if (item.RequestTypeKey == "ADJUSTMENT") {
+                                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1"><i class="fa-solid fa-user-clock me-1"></i> @item.RequestType</span>
+                                    } else {
+                                        <span class="badge bg-purple-subtle text-purple border border-purple-subtle px-2 py-1"><i class="fa-solid fa-file-invoice me-1"></i> @item.RequestType</span>
+                                    }
+                                </td>
+                                <td style="max-width:250px;" class="text-truncate" title="@item.DurationSummary">
+                                    @item.DurationSummary
+                                </td>
+                                <td>@item.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-center">
+                                    @if(item.Status == "Chờ duyệt")
+                                    {
+                                        <span class="badge bg-warning">Chờ duyệt</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">@item.Status</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary hrms-btn-icon" title="Xem chi tiết" onclick="openDetailDrawer('@item.ApprovalItemId')">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="hrms-empty-state p-5">
+                <div class="empty-icon"><i class="fa-solid fa-inbox text-muted"></i></div>
+                <div class="empty-title">Chưa có đơn chờ duyệt.</div>
+                <div class="empty-desc">Tuyệt vời, bạn đã xử lý hết tất cả các đơn!</div>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="detailDrawer" aria-labelledby="detailDrawerLabel" style="width: 500px;">
+    <div class="offcanvas-header border-bottom bg-light">
+        <h5 class="offcanvas-title fw-bold" id="detailDrawerLabel">Chi tiết đơn chờ duyệt</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    
+    <div id="drawerLoadingState" class="p-5 text-center d-none">
+        <div class="spinner-border text-primary" role="status"></div>
+        <div class="mt-2 text-muted">Đang tải thông tin...</div>
+    </div>
+    
+    <div id="drawerErrorState" class="p-5 text-center d-none">
+        <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size: 32px;"></i>
+        <div class="text-danger fw-bold">Lỗi tải chi tiết đơn.</div>
+    </div>
+    
+    <div class="offcanvas-body p-0 d-none" id="drawerContentArea">
+        <div class="p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0 text-primary" id="detRequestCode">--</h5>
+                <span id="detStatus" class="badge bg-warning fs-6">Chờ duyệt</span>
+            </div>
+            
+            <div class="accordion" id="accordionDetail">
+                <!-- Thông tin nhân viên -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEmp" aria-expanded="true" aria-controls="collapseEmp">
+                            <i class="fa-solid fa-user me-2 text-secondary"></i> Thông tin nhân viên
+                        </button>
+                    </h2>
+                    <div id="collapseEmp" class="accordion-collapse collapse show" data-bs-parent="#accordionDetail">
+                        <div class="accordion-body">
+                            <table class="table table-sm table-borderless mb-0">
+                                <tr><td class="text-muted" width="40%">Họ tên:</td><td class="fw-bold" id="detEmpName">--</td></tr>
+                                <tr><td class="text-muted">Mã NV:</td><td id="detEmpCode">--</td></tr>
+                                <tr><td class="text-muted">Phòng ban:</td><td id="detDept">--</td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Nội dung đơn (Render Dynamic) -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContent" aria-expanded="true" aria-controls="collapseContent">
+                            <i class="fa-solid fa-file-lines me-2 text-secondary"></i> Nội dung đơn
+                        </button>
+                    </h2>
+                    <div id="collapseContent" class="accordion-collapse collapse show" data-bs-parent="#accordionDetail">
+                        <div class="accordion-body" id="dynamicContentContainer">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phép còn lại (Chỉ show nếu là LEAVE) -->
+                <div class="accordion-item d-none" id="leaveBalanceSection">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBalance" aria-expanded="false" aria-controls="collapseBalance">
+                            <i class="fa-solid fa-scale-balanced me-2 text-secondary"></i> Phép còn lại
+                        </button>
+                    </h2>
+                    <div id="collapseBalance" class="accordion-collapse collapse" data-bs-parent="#accordionDetail">
+                        <div class="accordion-body text-center text-muted">
+                            <i class="fa-solid fa-info-circle mb-2" style="font-size:24px;"></i>
+                            <p class="mb-0 small">Chưa có thông tin số dư phép khả dụng.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="offcanvas-footer border-top p-3 bg-white d-none" id="drawerFooterArea">
+        <input type="hidden" id="currentApprovalItemId" />
+        <div id="drawerActionButtons" class="d-flex justify-content-between gap-2">
+            <button class="btn btn-outline-danger flex-grow-1" onclick="openRejectModal()">Từ chối</button>
+            <button class="hrms-btn hrms-btn-primary flex-grow-1" id="btnApprove" onclick="approveRequest()">
+                <i class="fa-solid fa-check"></i> Duyệt
+            </button>
+        </div>
+        <div id="drawerMonitorNotice" class="alert alert-info py-2 px-3 mb-0 small text-center d-none">
+            <i class="fa-solid fa-circle-info me-1"></i> Đơn này thuộc thẩm quyền phê duyệt của Quản lý trực tiếp (Manager). HR/Leader theo dõi giám sát.
+        </div>
+    </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-danger" id="rejectModalLabel">Từ chối đơn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Lý do từ chối <span class="text-danger">*</span></label>
+                    <textarea class="form-control" id="rejectReason" rows="3" placeholder="Nhập lý do chi tiết..." required></textarea>
+                </div>
+                <div id="rejectErrorMsg" class="text-danger small d-none">Vui lòng nhập lý do từ chối.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="btnSubmitReject" onclick="submitReject()">Xác nhận Từ chối</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        var drawer = new bootstrap.Offcanvas(document.getElementById('detailDrawer'));
+        var rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+
+        function openDetailDrawer(itemId) {
+            document.getElementById('currentApprovalItemId').value = itemId;
+            
+            showDrawerState('loading');
+            drawer.show();
+
+            fetch('@Url.Action("GetDetail")?itemId=' + itemId)
+                .then(res => res.ok ? res.json() : Promise.reject())
+                .then(data => {
+                    // Populate Header
+                    document.getElementById('detRequestCode').innerText = data.requestCode;
+                    document.getElementById('detStatus').innerText = data.status;
+                    
+                    // Populate Employee
+                    document.getElementById('detEmpName').innerText = data.employeeName;
+                    document.getElementById('detEmpCode').innerText = data.employeeCode || "N/A";
+                    document.getElementById('detDept').innerText = data.department || "N/A";
+
+                    // Populate Content dynamically
+                    let container = document.getElementById('dynamicContentContainer');
+                    container.innerHTML = '';
+                    let table = '<table class="table table-sm table-borderless mb-0">';
+                    for (const [key, value] of Object.entries(data.requestContent)) {
+                        table += `<tr><td class="text-muted" width="40%">${key}:</td><td class="fw-bold">${value}</td></tr>`;
+                    }
+                    table += '</table>';
+                    container.innerHTML = table;
+
+                    // Toggle Leave Balance Section
+                    if(data.requestTypeKey === 'LEAVE') {
+                        document.getElementById('leaveBalanceSection').classList.remove('d-none');
+                    } else {
+                        document.getElementById('leaveBalanceSection').classList.add('d-none');
+                    }
+
+                    // Toggle Monitoring Notice for LEAVE and ADJUSTMENT (Manager owns approval)
+                    if (data.requestTypeKey === 'LEAVE' || data.requestTypeKey === 'ADJUSTMENT') {
+                        document.getElementById('drawerActionButtons').classList.add('d-none');
+                        document.getElementById('drawerMonitorNotice').classList.remove('d-none');
+                    } else {
+                        document.getElementById('drawerActionButtons').classList.remove('d-none');
+                        document.getElementById('drawerMonitorNotice').classList.add('d-none');
+                    }
+
+                    showDrawerState('content');
+                })
+                .catch(() => showDrawerState('error'));
+        }
+
+        function showDrawerState(state) {
+            document.getElementById('drawerLoadingState').classList.add('d-none');
+            document.getElementById('drawerErrorState').classList.add('d-none');
+            document.getElementById('drawerContentArea').classList.add('d-none');
+            document.getElementById('drawerFooterArea').classList.add('d-none');
+            
+            if(state === 'loading') document.getElementById('drawerLoadingState').classList.remove('d-none');
+            if(state === 'error') document.getElementById('drawerErrorState').classList.remove('d-none');
+            if(state === 'content') {
+                document.getElementById('drawerContentArea').classList.remove('d-none');
+                document.getElementById('drawerFooterArea').classList.remove('d-none');
+            }
+        }
+
+        function approveRequest() {
+            var itemId = document.getElementById('currentApprovalItemId').value;
+            var btn = document.getElementById('btnApprove');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang xử lý...';
+
+            fetch('@Url.Action("Approve")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ itemId: itemId, __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value })
+            })
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(() => {
+                alert('Lỗi: Đơn đã bị xử lý hoặc bạn không có quyền duyệt.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Duyệt';
+            });
+        }
+
+        function openRejectModal() {
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectErrorMsg').classList.add('d-none');
+            rejectModal.show();
+        }
+
+        function submitReject() {
+            var itemId = document.getElementById('currentApprovalItemId').value;
+            var reason = document.getElementById('rejectReason').value.trim();
+            
+            if(!reason) {
+                document.getElementById('rejectErrorMsg').classList.remove('d-none');
+                return;
+            }
+            
+            var btn = document.getElementById('btnSubmitReject');
+            btn.disabled = true;
+
+            fetch('@Url.Action("Reject")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ itemId: itemId, reason: reason, __RequestVerificationToken: document.querySelector('input[name="__RequestVerificationToken"]').value })
+            })
+            .then(res => res.ok ? res.json() : Promise.reject())
+            .then(data => {
+                window.location.reload();
+            })
+            .catch(() => {
+                alert('Có lỗi xảy ra.');
+                btn.disabled = false;
+            });
+        }
+    </script>
+}

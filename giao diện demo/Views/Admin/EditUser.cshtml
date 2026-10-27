@@ -1,39 +1,106 @@
-﻿@model giao_dien_demo.Models.User
+@model giao_dien_demo.Models.User
 
 @{
-    ViewData["Title"] = "Sửa tài khoản";
+    ViewData["Title"] = "Cập nhật tài khoản";
 }
 
-<h2>✏ Sửa tài khoản</h2>
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Users","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;">Người dùng</a>
+            <span>/</span>
+            <span>Cập nhật</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-pen-to-square"></i></span>
+            Cập nhật tài khoản
+        </h1>
+        <p class="hrms-page-subtitle">Chỉnh sửa thông tin tài khoản #@Model.Id — @Model.FullName</p>
+    </div>
+    <div class="hrms-page-header-actions">
+        <a href="@Url.Action("Users","Admin")" class="hrms-btn hrms-btn-ghost">
+            <i class="fa-solid fa-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
 
-<form asp-action="EditUser" method="post">
-    <input type="hidden" asp-for="Id" />
+@if (TempData["Error"] != null) {
+    <div class="hrms-alert hrms-alert-danger mb-4">
+        <i class="fa-solid fa-circle-exclamation me-2"></i> @TempData["Error"]
+    </div>
+}
 
-    <div class="mb-3">
-        <label>Họ tên</label>
-        <input asp-for="FullName" class="form-control" />
+<div class="row">
+    <div class="col-md-8">
+        <div class="hrms-card">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-user-gear card-title-icon"></i> Thông tin tài khoản</h3>
+            </div>
+            <div class="hrms-card-body">
+                <form asp-action="EditUser" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="mb-4">
+                        <label class="hrms-form-label">
+                            Họ và tên <span style="color: var(--hrms-danger, #ef4444);">*</span>
+                        </label>
+                        <input asp-for="FullName"
+                               class="hrms-form-control"
+                               placeholder="Nhập họ và tên đầy đủ" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="hrms-form-label">
+                            Tên đăng nhập <span style="color: var(--hrms-danger, #ef4444);">*</span>
+                        </label>
+                        <input asp-for="Username"
+                               class="hrms-form-control"
+                               placeholder="Nhập tên đăng nhập"
+                               style="font-family: monospace;" required />
+                        <p style="font-size:12px; color: var(--hrms-text-muted, #94a3b8); margin-top:4px;">
+                            <i class="fa-solid fa-circle-info"></i> Tên đăng nhập phải là duy nhất trong hệ thống
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="hrms-form-label">
+                            Vai trò <span style="color: var(--hrms-danger, #ef4444);">*</span>
+                        </label>
+                        <select asp-for="Role" class="hrms-form-select">
+                            @foreach (var roleName in (IEnumerable<string>)(ViewBag.AvailableRoles ?? Array.Empty<string>()))
+                            {
+                                <option value="@roleName">@roleName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div style="padding-top:16px; border-top:1px solid var(--hrms-border, #f1f5f9);" class="d-flex gap-2">
+                        <button type="submit" class="hrms-btn hrms-btn-primary">
+                            <i class="fa-solid fa-floppy-disk"></i> Lưu thay đổi
+                        </button>
+                        <a href="@Url.Action("Details","Admin", new { id = Model.Id })" class="hrms-btn hrms-btn-secondary">
+                            Xem chi tiết
+                        </a>
+                        <a href="@Url.Action("Users","Admin")" class="hrms-btn hrms-btn-ghost">
+                            Hủy
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <div class="mb-3">
-        <label>Tên đăng nhập</label>
-        <input asp-for="Username" class="form-control" />
+    <div class="col-md-4">
+        <div class="hrms-card">
+            <div class="hrms-card-header">
+                <h3 class="hrms-card-title"><i class="fa-solid fa-circle-info card-title-icon"></i> Lưu ý quản trị</h3>
+            </div>
+            <div class="hrms-card-body" style="font-size:13px; color: var(--hrms-text-muted, #64748b); line-height:1.7;">
+                <p><i class="fa-solid fa-triangle-exclamation" style="color: var(--hrms-warning, #f59e0b);"></i> Thay đổi vai trò sẽ có hiệu lực ngay sau khi người dùng đăng nhập lại.</p>
+                <p><i class="fa-solid fa-lock" style="color: var(--hrms-primary, #6366f1);"></i> Mật khẩu không thể thay đổi từ trang này. Dùng chức năng Reset Password.</p>
+                <p><i class="fa-solid fa-shield-halved" style="color: var(--hrms-primary, #3b82f6);"></i> Mọi thay đổi sẽ được ghi vào Audit Log.</p>
+            </div>
+        </div>
     </div>
-
-    <div class="mb-3">
-        <label>Vai trò</label>
-        <select asp-for="Role" class="form-control">
-            <option>Admin</option>
-            <option>HR</option>
-            <option>Leader</option>
-            <option>Employee</option>
-        </select>
-    </div>
-
-    <button type="submit" class="btn btn-primary">
-        💾 Lưu
-    </button>
-
-    <a asp-action="Index" class="btn btn-secondary">
-        ↩ Quay lại
-    </a>
-</form>
+</div>

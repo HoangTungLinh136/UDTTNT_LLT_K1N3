@@ -1,0 +1,315 @@
+@{
+    ViewData["Title"] = "Quản lý Nhân sự";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-users"></i></span>
+            Quản lý Nhân sự (Lãnh đạo)
+        </h1>
+        <div class="hrms-page-subtitle">Theo dõi quy mô nhân sự, tình trạng làm việc và các đề xuất trong phạm vi phụ trách.</div>
+    </div>
+    <div class="hrms-page-header-actions">
+        <button class="hrms-btn hrms-btn-secondary" onclick="loadData()">
+            <i class="fa-solid fa-rotate-right me-1"></i> Làm mới
+        </button>
+    </div>
+</div>
+
+<!-- Thống kê tổng quan -->
+<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4" id="kpi-container">
+    <div class="hrms-kpi-card kpi-blue">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="hrms-kpi-value" id="kpi-total">-</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tổng nhân sự</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-green">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-check"></i></div>
+            <div class="hrms-kpi-value text-success" id="kpi-active">-</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Đang làm việc</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-yellow">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-bed"></i></div>
+            <div class="hrms-kpi-value text-warning" id="kpi-leave">-</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Nghỉ phép (Hôm nay)</div>
+        </div>
+    </div>
+    <div class="hrms-kpi-card kpi-purple">
+        <div class="hrms-kpi-top">
+            <div class="hrms-kpi-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <div class="hrms-kpi-value text-info" id="kpi-new">-</div>
+        </div>
+        <div class="hrms-kpi-body mt-2">
+            <div class="hrms-kpi-label">Tuyển mới (Tháng này)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar / Search -->
+<div class="hrms-card mb-4">
+    <div class="hrms-card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex gap-2 flex-grow-1" style="max-width: 400px;">
+                <input type="text" id="searchInput" class="hrms-form-control hrms-search-input" placeholder="Tìm kiếm theo Mã NV, Tên, Email...">
+            </div>
+            <div class="d-flex gap-2">
+                <button class="hrms-btn hrms-btn-ghost" onclick="loadData()" title="Làm mới dữ liệu">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lọc nhanh theo phòng ban (Chỉ hiện khi > 1 phòng ban) -->
+<ul class="nav nav-pills hrms-tabs mb-3" id="department-tabs" style="display: none;">
+    <!-- Rendered by JS -->
+</ul>
+
+<!-- Table -->
+<div class="hrms-card mb-4">
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th>Nhân viên</th>
+                    <th>Phòng ban</th>
+                    <th>Chức danh</th>
+                    <th>Trạng thái</th>
+                    <th class="col-actions">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="employee-tbody">
+                <tr><td colspan="5" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải dữ liệu...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-muted small" id="pagination-info">Hiển thị 0-0 trong 0</span>
+            <select id="pageSizeSelect" class="hrms-form-select form-select-sm" style="width: 75px;" onchange="changePageSize()">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        <nav>
+            <ul class="pagination pagination-sm mb-0" id="pagination-ul">
+                <!-- Rendered by JS -->
+            </ul>
+        </nav>
+    </div>
+</div>
+
+
+<!-- Modal Xem Chi tiết -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Chi tiết Nhân sự</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detail-body">
+                <div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải dữ liệu...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        let pageSize = 10;
+        let currentDepartment = "";
+        let currentSearch = "";
+        let searchTimeout = null;
+
+        $(document).ready(function () {
+            loadKPIs();
+            loadData();
+
+            $('#searchInput').on('input', function () {
+                clearTimeout(searchTimeout);
+                currentSearch = $(this).val();
+                searchTimeout = setTimeout(function () {
+                    currentPage = 1;
+                    loadData();
+                }, 400);
+            });
+        });
+
+        function loadKPIs() {
+            $.get('@Url.Action("GetDashboardKPIs", "LeaderPersonnel")', function (res) {
+                $('#kpi-total').text(res.totalEmployees);
+                $('#kpi-active').text(res.activeEmployees);
+                $('#kpi-leave').text(res.onLeaveEmployees);
+                $('#kpi-new').text(res.newEmployeesThisMonth);
+            }).fail(function () {
+                console.error("Lỗi khi tải KPI");
+            });
+        }
+
+        function loadData() {
+            $('#employee-tbody').html('<tr><td colspan="5" class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải dữ liệu...</td></tr>');
+            
+            $.get(`@Url.Action("GetEmployees", "LeaderPersonnel")?search=${encodeURIComponent(currentSearch)}&department=${encodeURIComponent(currentDepartment)}&page=${currentPage}&pageSize=${pageSize}`, function (res) {
+                renderTabs(res.allowedDepartments);
+                renderTable(res.items);
+                renderPagination(res.totalCount, res.pageNumber, res.pageSize);
+            }).fail(function (err) {
+                if(err.status === 403) {
+                    $('#employee-tbody').html('<tr><td colspan="5" class="text-center py-4 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Bạn không có quyền truy cập.</td></tr>');
+                } else {
+                    $('#employee-tbody').html('<tr><td colspan="5" class="text-center py-4 text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>Lỗi khi tải dữ liệu.</td></tr>');
+                }
+            });
+        }
+
+        function renderTabs(allowedDepts) {
+            let $tabs = $('#department-tabs');
+            
+            // Xử lý Quick Filters
+            if (allowedDepts.length > 1) {
+                $tabs.show();
+                let html = `<li class="nav-item">
+                                <a class="nav-link ${currentDepartment === '' ? 'active' : ''}" href="#" onclick="filterDept('')">Tất cả</a>
+                            </li>`;
+                allowedDepts.forEach(d => {
+                    html += `<li class="nav-item">
+                                <a class="nav-link ${currentDepartment === d ? 'active' : ''}" href="#" onclick="filterDept('${d}')">${d}</a>
+                             </li>`;
+                });
+                $tabs.html(html);
+            } else {
+                $tabs.hide();
+            }
+        }
+
+        function filterDept(dept) {
+            event.preventDefault();
+            currentDepartment = dept;
+            currentPage = 1;
+            loadData();
+        }
+
+        function changePageSize() {
+            pageSize = parseInt($('#pageSizeSelect').val());
+            currentPage = 1;
+            loadData();
+        }
+
+        function renderTable(items) {
+            let $tbody = $('#employee-tbody');
+            $tbody.empty();
+            
+            if (!items || items.length === 0) {
+                $tbody.html('<tr><td colspan="5" class="text-center py-5 text-muted"><img src="/images/empty.svg" width="100" class="mb-3 d-block mx-auto" onerror="this.style.display=\'none\'" />Không tìm thấy nhân sự phù hợp.</td></tr>');
+                return;
+            }
+
+            items.forEach(item => {
+                let statusBadge = '';
+                if (item.position === 'Đang làm việc' || item.position === 'Chính thức') {
+                    statusBadge = `<span class="hrms-badge hrms-badge-success">Đang làm việc</span>`;
+                } else if (item.position.includes('Thử việc') || item.position.includes('Thực tập')) {
+                    statusBadge = `<span class="hrms-badge hrms-badge-warning">${item.position}</span>`;
+                } else if (item.position === 'Đã nghỉ việc') {
+                    statusBadge = `<span class="hrms-badge hrms-badge-danger">Đã nghỉ việc</span>`;
+                } else {
+                    statusBadge = `<span class="hrms-badge hrms-badge-neutral">${item.position}</span>`;
+                }
+
+                let tr = `<tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="${item.avatarPath}" class="rounded-circle me-3" width="36" height="36" style="object-fit: cover;" onerror="this.src='/images/default-avatar.png'">
+                            <div>
+                                <div class="fw-bold">${item.name}</div>
+                                <div class="text-muted small">${item.employeeCode}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${item.department}</td>
+                    <td>${item.jobTitle}</td>
+                    <td>${statusBadge}</td>
+                    <td class="col-actions">
+                        <button class="hrms-btn hrms-btn-xs hrms-btn-secondary" onclick="viewDetail(${item.id})" title="Xem chi tiết"><i class="fa-solid fa-eye"></i></button>
+                    </td>
+                </tr>`;
+                $tbody.append(tr);
+            });
+        }
+
+        function renderPagination(total, page, size) {
+            let totalPages = Math.ceil(total / size);
+            if (totalPages === 0) totalPages = 1;
+            
+            let startItem = (page - 1) * size + 1;
+            let endItem = Math.min(page * size, total);
+            if (total === 0) { startItem = 0; endItem = 0; }
+            
+            $('#pagination-info').text(`Hiển thị ${startItem}-${endItem} trong tổng số ${total} nhân sự`);
+            
+            let $ul = $('#pagination-ul');
+            $ul.empty();
+            
+            $ul.append(`<li class="page-item ${page === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="goToPage(${page - 1})"><i class="fa-solid fa-chevron-left"></i></a></li>`);
+            
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= page - 1 && i <= page + 1)) {
+                    $ul.append(`<li class="page-item ${i === page ? 'active' : ''}"><a class="page-link" href="#" onclick="goToPage(${i})">${i}</a></li>`);
+                } else if (i === page - 2 || i === page + 2) {
+                    $ul.append(`<li class="page-item disabled"><span class="page-link">...</span></li>`);
+                }
+            }
+            
+            $ul.append(`<li class="page-item ${page === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" onclick="goToPage(${page + 1})"><i class="fa-solid fa-chevron-right"></i></a></li>`);
+        }
+
+        function goToPage(p) {
+            event.preventDefault();
+            currentPage = p;
+            loadData();
+        }
+
+        function viewDetail(id) {
+            $('#detail-body').html('<div class="text-center py-4 text-muted"><i class="fa-solid fa-spinner fa-spin me-2"></i>Đang tải dữ liệu...</div>');
+            $('#detailModal').modal('show');
+            
+            $.get(`@Url.Action("GetEmployeeDetail", "LeaderPersonnel")?id=${id}`, function(res) {
+                let html = `
+                    <div class="text-center mb-4">
+                        <img src="${res.avatarPath}" class="rounded-circle mb-2" width="80" height="80" style="object-fit: cover;" onerror="this.src='/images/default-avatar.png'">
+                        <h5 class="mb-0 fw-bold">${res.name}</h5>
+                        <div class="text-muted">${res.employeeCode}</div>
+                    </div>
+                    <table class="table table-borderless table-sm">
+                        <tbody>
+                            <tr><td class="text-muted" style="width:120px">Phòng ban:</td><td class="fw-medium">${res.department}</td></tr>
+                            <tr><td class="text-muted">Chức danh:</td><td class="fw-medium">${res.jobTitle}</td></tr>
+                            <tr><td class="text-muted">Trạng thái:</td><td class="fw-medium">${res.position}</td></tr>
+                            <tr><td class="text-muted">Email:</td><td class="fw-medium">${res.email || '—'}</td></tr>
+                            <tr><td class="text-muted">SĐT:</td><td class="fw-medium">${res.phoneNumber || '—'}</td></tr>
+                        </tbody>
+                    </table>
+                `;
+                $('#detail-body').html(html);
+            }).fail(function() {
+                $('#detail-body').html('<div class="text-danger text-center py-4">Bạn không có quyền xem chi tiết nhân sự này hoặc có lỗi xảy ra.</div>');
+            });
+        }
+    </script>
+}

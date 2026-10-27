@@ -1,0 +1,82 @@
+@model IEnumerable<giao_dien_demo.Models.KPIConfig>
+
+@{
+    ViewData["Title"] = "Cấu hành Hệ số KPI";
+}
+
+<div class="hrms-page-header mb-4">
+    <div class="hrms-page-header-main">
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon"><i class="fa-solid fa-sliders"></i></span>
+            Cấu hình Hệ số KPI
+        </h1>
+        <div class="hrms-page-subtitle">Thiết lập hệ số lương theo điểm/xếp loại KPI. Hệ số này sẽ nhân trực tiếp vào lương cơ bản để tính Lương theo Hiệu suất.</div>
+    </div>
+    <div class="hrms-page-header-actions">
+        <a href="@Url.Action("Index", "KPIPeriod")" class="hrms-btn hrms-btn-secondary">
+            <i class="fa-solid fa-arrow-left me-1"></i> Quay lại Kỳ đánh giá
+        </a>
+        <button id="btnSave" class="hrms-btn hrms-btn-primary">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Lưu Cấu hình
+        </button>
+    </div>
+</div>
+
+<div class="hrms-card">
+    <div class="hrms-table-wrap">
+        <table class="hrms-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Xếp loại KPI</th>
+                    <th style="width: 30%;">Hệ số (Multiplier)</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody id="configTable">
+                @foreach (var item in Model)
+                {
+                    <tr data-id="@item.Id">
+                        <td class="fw-semibold text-primary">@item.KPIRating</td>
+                        <td>
+                            <input type="number" step="0.1" min="0" class="hrms-form-control coef-input" value="@item.Coefficient.ToString("0.0")" />
+                        </td>
+                        <td>
+                            <input type="text" class="hrms-form-control note-input" value="@item.Notes" />
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+document.getElementById('btnSave').addEventListener('click', function() {
+    var rows = document.querySelectorAll('#configTable tr');
+    var data = [];
+    rows.forEach(function(r) {
+        data.push({
+            Id: parseInt(r.getAttribute('data-id')),
+            KPIRating: r.cells[0].innerText.trim(),
+            Coefficient: parseFloat(r.querySelector('.coef-input').value),
+            Notes: r.querySelector('.note-input').value
+        });
+    });
+    
+    fetch('/KPIConfig/SaveConfigs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(res => {
+        if(res.ok) {
+            Swal.fire('Thành công', 'Đã lưu cấu hành Hệ số KPI.', 'success');
+        } else {
+            Swal.fire('Lỗi', 'Không thể lưu cấu hành.', 'error');
+        }
+    }).catch(err => {
+        console.error(err);
+        Swal.fire('Lỗi', 'Có lỗi kết nối mạng.', 'error');
+    });
+});
+</script>
+

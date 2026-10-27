@@ -1,0 +1,80 @@
+@model giao_dien_demo.Models.ManagerProfileViewModel
+@{
+    ViewData["Title"] = "Hồ sơ Manager";
+    string Display(string? value) => string.IsNullOrWhiteSpace(value) ? "Chưa cập nhật" : value;
+    string CodeDisplay(string? value) => string.IsNullOrWhiteSpace(value) ? "Chưa được cấp mã" : value;
+}
+
+<div class="manager-profile-page">
+    <div class="page-header profile-header">
+        <div>
+            <span class="eyebrow">TÀI KHOẢN MANAGER</span>
+            <h1>Hồ sơ của tôi</h1>
+            <p class="text-muted">Thông tin được lấy từ hồ sơ nhân viên đang liên kết với tài khoản đăng nhập.</p>
+        </div>
+        @if (Model.HasLinkedEmployee)
+        {
+            <a class="btn btn-primary" asp-controller="Employee" asp-action="MyProfile"><i class="fa-solid fa-pen"></i> Chỉnh sửa thông tin cá nhân</a>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Message))
+    {
+        <div class="profile-alert"><i class="fa-solid fa-circle-info"></i> @Model.Message</div>
+    }
+
+    <div class="profile-grid">
+        <section class="profile-card profile-identity">
+            <div class="profile-avatar">
+                @if (!string.IsNullOrWhiteSpace(Model.AvatarPath))
+                { <img src="@Model.AvatarPath" alt="Ảnh đại diện" /> }
+                else
+                { <i class="fa-solid fa-user"></i> }
+            </div>
+            <h2>@Display(Model.Name)</h2>
+            <p class="profile-code">@CodeDisplay(Model.EmployeeCode)</p>
+            <span class="status-pill">@Display(Model.EmploymentStatus)</span>
+            <div class="profile-account"><span>Tài khoản</span><strong>@Display(Model.Username)</strong><span>Vai trò</span><strong>@Display(Model.AccountRole)</strong></div>
+        </section>
+
+        <section class="profile-card">
+            <h3><i class="fa-solid fa-address-card"></i> Thông tin cá nhân</h3>
+            <dl class="profile-details">
+                <div><dt>Email</dt><dd>@Display(Model.Email)</dd></div>
+                <div><dt>Số điện thoại</dt><dd>@Display(Model.PhoneNumber)</dd></div>
+                <div><dt>Ngày sinh</dt><dd>@(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "Chưa cập nhật")</dd></div>
+                <div><dt>Giới tính</dt><dd>@Display(Model.Gender)</dd></div>
+                <div class="full"><dt>Địa chỉ</dt><dd>@Display(Model.Address)</dd></div>
+            </dl>
+        </section>
+
+        <section class="profile-card">
+            <h3><i class="fa-solid fa-briefcase"></i> Thông tin công việc</h3>
+            <dl class="profile-details">
+                <div><dt>Mã nhân viên</dt><dd>@CodeDisplay(Model.EmployeeCode)</dd></div>
+                <div><dt>Phòng ban</dt><dd>@Display(Model.Department)</dd></div>
+                <div><dt>Chức danh</dt><dd>@Display(Model.JobTitle)</dd></div>
+                <div><dt>Vị trí</dt><dd>@Display(Model.Position)</dd></div>
+                <div><dt>Trạng thái</dt><dd>@Display(Model.EmploymentStatus)</dd></div>
+            </dl>
+            <p class="readonly-note"><i class="fa-solid fa-lock"></i> Thông tin công việc do HR quản lý.</p>
+        </section>
+
+        <section class="profile-card scope-card">
+            <h3><i class="fa-solid fa-sitemap"></i> Phạm vi quản lý hiện tại</h3>
+            @if (Model.ActiveOrganizationalUnits.Count == 0)
+            {
+                <p class="empty-scope">Chưa có đơn vị quản lý đang hiệu lực.</p>
+            }
+            else
+            {
+                <div class="scope-badges">@foreach (var unit in Model.ActiveOrganizationalUnits) { <span>@unit</span> }</div>
+                <p class="text-muted">Chỉ các đơn vị đang hiệu lực được hiển thị.</p>
+            }
+        </section>
+    </div>
+</div>
+
+<style>
+    .manager-profile-page{max-width:1180px;margin:0 auto;padding:24px 0 48px}.profile-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px}.eyebrow{font-size:11px;letter-spacing:.12em;color:var(--primary-color,#4f46e5);font-weight:700}.profile-header h1{margin:5px 0;font-size:28px}.profile-header p{margin:0}.profile-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.profile-card{background:var(--card-bg,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:var(--border-radius,14px);padding:24px;box-shadow:var(--card-shadow,0 4px 16px rgba(15,23,42,.05))}.profile-identity{text-align:center}.profile-avatar{width:88px;height:88px;border-radius:50%;margin:0 auto 14px;background:#eef2ff;color:#6366f1;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden}.profile-avatar img{width:100%;height:100%;object-fit:cover}.profile-identity h2{margin:0;font-size:22px}.profile-code{color:var(--text-muted,#64748b);margin:5px 0 13px}.status-pill{display:inline-block;border-radius:999px;background:#ecfdf5;color:#047857;padding:5px 12px;font-size:12px;font-weight:600}.profile-account{display:grid;grid-template-columns:1fr 1fr;text-align:left;gap:7px 16px;border-top:1px solid var(--border-color,#e5e7eb);margin-top:20px;padding-top:16px;font-size:13px}.profile-account span{color:var(--text-muted,#64748b)}.profile-account strong{text-align:right}.profile-card h3{display:flex;align-items:center;gap:9px;margin:0 0 18px;font-size:16px}.profile-card h3 i{color:var(--primary-color,#4f46e5)}.profile-details{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin:0}.profile-details div{min-width:0}.profile-details .full{grid-column:1/-1}.profile-details dt{font-size:12px;color:var(--text-muted,#64748b);margin-bottom:3px}.profile-details dd{margin:0;overflow-wrap:anywhere}.readonly-note{font-size:12px;color:var(--text-muted,#64748b);margin:18px 0 0}.scope-badges{display:flex;flex-wrap:wrap;gap:8px}.scope-badges span{background:#eef2ff;color:#4338ca;border-radius:8px;padding:7px 11px;font-size:13px;font-weight:600}.empty-scope{border:1px dashed var(--border-color,#cbd5e1);border-radius:10px;padding:14px;color:var(--text-muted,#64748b);margin:0}.profile-alert{padding:13px 16px;border-radius:10px;background:#fff7ed;color:#9a3412;margin-bottom:18px}.profile-alert i{margin-right:7px}@@media(max-width:760px){.profile-header{align-items:flex-start;flex-direction:column}.profile-grid{grid-template-columns:1fr}.profile-header .btn{width:100%;text-align:center}}
+</style>

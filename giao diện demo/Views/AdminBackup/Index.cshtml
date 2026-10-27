@@ -1,0 +1,528 @@
+@{
+    ViewData["Title"] = "Sao lưu & Phục hồi";
+}
+@Html.AntiForgeryToken()
+
+<style>
+/* Modal scoped */
+.backup-modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; display: none; align-items: center; justify-content: center; }
+.backup-modal-content { background: var(--hrms-surface, #ffffff); border-radius: 12px; width: 480px; max-width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden; }
+.backup-modal-header { padding: 18px 24px; border-bottom: 1px solid var(--hrms-border, #e2e8f0); display: flex; justify-content: space-between; align-items: center; }
+.backup-modal-title { font-size: 17px; font-weight: 700; margin: 0; color: var(--hrms-text-main, #1e293b); }
+.backup-modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--hrms-text-muted, #94a3b8); }
+.backup-modal-close:hover { color: var(--hrms-text-main, #334155); }
+.backup-modal-body { padding: 24px; }
+.backup-modal-footer { padding: 16px 24px; border-top: 1px solid var(--hrms-border, #e2e8f0); display: flex; justify-content: flex-end; gap: 12px; background: var(--hrms-background, #f8fafc); }
+
+/* Full page loader */
+#full-loader { position: fixed; inset: 0; background: rgba(255,255,255,0.85); z-index: 2000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+#full-loader h3 { margin-top: 16px; color: var(--hrms-primary, #2563eb); font-size: 18px; font-weight: 700; text-align: center; }
+</style>
+
+<div class="hrms-page-header">
+    <div class="hrms-page-header-left">
+        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;"><i class="fa-solid fa-house" style="font-size:11px;"></i></a>
+            <span>/</span><span>Sao lưu & phục hồi</span>
+        </div>
+        <h1 class="hrms-page-title">
+            <span class="hrms-page-icon blue"><i class="fa-solid fa-database"></i></span>
+            Sao lưu & phục hồi
+        </h1>
+        <p class="hrms-page-subtitle">Quản trị dữ liệu, tạo bản sao lưu snapshot và phục hồi an toàn hệ thống</p>
+    </div>
+</div>
+
+<div class="hrms-tabs mb-4">
+    <button class="hrms-tab active" data-target="tab-overview"><i class="fa-solid fa-chart-pie me-1"></i> Tổng quan</button>
+    <button class="hrms-tab" data-target="tab-schedule"><i class="fa-solid fa-calendar-check me-1"></i> Lịch tự động</button>
+    <button class="hrms-tab" data-target="tab-history"><i class="fa-solid fa-clock-rotate-left me-1"></i> Lịch sử sao lưu</button>
+    <button class="hrms-tab" data-target="tab-restore" style="color: var(--hrms-danger, #ef4444);"><i class="fa-solid fa-rotate-left me-1"></i> Phục hồi dữ liệu</button>
+</div>
+
+<!-- TAB: OVERVIEW -->
+<div id="tab-overview" class="tab-pane">
+    <div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
+        <div class="hrms-kpi-card kpi-blue">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-database"></i></div>
+                <div class="hrms-kpi-value" id="sum-total">0</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Tổng số bản sao lưu</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-green">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-calendar-day"></i></div>
+                <div class="hrms-kpi-value" id="sum-last-date" style="font-size: 18px;">N/A</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Lần sao lưu gần nhất</div>
+            </div>
+        </div>
+
+        <div class="hrms-kpi-card kpi-purple">
+            <div class="hrms-kpi-top">
+                <div class="hrms-kpi-icon"><i class="fa-solid fa-weight-scale"></i></div>
+                <div class="hrms-kpi-value" id="sum-last-size">0 MB</div>
+            </div>
+            <div class="hrms-kpi-body mt-2">
+                <div class="hrms-kpi-label">Dung lượng bản gần nhất</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hrms-card">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title"><i class="fa-solid fa-bolt card-title-icon"></i> Thao tác nhanh</h3>
+        </div>
+        <div class="hrms-card-body">
+            <p style="font-size:14px; color:var(--hrms-text-muted, #64748b); margin-bottom:16px;">
+                Tạo bản sao lưu snapshot dữ liệu tức thời phục vụ mục đích bảo trì, cập nhật hệ thống hoặc kiểm thử an toàn.
+            </p>
+            <button class="hrms-btn hrms-btn-primary" onclick="openBackupModal()"><i class="fa-solid fa-plus"></i> Tạo bản sao lưu ngay</button>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: SCHEDULE -->
+<div id="tab-schedule" class="tab-pane" style="display:none;">
+    <div class="hrms-card">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title"><i class="fa-solid fa-calendar-days card-title-icon"></i> Cấu hình lịch sao lưu tự động</h3>
+        </div>
+        <div class="hrms-card-body">
+            <div class="form-check mb-3">
+                <input type="checkbox" id="cfg-enabled" class="form-check-input" />
+                <label for="cfg-enabled" class="form-check-label fw-bold">Kích hoạt lịch tự động</label>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="hrms-form-label">Tần suất</label>
+                    <select id="cfg-frequency" class="hrms-form-select">
+                        <option value="Daily">Hàng ngày (Daily)</option>
+                        <option value="Weekly">Hàng tuần (Weekly)</option>
+                        <option value="Monthly">Hàng tháng (Monthly)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="hrms-form-label">Giờ thực hiện</label>
+                    <input type="time" id="cfg-time" class="hrms-form-control" value="00:00" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="hrms-form-label">Thời hạn lưu trữ (Ngày)</label>
+                    <input type="number" id="cfg-retention" class="hrms-form-control" value="30" min="1" max="365" />
+                </div>
+            </div>
+
+            <p style="font-size: 13px; color: var(--hrms-text-muted, #64748b); margin-top: 8px;">
+                Lần chạy kế tiếp dự kiến: <strong id="next-run-time" style="color: var(--hrms-primary, #2563eb);">Đang tải...</strong>
+            </p>
+
+            <div class="mt-4">
+                <button class="hrms-btn hrms-btn-primary" onclick="saveConfig()"><i class="fa-solid fa-floppy-disk"></i> Lưu cấu hình lịch</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: HISTORY -->
+<div id="tab-history" class="tab-pane" style="display:none;">
+    <div class="hrms-card">
+        <div class="hrms-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h3 class="hrms-card-title mb-0"><i class="fa-solid fa-clock-rotate-left card-title-icon"></i> Lịch sử sao lưu</h3>
+            <div class="d-flex gap-2 align-items-center">
+                <select id="flt-status" class="hrms-form-select" style="width: 140px;">
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="Success">Thành công</option>
+                    <option value="Failed">Thất bại</option>
+                </select>
+                <input type="date" id="flt-date" class="hrms-form-control" style="width: 150px;" />
+                <button class="hrms-btn hrms-btn-secondary" onclick="loadHistory(1)"><i class="fa-solid fa-filter"></i> Lọc</button>
+            </div>
+        </div>
+
+        <div class="hrms-table-wrap">
+            <table class="hrms-table">
+                <thead>
+                    <tr>
+                        <th>Thời gian</th>
+                        <th>Tên file</th>
+                        <th>Kích thước</th>
+                        <th>Trạng thái</th>
+                        <th>Người tạo</th>
+                        <th class="col-actions" style="text-align: right;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="history-tbody">
+                    <!-- Dữ liệu render qua AJAX -->
+                </tbody>
+            </table>
+
+            <div class="d-flex justify-content-between align-items-center p-3" style="border-top: 1px solid var(--hrms-border, #f1f5f9);">
+                <div id="hist-page-info" style="font-size: 13px; color: var(--hrms-text-muted, #64748b);"></div>
+                <div class="d-flex gap-2">
+                    <button class="hrms-btn hrms-btn-sm hrms-btn-secondary" id="btn-prev" onclick="changePage(-1)">Trước</button>
+                    <button class="hrms-btn hrms-btn-sm hrms-btn-secondary" id="btn-next" onclick="changePage(1)">Sau</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TAB: RESTORE (DANGER SURFACE) -->
+<div id="tab-restore" class="tab-pane" style="display:none;">
+    <div class="hrms-card" style="border-left: 4px solid var(--hrms-danger, #ef4444);">
+        <div class="hrms-card-header">
+            <h3 class="hrms-card-title" style="color: var(--hrms-danger, #ef4444);"><i class="fa-solid fa-triangle-exclamation card-title-icon"></i> Phục hồi dữ liệu hệ thống (Thao tác rủi ro cao)</h3>
+        </div>
+        <div class="hrms-card-body">
+            <div class="hrms-alert hrms-alert-danger mb-4" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; color: #991b1b;">
+                <div class="d-flex gap-3 align-items-start">
+                    <i class="fa-solid fa-skull-crossbones" style="font-size: 24px;"></i>
+                    <div>
+                        <strong>CẢNH BÁO RỦI RO CAO:</strong>
+                        <div style="font-size: 13px; margin-top: 4px; line-height: 1.6;">
+                            Thao tác phục hồi sẽ ghi đè toàn bộ dữ liệu CSDL hiện tại bằng bản sao lưu được chọn. Trong quá trình phục hồi, mọi kết nối khác sẽ bị ngắt.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p style="font-weight:600; margin-bottom:12px; font-size:14px;">Chọn một bản sao lưu hợp lệ để phục hồi:</p>
+            <div class="hrms-table-wrap mb-4">
+                <table class="hrms-table">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;"></th>
+                            <th>Thời gian sao lưu</th>
+                            <th>Tên File</th>
+                            <th>Kích thước</th>
+                        </tr>
+                    </thead>
+                    <tbody id="restore-tbody">
+                        <!-- Dữ liệu render qua AJAX -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-end">
+                <button class="hrms-btn hrms-btn-danger" onclick="openRestoreModal()" id="btn-trigger-restore" disabled>
+                    <i class="fa-solid fa-rotate-left"></i> Phục hồi từ bản sao lưu đã chọn
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL BACKUP -->
+<div class="backup-modal-overlay" id="modal-backup">
+    <div class="backup-modal-content" style="width:420px;">
+        <div class="backup-modal-header">
+            <h3 class="backup-modal-title">Tạo bản sao lưu mới</h3>
+            <button class="backup-modal-close" onclick="$('#modal-backup').hide()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="backup-modal-body">
+            <p style="font-size:13px; color:var(--hrms-text-muted, #64748b); margin-bottom:16px;">
+                Tiến trình sẽ sao lưu toàn bộ cơ sở dữ liệu hiện tại vào file backup vật lý.
+            </p>
+            <div class="mb-3">
+                <label class="hrms-form-label">Loại sao lưu</label>
+                <select id="new-backup-type" class="hrms-form-select" disabled>
+                    <option value="Full">Full Database Backup (T-SQL)</option>
+                </select>
+            </div>
+        </div>
+        <div class="backup-modal-footer">
+            <button class="hrms-btn hrms-btn-ghost" onclick="$('#modal-backup').hide()">Hủy</button>
+            <button class="hrms-btn hrms-btn-primary" onclick="doBackup()">Tiến hành sao lưu</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL RESTORE (DANGER & DOUBLE CONFIRMATION) -->
+<div class="backup-modal-overlay" id="modal-restore">
+    <div class="backup-modal-content" style="width: 480px;">
+        <div class="backup-modal-header" style="background: var(--hrms-danger, #ef4444); color: white;">
+            <h3 class="backup-modal-title" style="color: white;"><i class="fa-solid fa-triangle-exclamation me-1"></i> XÁC NHẬN PHỤC HỒI DỮ LIỆU</h3>
+            <button class="backup-modal-close" onclick="$('#modal-restore').hide()" style="color: white;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="backup-modal-body">
+            <p style="font-size:14px; font-weight:600; color:var(--hrms-text-main, #1e293b);">Bạn đang chuẩn bị phục hồi hệ thống từ file:</p>
+            <p id="lbl-restore-filename" style="background:var(--hrms-background, #f1f5f9); padding:10px; border-radius:6px; font-family:monospace; font-size:12px; word-break:break-all; margin-bottom:16px; border:1px solid var(--hrms-border, #e2e8f0);"></p>
+            
+            <p style="font-size:13px; color:var(--hrms-danger, #dc2626); font-weight:700; margin-bottom:8px;">HÀNH ĐỘNG NÀY KHÔNG THỂ HOÀN TÁC.</p>
+            <p style="font-size:13px; color:var(--hrms-text-muted, #475569); margin-bottom:12px;">Để xác nhận, vui lòng gõ chính xác từ <strong>RESTORE</strong> vào ô bên dưới:</p>
+            <input type="text" id="restore-confirm-text" class="hrms-form-control" autocomplete="off" placeholder="Gõ RESTORE để xác nhận..." />
+            <input type="hidden" id="restore-backup-id" />
+        </div>
+        <div class="backup-modal-footer">
+            <button class="hrms-btn hrms-btn-ghost" onclick="$('#modal-restore').hide()">Hủy bỏ</button>
+            <button class="hrms-btn hrms-btn-danger" onclick="doRestore()">Xác nhận Phục hồi</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div id="full-loader">
+    <i class="fa-solid fa-circle-notch fa-spin fa-3x" style="color:var(--hrms-primary, #2563eb);"></i>
+    <h3 id="loader-text">Đang xử lý...</h3>
+    <p style="color:var(--hrms-text-muted, #64748b); font-size:13px;">Vui lòng không đóng trình duyệt!</p>
+</div>
+
+@section Scripts {
+<script>
+    const adminBackupToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    let currentHistPage = 1;
+
+    $(document).ready(function() {
+        $('.hrms-tab').click(function() {
+            $('.hrms-tab').removeClass('active');
+            $(this).addClass('active');
+            $('.tab-pane').hide();
+            $('#' + $(this).data('target')).show();
+
+            let target = $(this).data('target');
+            if(target === 'tab-schedule') loadConfig();
+            if(target === 'tab-history') loadHistory(1);
+            if(target === 'tab-restore') loadRestoreList();
+        });
+
+        loadSummary();
+    });
+
+    function loadSummary() {
+        $.get('/AdminBackup/GetSummary', function(res) {
+            $('#sum-total').text(res.total);
+            $('#sum-last-date').text(res.lastBackupDate || 'N/A');
+            $('#sum-last-size').text(res.lastBackupSize);
+        });
+    }
+
+    function openBackupModal() {
+        $('#modal-backup').css('display', 'flex');
+    }
+
+    function doBackup() {
+        $('#modal-backup').hide();
+        showLoader('Đang thực hiện sao lưu (SQL Export)...');
+        
+        $.ajax({
+            url: '/AdminBackup/TriggerBackup',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'RequestVerificationToken': adminBackupToken },
+            data: JSON.stringify({ type: 'Full' }),
+            success: function(res) {
+                hideLoader();
+                if(res.success) {
+                    alert('Tạo sao lưu thành công!');
+                    loadSummary();
+                } else {
+                    alert('Lỗi: ' + res.message);
+                }
+            },
+            error: function() {
+                hideLoader();
+                alert('Lỗi kết nối đến server.');
+            }
+        });
+    }
+
+    function loadConfig() {
+        $.get('/AdminBackup/GetConfig', function(res) {
+            $('#cfg-enabled').prop('checked', res.isEnabled);
+            $('#cfg-frequency').val(res.frequency);
+            $('#cfg-time').val(res.executeTime);
+            $('#cfg-retention').val(res.retentionDays);
+            $('#next-run-time').text(res.nextRun);
+        });
+    }
+
+    function saveConfig() {
+        let payload = {
+            isEnabled: $('#cfg-enabled').is(':checked'),
+            frequency: $('#cfg-frequency').val(),
+            executeTime: $('#cfg-time').val() + ':00',
+            retentionDays: parseInt($('#cfg-retention').val()),
+            backupType: 'Full'
+        };
+
+        showLoader('Đang lưu cấu hình...');
+        $.ajax({
+            url: '/AdminBackup/SaveConfig',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'RequestVerificationToken': adminBackupToken },
+            data: JSON.stringify(payload),
+            success: function(res) {
+                hideLoader();
+                if(res.success) {
+                    alert('Lưu cấu hình thành công!');
+                    loadConfig();
+                }
+            }
+        });
+    }
+
+    function loadHistory(page) {
+        currentHistPage = page;
+        let st = $('#flt-status').val();
+        let dt = $('#flt-date').val();
+        
+        $('#history-tbody').html('<tr><td colspan="6" style="text-align:center; padding:24px;">Đang tải...</td></tr>');
+        
+        $.get(`/AdminBackup/GetHistory?page=${page}&pageSize=10&status=${st}&dateFrom=${dt}`, function(res) {
+            let html = '';
+            if(res.data.length === 0) {
+                html = '<tr><td colspan="6" style="text-align:center; color:var(--hrms-text-muted, #64748b); padding:32px;">Không có dữ liệu bản sao lưu nào.</td></tr>';
+            } else {
+                res.data.forEach(item => {
+                    let badge = item.status === 'Success' ? '<span class="hrms-badge hrms-badge-success">Thành công</span>' 
+                              : item.status === 'Failed' ? '<span class="hrms-badge hrms-badge-danger">Thất bại</span>'
+                              : '<span class="hrms-badge hrms-badge-warning">Đang chạy</span>';
+                    
+                    let sizeMb = (item.sizeBytes / 1024 / 1024).toFixed(2);
+                    
+                    let actHtml = '';
+                    if(item.status === 'Success') {
+                        actHtml += `<button class="hrms-btn hrms-btn-sm hrms-btn-ghost me-1" onclick="downloadBackup(${item.id})" title="Tải về"><i class="fa-solid fa-download"></i></button>`;
+                        actHtml += `<button class="hrms-btn hrms-btn-sm hrms-btn-secondary me-1" onclick="verifyBackup(${item.id})" title="Kiểm tra SHA-256"><i class="fa-solid fa-check-double"></i> Verify</button>`;
+                    }
+                    actHtml += `<button class="hrms-btn hrms-btn-sm hrms-btn-danger" onclick="deleteBackup(${item.id})" title="Xóa"><i class="fa-solid fa-trash"></i></button>`;
+
+                    html += `<tr>
+                        <td style="color:var(--hrms-text-muted, #64748b); font-size:13px;">${item.createdAt}</td>
+                        <td><code style="font-size:12px; word-break:break-all;">${item.fileName}</code></td>
+                        <td>${sizeMb} MB</td>
+                        <td>${badge}</td>
+                        <td>${item.createdBy}</td>
+                        <td style="text-align:right;">${actHtml}</td>
+                    </tr>`;
+                });
+            }
+            $('#history-tbody').html(html);
+            
+            let total = res.total;
+            let totalPages = Math.ceil(total / 10);
+            $('#hist-page-info').text(`Trang ${page} / ${totalPages > 0 ? totalPages : 1} (Tổng ${total} bản ghi)`);
+            $('#btn-prev').prop('disabled', page <= 1);
+            $('#btn-next').prop('disabled', page >= totalPages);
+        });
+    }
+
+    function changePage(delta) {
+        loadHistory(currentHistPage + delta);
+    }
+
+    function downloadBackup(id) {
+        window.location.href = '/AdminBackup/Download?id=' + id;
+    }
+
+    function verifyBackup(id) {
+        showLoader('Đang kiểm tra mã băm SHA-256...');
+        $.post('/AdminBackup/VerifyBackup?id=' + id, { __RequestVerificationToken: adminBackupToken }, function(res) {
+            hideLoader();
+            if(res.success) {
+                if(res.isValid) alert('File sao lưu hợp lệ. Tính toàn vẹn được đảm bảo.');
+                else alert('CẢNH BÁO: File sao lưu không hợp lệ hoặc đã bị chỉnh sửa!');
+            } else {
+                alert('Lỗi: ' + res.message);
+            }
+        });
+    }
+
+    function deleteBackup(id) {
+        if(!confirm('Bạn có chắc chắn muốn xoá bản sao lưu này? (Xoá vĩnh viễn file vật lý)')) return;
+        
+        showLoader('Đang xoá...');
+        $.post('/AdminBackup/DeleteBackup?id=' + id, { __RequestVerificationToken: adminBackupToken }, function(res) {
+            hideLoader();
+            if(res.success) {
+                loadHistory(currentHistPage);
+                loadSummary();
+            } else {
+                alert('Lỗi: ' + res.message);
+            }
+        });
+    }
+
+    function loadRestoreList() {
+        $('#restore-tbody').html('<tr><td colspan="4" style="text-align:center; padding:24px;">Đang tải...</td></tr>');
+        $.get(`/AdminBackup/GetHistory?page=1&pageSize=50&status=Success`, function(res) {
+            let html = '';
+            if(res.data.length === 0) {
+                html = '<tr><td colspan="4" style="text-align:center; color:var(--hrms-text-muted, #64748b); padding:32px;">Chưa có bản sao lưu hợp lệ nào để phục hồi.</td></tr>';
+            } else {
+                res.data.forEach(item => {
+                    let sizeMb = (item.sizeBytes / 1024 / 1024).toFixed(2);
+                    html += `<tr>
+                        <td><input type="radio" name="sel_restore" value="${item.id}" data-filename="${item.fileName}" onchange="$('#btn-trigger-restore').prop('disabled', false)" /></td>
+                        <td style="color:var(--hrms-text-muted, #64748b); font-size:13px;">${item.createdAt}</td>
+                        <td><code style="font-size:12px;">${item.fileName}</code></td>
+                        <td>${sizeMb} MB</td>
+                    </tr>`;
+                });
+            }
+            $('#restore-tbody').html(html);
+        });
+    }
+
+    function openRestoreModal() {
+        let selected = $('input[name="sel_restore"]:checked');
+        if(selected.length === 0) return;
+        
+        let id = selected.val();
+        let fileName = selected.data('filename');
+        
+        $('#restore-backup-id').val(id);
+        $('#lbl-restore-filename').text(fileName);
+        $('#restore-confirm-text').val('');
+        $('#modal-restore').css('display', 'flex');
+    }
+
+    function doRestore() {
+        let confirmText = $('#restore-confirm-text').val();
+        if(confirmText !== 'RESTORE') {
+            alert("Bạn phải gõ chính xác chữ RESTORE.");
+            return;
+        }
+
+        let id = $('#restore-backup-id').val();
+        $('#modal-restore').hide();
+        showLoader('HỆ THỐNG ĐANG PHỤC HỒI DỮ LIỆU...<br/>(Quá trình này ngắt mọi kết nối khác. Tuyệt đối không tắt trình duyệt)');
+        
+        $.ajax({
+            url: '/AdminBackup/TriggerRestore',
+            type: 'POST',
+            contentType: 'application/json',
+            headers: { 'RequestVerificationToken': adminBackupToken },
+            data: JSON.stringify({ id: parseInt(id), confirmText: confirmText }),
+            success: function(res) {
+                hideLoader();
+                if(res.success) {
+                    alert('PHỤC HỒI THÀNH CÔNG! Dữ liệu đã được khôi phục.');
+                    window.location.reload();
+                } else {
+                    alert('LỖI PHỤC HỒI: ' + res.message);
+                }
+            },
+            error: function(err) {
+                hideLoader();
+                alert('Mất kết nối hoặc Restore thất bại. Vui lòng kiểm tra server logs.');
+            }
+        });
+    }
+
+    function showLoader(text) {
+        $('#loader-text').html(text);
+        $('#full-loader').css('display', 'flex');
+    }
+    function hideLoader() {
+        $('#full-loader').hide();
+    }
+</script>
+}

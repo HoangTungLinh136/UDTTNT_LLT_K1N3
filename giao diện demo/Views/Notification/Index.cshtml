@@ -1,14 +1,14 @@
-﻿@model List<giao_dien_demo.Controllers.ThongBaoTam>
+@model List<giao_dien_demo.Controllers.ThongBaoTam>
 @using Microsoft.AspNetCore.Http
 @{
     ViewData["Title"] = "Quản lý Thông báo";
     var role = Context.Session.GetString("Role");
     var currentUser = Context.Session.GetString("User");
 
-    // 1. Lấy danh sách nhân viên CHÍNH THỨC từ ViewBag (đã đồng bộ từ Controller)
+    // 1. Lấy danh sách nhân viên từ ViewBag (đã đồng bộ từ Controller lấy toàn bộ nhân sự)
     var officialEmployees = ViewBag.Employees as List<giao_dien_demo.Models.Employee> ?? new List<giao_dien_demo.Models.Employee>();
 
-    // 2. DIỆT GẠCH ĐỎ: Chuẩn bị dữ liệu JSON sạch cho Javascript
+    // 2. Chuẩn bị dữ liệu JSON sạch cho Javascript
     var listData = new List<object>();
     if (Model != null)
     {
@@ -19,7 +19,10 @@
                 content = x.NoiDung ?? "",
                 sender = x.NguoiGui ?? "",
                 receiver = x.NguoiNhan ?? "",
-                time = x.NgayTao.ToString("HH:mm")
+                time = x.NgayTao.ToString("HH:mm"),
+                targetUrl = x.TargetUrl ?? "",
+                isRead = x.IsRead,
+                referenceId = x.ReferenceId
             });
         }
     }
@@ -29,58 +32,72 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <style>
-    .notification-card { border-radius: 12px; transition: all 0.3s; border-left: 6px solid #dee2e6; }
-    .card-all { border-left-color: #2196F3 !important; } /* Gửi tất cả - Xanh dương */
-    .card-management { border-left-color: #f44336 !important; } /* Gửi quản lý - Đỏ */
-    .card-private { border-left-color: #9c27b0 !important; } /* Gửi cá nhân - Tím */
-    .card-system { border-left-color: #ff9800 !important; background-color: #fff9f1; } /* Hệ thống - Cam */
-    
-    .sender-badge { font-size: 11px; background: #e9ecef; color: #495057; padding: 2px 8px; border-radius: 10px; }
-    .receiver-badge { font-size: 11px; background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 10px; }
-    .notification-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    /* Notification — Design System aligned */
+    .notification-card {
+        border-radius: var(--radius-lg, 14px); transition: all 0.22s ease;
+        border-left: 4px solid #e2e8f0;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+        font-family: 'Inter', sans-serif;
+    }
+    .card-all        { border-left-color: #3b82f6 !important; }
+    .card-management { border-left-color: #ef4444 !important; }
+    .card-private    { border-left-color: #8b5cf6 !important; }
+    .card-system     { border-left-color: #f59e0b !important; background-color: #fffbeb !important; }
 
-    /* Fix Select2 Height */
-    .select2-container--default .select2-selection--single { height: 38px !important; border: 1px solid #dee2e6 !important; border-radius: 8px !important; }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 35px !important; }
+    .notification-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+    .sender-badge   { font-size: 11px; background: #f1f5f9; color: #64748b; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+    .receiver-badge { font-size: 11px; background: #fffbeb; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 99px; font-weight: 600; }
+
+    /* Select2 */
+    .select2-container--default .select2-selection--single { height: 38px !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; font-family: 'Inter', sans-serif !important; }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 35px !important; font-family: 'Inter', sans-serif; }
 </style>
 
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">📢 Thông báo hệ thống</h2>
-        <span class="badge bg-danger p-2" id="liveStatus">Đang kết nối Real-time...</span>
+<div class="py-2">
+    @Html.AntiForgeryToken()
+    <div class="hrms-page-header mb-4">
+        <div class="hrms-page-header-main">
+            <h1 class="hrms-page-title">
+                <span class="hrms-page-icon"><i class="fa-solid fa-bell"></i></span>
+                Thông báo hệ thống
+            </h1>
+            <p class="hrms-page-subtitle">Theo dõi và quản lý thông báo, cập nhật thời gian thực.</p>
+        </div>
     </div>
 
     @* --- PHẦN 1: FORM GỬI THÔNG BÁO (CHỈ HIỆN VỚI QUẢN LÝ) --- *@
     @if (role == "HR" || role == "Admin" || role == "Leader")
     {
-        <div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
-            <div class="card-body p-4">
+        <div class="hrms-card mb-4">
+            <div class="hrms-card-body p-4">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label class="form-label fw-bold small">👤 Gửi tới đối tượng</label>
+                        <label class="form-label fw-bold small">🔹 Gửi tới đối tượng</label>
                         <select id="receiverSelect" class="form-select">
-                            <optgroup label="Gửi chung">
-                                <option value="Tất cả">📢 Gửi cho tất cả nhân viên</option>
+                            <optgroup id="notif-optgroup-general" label="Gửi chung">
+                                <option value="Tất cả" data-i18n-opt="notif.send_all">🔹 Gửi cho tất cả nhân viên</option>
                             </optgroup>
-                            <optgroup label="Gửi Ban quản trị">
-                                <option value="HR">📩 Gửi cho Nhân sự (HR)</option>
-                                <option value="Admin">⚙️ Gửi cho Admin hệ thống</option>
-                                <option value="Ban lãnh đạo">🏛️ Gửi cho Ban lãnh đạo</option>
+                            <optgroup id="notif-optgroup-mgmt" label="Gửi Ban quản trị">
+                                <option value="HR" data-i18n-opt="notif.send_hr">🔹 Gửi cho Nhân sự (HR)</option>
+                                <option value="Admin" data-i18n-opt="notif.send_admin">?️ Gửi cho Admin hệ thống</option>
+                                <option value="Ban lãnh đạo" data-i18n-opt="notif.send_leader">🔹️ Gửi cho Ban lãnh đạo</option>
                             </optgroup>
-                            <optgroup label="Gửi đích danh nhân viên (Chính thức)">
+                            
+                            <optgroup id="notif-optgroup-emp" label="Gửi đích danh nhân viên">
                                 @foreach (var emp in officialEmployees) {
-                                    <option value="@emp.Name">👤 @emp.Name</option>
+                                    <option value="@emp.Name">🔹 @emp.Name</option>
                                 }
                             </optgroup>
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-bold small">📝 Nội dung thông báo</label>
-                        <input type="text" id="notificationInput" class="form-control" 
+                        <label class="form-label fw-bold small">🔹 Nội dung thông báo</label>
+                        <input type="text" id="notificationInput" class="form-control"
                                placeholder="Nhập tin nhắn cần phát đi..." style="border-radius: 8px; height: 38px;" />
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
-                        <button class="btn btn-primary w-100 fw-bold" style="border-radius: 8px; height: 38px;" onclick="sendNotification()">
+                        <button class="hrms-btn hrms-btn-primary w-100 fw-bold" style="height: 38px;" onclick="sendNotification()">
                             🚀 Gửi đi
                         </button>
                     </div>
@@ -89,14 +106,13 @@
         </div>
     }
 
-    @* --- PHẦN 2: DANH SÁCH THÔNG BÁO --- *@
+    @* --- PHẦN 2: DÀNH SÁCH THÔNG BÁO --- *@
     <div id="notificationList"></div>
 </div>
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <script>
@@ -111,38 +127,33 @@
             renderNotifications();
         });
 
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/dashboardHub")
-            .withAutomaticReconnect()
-            .build();
+        const connection = window.HRMSSignalRConnection;
 
-        // HÀM VẼ DANH SÁCH THÔNG BÁO
+        // HÀM VẼ DÀNH SÁCH THÔNG BÁO
         function renderNotifications() {
             const list = document.getElementById("notificationList");
             if (!list) return;
 
             if (notifications.length === 0) {
-                list.innerHTML = `<div class="alert alert-info text-center shadow-sm">Chưa có thông báo nào dành cho bạn.</div>`;
+                const emptyText = 'Chưa có thông báo nào dành cho bạn.';
+                list.innerHTML = `<div class="alert alert-info text-center shadow-sm">${emptyText}</div>`;
                 return;
             }
 
+            const fromLabel = 'Từ:';
+            const toLabel = 'Đến:';
+            const deleteLabel = '🔹 Xóa';
+
             list.innerHTML = notifications.map((item, index) => {
                 let cardClass = "card-private";
-                let icon = "📩";
+                let icon = "🔹";
 
-                if (item.sender === "Hệ thống") { cardClass = "card-system"; icon = "⚠️"; }
-                else if (item.receiver === "Tất cả") { cardClass = "card-all"; icon = "📢"; }
-                else if (["HR", "Admin", "Ban lãnh đạo"].includes(item.receiver)) { cardClass = "card-management"; icon = "🏛️"; }
+                if (item.sender === "Hệ thống") { cardClass = "card-system"; icon = "?️"; }
+                else if (item.receiver === "Tất cả") { cardClass = "card-all"; icon = "🔹"; }
+                else if (["HR", "Admin", "Ban lãnh đạo"].includes(item.receiver)) { cardClass = "card-management"; icon = "🔹️"; }
 
-                // Chỉ Quản lý mới thấy nút Xóa/Thu hồi
-                let actionButtons = "";
-                if (userRole === "HR" || userRole === "Admin" || userRole === "Leader") {
-                    actionButtons = `
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-danger me-2" onclick="deleteRemote(${item.id}, ${index})">🗑 Xóa</button>
-                        <button class="btn btn-sm btn-warning" onclick="recallNotification(${index})">🔄 Thu hồi</button>
-                    </div>`;
-                }
+                // Every actor may delete only a notification owned by that actor.
+                const actionButtons = `<button class="btn btn-sm btn-outline-danger" onclick="deleteRemote(${item.id}, ${index})">${deleteLabel}</button>`;
 
                 return `
                 <div class="card shadow-sm border-0 mb-3 notification-card ${cardClass}" style="animation: slideIn 0.4s ease-out;">
@@ -151,11 +162,13 @@
                             <span class="me-3" style="font-size: 24px;">${icon}</span>
                             <div>
                                 <div class="mb-1">
-                                    <span class="sender-badge">Từ: <b>${item.sender}</b></span>
-                                    <span class="receiver-badge">Đến: <b>${item.receiver}</b></span>
+                                    <span class="sender-badge">${fromLabel} <b>${item.sender}</b></span>
+                                    <span class="receiver-badge">${toLabel} <b>${item.receiver}</b></span>
                                     <small class="text-muted ms-2">${item.time}</small>
                                 </div>
-                                <div class="fw-bold" style="font-size: 16px; color: #2c3e50;">${item.content}</div>
+                                <div class="fw-bold" style="font-size: 16px; color: #2c3e50; ${item.isRead ? 'font-weight: normal !important;' : ''}">
+                                    ${item.targetUrl ? `<a href="javascript:void(0)" onclick="handleNotificationClick(${item.id}, '${item.targetUrl}')" style="text-decoration: none; color: inherit;">${item.content} <i class="fas fa-external-link-alt text-primary ms-1" style="font-size: 0.85em;"></i></a>` : item.content}
+                                </div>
                             </div>
                         </div>
                         ${actionButtons}
@@ -164,13 +177,22 @@
             }).join("");
         }
 
-        // --- XỬ LÝ SIGNALR ---
+        // --- XỬ Là SIGNALR ---
         connection.on("ReceiveNotification", function (data) {
             // Logic lọc hiển thị Real-time cho nhân viên
             if (data.receiver === "Tất cả" || data.receiver === currentUserName || userRole !== "Employee") {
                 notifications.unshift(data);
                 renderNotifications();
                 
+                // === ÂM THANH (BỔ SUNG - KHÔNG ẢNH HƯ?NG LOGIC CŨ) ===
+                try {
+                    if (window.HRMS_Sound) {
+                        var soundId = (data.sender || '') + '_' + (data.time || '') + '_' +
+                                      ((data.content || '').substring(0, 20)) + '_' + Date.now();
+                        HRMS_Sound.playForNotification(soundId);
+                    }
+                } catch(e) { /* Không crash */ }
+
                 // Hiện Toast thông báo
                 Swal.fire({
                     toast: true, position: 'top-end', 
@@ -186,44 +208,55 @@
         });
 
         // --- CÁC HÀM GỬI/XÓA (CHỈ DÀNH CHO QUẢN LÝ) ---
+        const antiForgeryToken = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        function securePost(url, data, done) {
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: Object.assign({ __RequestVerificationToken: antiForgeryToken }, data),
+                success: done
+            });
+        }
+
         function sendNotification() {
             const input = document.getElementById("notificationInput");
             const receiver = $('#receiverSelect').val(); 
             const content = input.value.trim();
             if (!content) return;
 
-            $.post('/Notification/GuiThongBao', { noiDung: content, nguoiNhan: receiver }, function() {
+            const sentText = 'Đã phát đi!';
+            securePost('/Notification/GuiThongBao', { noiDung: content, nguoiNhan: receiver }, function() {
                 input.value = "";
-                Swal.fire({ icon: 'success', title: 'Đã phát đi!', timer: 1000, showConfirmButton: false });
-            });
-        }
-
-        function recallNotification(index) {
-            const content = notifications[index].content;
-            Swal.fire({
-                title: 'Thu hồi?', text: "Tin nhắn sẽ biến mất ở mọi máy khách!",
-                icon: 'warning', showCancelButton: true, confirmButtonText: 'Đồng ý'
-            }).then((result) => {
-                if (result.isConfirmed) $.post('/Notification/RecallByName', { noiDung: content });
+                Swal.fire({ icon: 'success', title: sentText, timer: 1000, showConfirmButton: false });
             });
         }
 
         function deleteRemote(id, index) {
-            $.post('/Notification/Delete', { id: id }, function() {
+            securePost('/Notification/Delete', { id: id }, function() {
                 notifications.splice(index, 1);
                 renderNotifications();
             });
         }
 
-        async function startConnection() {
-            try { 
-                await connection.start(); 
-                document.getElementById("liveStatus").innerText = "● Trực tuyến";
-                document.getElementById("liveStatus").className = "badge bg-success p-2";
-            } catch (err) { setTimeout(startConnection, 5000); }
+        function handleNotificationClick(id, url) {
+            $.ajax({
+                url: '/Notification/MarkAsRead',
+                type: 'POST',
+                data: { id: id, __RequestVerificationToken: antiForgeryToken },
+                complete: function() { window.location.href = url; }
+            });
         }
 
-        startConnection();
+        const updateLiveStatus = (isConnected) => {
+            const statusEl = document.getElementById("liveStatus");
+            if (!statusEl) return;
+            statusEl.innerText = isConnected ? '● Trực tuyến' : '● Ngoại tuyến';
+            statusEl.className = isConnected ? 'badge bg-success p-2' : 'badge bg-secondary p-2';
+        };
+        updateLiveStatus(connection?.state === 'Connected');
+        window.addEventListener('hrms:signalr-connected', () => updateLiveStatus(true));
+        window.addEventListener('hrms:signalr-disconnected', () => updateLiveStatus(false));
     </script>
     
     <style>

@@ -2,13 +2,13 @@
 @{
     ViewData["Title"] = "Xem trước Báo cáo";
     
-    // 🔥 Lấy danh sách File đính kèm từ Controller truyền sang
+    // 🔹 Lấy danh sách File đánh kèm từ Controller truyền sang
     var uploadedFiles = ViewBag.UploadedFiles as List<giao_dien_demo.Models.ReportFile> ?? new List<giao_dien_demo.Models.ReportFile>();
 }
 
 <div class="container-fluid mt-4">
     <div class="d-print-none d-flex justify-content-between align-items-center mb-4">
-        <h3>📑 Xem trước nội dung Báo cáo</h3>
+        <h3>🔹 Xem trước nội dung Báo cáo</h3>
         <div>
             <a href="javascript:history.back()" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-arrow-left"></i> Quay lại
@@ -21,7 +21,7 @@
 
     <div class="card shadow-sm mb-4 d-print-none mx-auto" style="max-width: 900px;">
         <div class="card-body bg-light rounded">
-            <label class="fw-bold mb-2 text-primary">📂 Chọn báo cáo đính kèm từ HR để xem nội dung:</label>
+            <label class="fw-bold mb-2 text-primary">🔹 Chọn báo cáo đánh kèm từ HR để xem nội dung:</label>
             <select id="fileSelector" class="form-select form-select-lg border-primary shadow-sm" onchange="loadDocument()">
                 <option value="">-- Mặc định: Xem bảng tổng kết KPI Nhân sự --</option>
                 @foreach (var file in uploadedFiles)
@@ -42,9 +42,9 @@
                 <p style="border-top: 1px solid black; display: inline-block; padding-top: 5px;">Số: 01/BC-NS</p>
             </div>
             <div class="col-7">
-                <h6 class="fw-bold">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h6>
+                <h6 class="fw-bold">CỘNG HÓA XÓA HỘI CHỦ NGHĨA VIỆT NAM</h6>
                 <h6 class="fw-bold text-decoration-underline">Độc lập - Tự do - Hạnh phúc</h6>
-                <p class="mt-2 text-end fst-italic">Hà Nội, ngày @DateTime.Now.ToString("dd") tháng @DateTime.Now.ToString("MM") năm @DateTime.Now.ToString("yyyy")</p>
+                <p class="mt-2 text-end fst-italic">HA Nội, ngày @DateTime.Now.ToString("dd") tháng @DateTime.Now.ToString("MM") năm @DateTime.Now.ToString("yyyy")</p>
             </div>
         </div>
 
@@ -65,7 +65,7 @@
                         <th>Khen thưởng</th>
                         <th>Kỷ luật</th>
                         <th>Nghỉ phép</th>
-                        <th>Tình trạng nhiệm vụ</th>
+                        <th>Tính trạng nhiệm vụ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,12 +96,12 @@
         <div class="row mt-5 text-center text-dark" style="page-break-inside: avoid;">
             <div class="col-6">
                 <p class="fw-bold mb-0">Bộ phận HR tiếp nhận</p>
-                <p><i>(Ký và ghi rõ họ tên)</i></p>
+                <p><i>(KA và ghi rA họ tên)</i></p>
                 <br /><br /><br />
             </div>
             <div class="col-6">
-                <p class="fw-bold mb-0">Lãnh đạo phê duyệt</p>
-                <p><i>(Ký và ghi rõ họ tên)</i></p>
+                <p class="fw-bold mb-0">Lãnh đạo phA duyệt</p>
+                <p><i>(KA và ghi rA họ tên)</i></p>
                 <br /><br /><br />
                 <p class="fw-bold">Vũ Đức Đạt</p>
             </div>
@@ -120,9 +120,9 @@
     @@media print {
         /* Ẩn mọi thứ ngoài lề */
         body * { visibility: hidden; }
-        /* Chỉ hiện phần giấy trắng A4 */
+        /* Chỉ hiện phần giây trắng A4 */
         .print-paper, .print-paper * { visibility: visible; }
-        /* Căn giấy full trang in */
+        /* Căn giây full trang in */
         .print-paper {
             position: absolute;
             left: 0;
@@ -140,7 +140,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.21/mammoth.browser.min.js"></script>
 
     <script>
-        // Lưu lại đoạn HTML gốc (Bảng KPI) để khôi phục khi Lãnh đạo chọn "Mặc định"
+        
+        // Lưu lại đoạn HTML gốc (Bảng KPI) để khối phục khi Lãnh đạo chọn "Mặc định"
         const originalContent = document.getElementById("documentContent").innerHTML;
 
         function loadDocument() {
@@ -151,9 +152,9 @@
             const titleEl = document.getElementById("reportDocTitle");
 
             if (!filePath) {
-                // Khôi phục về bảng KPI
+                // Khởi phục về bảng KPI
                 container.innerHTML = originalContent;
-                titleEl.innerText = "BÁO CÁO TỔNG KẾT NHÂN SỰ & CHẤM CÔNG";
+                titleEl.innerText = 'BÁO CÁO TỔNG KẾT NHÂN SỰ & CHẤM CÔNG';
                 return;
             }
 
@@ -161,7 +162,7 @@
             titleEl.innerText = "PHỤ LỤC: " + selector.options[selector.selectedIndex].text.toUpperCase();
             
             // Hiện trạng thái Loading
-            container.innerHTML = "<div class='text-center mt-5 text-dark'><div class='spinner-border text-primary'></div><p class='mt-2 fw-bold'>Hệ thống đang trích xuất nội dung file...</p></div>";
+            container.innerHTML = "<div class='text-center mt-5 text-dark'><div class='spinner-border text-primary'></div><p class='mt-2 fw-bold'>" + 'Hệ thống đang trách xuất nội dung file...' + "</p></div>";
 
             if (ext === ".pdf") {
                 // Đọc PDF bằng Iframe chuẩn
@@ -176,14 +177,14 @@
                         container.innerHTML = `<div class='text-start text-dark' style='line-height: 1.6; font-size: 15px;'>${result.value}</div>`;
                     })
                     .catch(err => {
-                        container.innerHTML = "<div class='alert alert-danger'>❌ Không thể đọc file Word này. Hệ thống yêu cầu định dạng chuẩn .docx từ Microsoft Word.</div>";
+                        container.innerHTML = "<div class='alert alert-danger'>" + '❌ Không thể đọc file Word này. Hệ thống yêu cầu định dạng chuẩn .docx từ Microsoft Word.' + "</div>";
                     });
             } 
             else {
                 container.innerHTML = `<div class='alert alert-warning text-center mt-4'>
                     <i class='fas fa-exclamation-triangle fa-2x mb-2'></i><br>
-                    Trình duyệt chỉ hỗ trợ xem trực tiếp <b>.PDF</b> và <b>.DOCX</b>.<br>
-                    <a href='${filePath}' class='btn btn-primary mt-3' download>Nhấn vào đây để tải về máy</a>
+                    ${'Trình duyệt chỉ hỗ trợ xem trực tiếp <b>.PDF</b> và <b>.DOCX</b>.<br>'}
+                    <a href='${filePath}' class='btn btn-primary mt-3' download>${'Nhấn vào đây để tải về máy'}</a>
                 </div>`;
             }
         }
