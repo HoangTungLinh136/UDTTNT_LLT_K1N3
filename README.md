@@ -16,3 +16,5 @@ Bản phát hành cung cấp mô hình Whisper Base (`ggml-base.bin`) phục v�
 - Không đưa file mô hình vào Git commit.
 - File mô hình được phân phối riêng thông qua GitHub Releases.
 - Các thành viên cần tải mô hình về trước khi chạy chức năng nhận dạng giọng nói.
+
+https://github.com/HoangTungLinh136/UDTTNT_LLT_K1N3/releases/tag/v1.0.0
