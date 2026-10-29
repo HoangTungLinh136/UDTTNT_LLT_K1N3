@@ -28,23 +28,81 @@ namespace giao_dien_demo.Controllers
         {
             var allowedDepts = _scopeService.GetOverseenOrganizationalUnits()
                 .Where(d => !string.IsNullOrWhiteSpace(d)).Distinct().OrderBy(d => d).ToList();
+
+            // Resolve current Leader identity
+            var currentActorUser = await CurrentActor.ResolveUserAsync(User, _context);
+            string leaderName = string.Empty;
+            string leaderDept = string.Empty;
+            string leaderRole = currentActorUser?.Role ?? "Leader";
+            string leaderStatus = "Đang hoạt động";
+
+            if (currentActorUser?.EmployeeId != null)
+            {
+                var emp = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == currentActorUser.EmployeeId.Value);
+                if (emp != null)
+                {
+                    leaderName = emp.Name;
+                    leaderDept = emp.Department ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(emp.Status))
+                    {
+                        leaderStatus = emp.Status == "Active" ? "Đang hoạt động" : emp.Status;
+                    }
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(leaderName))
+            {
+                leaderName = currentActorUser?.Username ?? CurrentActor.Username(User) ?? "Lãnh đạo";
+            }
+            if (string.IsNullOrWhiteSpace(leaderDept) && allowedDepts.Count > 0)
+            {
+                leaderDept = allowedDepts[0];
+            }
+            if (string.IsNullOrWhiteSpace(leaderDept))
+            {
+                leaderDept = "Ban Lãnh đạo";
+            }
+
             if (allowedDepts.Count == 0)
             {
                 ViewBag.TotalHeadcount = 0; ViewBag.NewHires = 0; ViewBag.DeptStats = new List<object>();
                 ViewData["ExpiringContracts"] = 0;
                 ViewData["ActiveLeaves"] = 0;
                 ViewData["TotalCost"] = 0m;
-                return View(new LeaderExecutiveViewModel());
+                ViewBag.LeaderName = leaderName;
+                ViewBag.LeaderDepartment = leaderDept;
+                ViewBag.LeaderRole = leaderRole;
+                ViewBag.LeaderStatus = leaderStatus;
+                ViewBag.LatestSalaryMonth = "N/A";
+                return View(new LeaderExecutiveViewModel
+                {
+                    LeaderName = leaderName,
+                    LeaderRole = leaderRole,
+                    LeaderDepartment = leaderDept,
+                    LeaderStatus = leaderStatus,
+                    LatestSalaryMonth = "N/A"
+                });
             }
 
             var today = DateTime.Today;
             var tomorrow = today.AddDays(1);
             var employees = await _context.Employees.AsNoTracking()
                 .Where(e => allowedDepts.Contains(e.Department))
-                .Select(e => new { e.Id, e.Department, e.Status })
+                .Select(e => new { e.Id, e.EmployeeCode, e.Name, e.Department, e.JobTitle, e.Status })
                 .ToListAsync();
             var employeeIds = employees.Select(e => e.Id).ToList();
             var activeEmployees = employees.Where(e => e.Status == "Active" || e.Status == "Probation").ToList();
+            var newHires = activeEmployees.Count(e => e.Status == "Probation");
+
+            var scopedEmployeeRows = activeEmployees.Select(e => new LeaderEmployeeRow
+            {
+                Id = e.Id,
+                EmployeeCode = e.EmployeeCode ?? string.Empty,
+                Name = e.Name ?? string.Empty,
+                Department = e.Department ?? string.Empty,
+                JobTitle = !string.IsNullOrWhiteSpace(e.JobTitle) ? e.JobTitle : "Chuyên viên",
+                Status = e.Status ?? "Active"
+            }).OrderBy(e => e.EmployeeCode).ToList();
 
             var presentToday = employeeIds.Count == 0 ? 0 : await _context.Attendances.AsNoTracking()
                 .Where(a => a.EmployeeId.HasValue && employeeIds.Contains(a.EmployeeId.Value) && a.CheckIn >= today && a.CheckIn < tomorrow)
@@ -102,9 +160,14 @@ namespace giao_dien_demo.Controllers
             };
 
             ViewBag.TotalHeadcount = activeEmployees.Count;
-            ViewBag.NewHires = activeEmployees.Count(e => e.Status == "Probation");
+            ViewBag.NewHires = newHires;
             ViewBag.DeptStats = departments.Select(d => new { Department = d.Department, Headcount = d.EmployeeCount }).ToList();
             ViewBag.LatestSalaryMonth = latestSalaryMonth == default ? "N/A" : latestSalaryMonth.ToString("MM/yyyy");
+            ViewBag.LeaderName = leaderName;
+            ViewBag.LeaderDepartment = leaderDept;
+            ViewBag.LeaderRole = leaderRole;
+            ViewBag.LeaderStatus = leaderStatus;
+
             return View(new LeaderExecutiveViewModel
             {
                 ScopeDepartments = allowedDepts,
@@ -114,7 +177,15 @@ namespace giao_dien_demo.Controllers
                 ExpiringContracts = expiringContracts,
                 PendingLeaderDecisions = pendingLeaderDecisions,
                 Departments = departments,
-                AttentionItems = attention
+                AttentionItems = attention,
+                LeaderName = leaderName,
+                LeaderRole = leaderRole,
+                LeaderDepartment = leaderDept,
+                LeaderStatus = leaderStatus,
+                NewHires = newHires,
+                TotalCost = legacyCost,
+                LatestSalaryMonth = latestSalaryMonth == default ? "N/A" : latestSalaryMonth.ToString("MM/yyyy"),
+                ScopedEmployees = scopedEmployeeRows
             });
         }
     }

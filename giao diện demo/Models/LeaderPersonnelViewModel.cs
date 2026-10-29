@@ -22,6 +22,7 @@ namespace giao_dien_demo.Models
         public string Position { get; set; } // Trạng thái: Chính thức, Thử việc...
         public DateTime? JoinDate { get; set; }
         public string? Status { get; set; }
+        public string? ManagerName { get; set; }
     }
 
     public class LeaderEmployeeDetailDto
@@ -37,6 +38,7 @@ namespace giao_dien_demo.Models
         public string JobTitle { get; set; }
         public DateTime? JoinDate { get; set; }
         public string? Status { get; set; }
+        public string? ManagerName { get; set; }
     }
 
     public class ProposeEmployeeChangeDto

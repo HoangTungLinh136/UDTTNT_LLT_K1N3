@@ -1,11 +1,1080 @@
 @model giao_dien_demo.Models.HRWorkspaceViewModel
-@{ ViewData["Title"] = "Tổng quan nhân sự"; }
+@{
+    ViewData["Title"] = "Tổng quan nhân sự";
+    ViewData["HideBreadcrumb"] = true;
+}
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
 <style>
-.hr-dashboard{display:flex;flex-direction:column;gap:24px;max-width:1440px}.hr-columns{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px}.hr-quick{display:flex;flex-wrap:wrap;gap:10px}.hr-empty{text-align:center;padding:40px 16px;color:#64748b}.hr-table-wrap{overflow:auto}@@media(max-width:900px){.hr-columns{grid-template-columns:1fr}}
+    /* HR Dashboard Theme & Layout */
+    .hr-dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 4px 0 32px 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #1e293b;
+    }
+
+    /* Breadcrumb */
+    .hr-breadcrumb {
+        font-size: 13px;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 2px;
+    }
+    .hr-breadcrumb a {
+        color: #64748b;
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .hr-breadcrumb a:hover {
+        color: #2563eb;
+    }
+    .hr-breadcrumb .separator {
+        color: #94a3b8;
+    }
+    .hr-breadcrumb .current {
+        color: #0f172a;
+        font-weight: 600;
+    }
+
+    /* Header */
+    .hr-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .hr-header-icon {
+        width: 44px;
+        height: 44px;
+        background-color: #2563eb;
+        color: #ffffff;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    }
+    .hr-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 2px 0;
+        letter-spacing: -0.01em;
+    }
+    .hr-subtitle {
+        font-size: 13.5px;
+        color: #64748b;
+        margin: 0;
+    }
+
+    /* 4 Stat Cards Grid */
+    .hr-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+    }
+    .hr-stat-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .hr-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+    .stat-left {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+    }
+    .stat-icon-box {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+    }
+    .icon-blue { background-color: #eff6ff; color: #2563eb; }
+    .icon-green { background-color: #f0fdf4; color: #16a34a; }
+    .icon-orange { background-color: #fffbeb; color: #f59e0b; }
+    .icon-red { background-color: #fef2f2; color: #ef4444; }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .stat-label {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+    .stat-value {
+        font-size: 26px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.2;
+    }
+    .stat-subtext {
+        font-size: 11.5px;
+        color: #64748b;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .stat-subtext.growth {
+        color: #16a34a;
+        font-weight: 500;
+    }
+
+    /* Right Indicator Elements on Stat Cards */
+    .stat-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .sparkline-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 28px;
+    }
+    .sparkline-bars .bar {
+        width: 4px;
+        background-color: #93c5fd;
+        border-radius: 2px;
+    }
+    .sparkline-bars .bar:nth-child(1) { height: 12px; }
+    .sparkline-bars .bar:nth-child(2) { height: 20px; }
+    .sparkline-bars .bar:nth-child(3) { height: 15px; }
+    .sparkline-bars .bar:nth-child(4) { height: 28px; }
+
+    .radial-ring-wrap {
+        position: relative;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .radial-ring-wrap svg {
+        transform: rotate(-90deg);
+        width: 48px;
+        height: 48px;
+    }
+    .radial-ring-wrap .ring-bg {
+        fill: none;
+        stroke: #f1f5f9;
+        stroke-width: 4;
+    }
+    .radial-ring-wrap .ring-progress {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.5s ease;
+    }
+    .radial-ring-wrap .ring-text {
+        position: absolute;
+        font-size: 10px;
+        font-weight: 700;
+        color: #0f172a;
+        text-align: center;
+    }
+
+    /* 2-Column Section Rows */
+    .hr-row-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    /* Common Card Styling */
+    .hr-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .hr-card-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .hr-card-title-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .hr-card-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        background-color: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+    }
+    .hr-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+    .hr-card-action-link {
+        font-size: 13px;
+        font-weight: 500;
+        color: #2563eb;
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .hr-card-action-link:hover {
+        color: #1d4ed8;
+        text-decoration: underline;
+    }
+    .hr-card-select {
+        font-size: 12.5px;
+        padding: 4px 28px 4px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background-color: #ffffff;
+        color: #334155;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+    }
+    .hr-card-select:focus {
+        border-color: #2563eb;
+    }
+    .hr-card-body {
+        padding: 20px;
+        flex: 1;
+    }
+
+    /* Donut Chart Layout */
+    .donut-layout {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        height: 100%;
+    }
+    .donut-chart-container {
+        position: relative;
+        width: 175px;
+        height: 175px;
+        flex-shrink: 0;
+    }
+    .donut-center-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        pointer-events: none;
+    }
+    .donut-center-number {
+        font-size: 24px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+    .donut-center-label {
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 500;
+        margin-top: 2px;
+    }
+
+    /* Department Legend */
+    .dept-legend-list {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .dept-legend-row {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+    }
+    .dept-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 10px;
+        flex-shrink: 0;
+    }
+    .dept-name {
+        flex: 1;
+        color: #334155;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dept-count {
+        width: 42px;
+        text-align: right;
+        font-weight: 700;
+        color: #0f172a;
+    }
+    .dept-pct {
+        width: 54px;
+        text-align: right;
+        color: #64748b;
+        font-size: 12.5px;
+    }
+
+    /* Bar Chart Container */
+    .bar-chart-container {
+        position: relative;
+        width: 100%;
+        height: 205px;
+    }
+
+    /* Task Action List (Row 3 Left) */
+    .task-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .task-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.15s ease;
+    }
+    .task-item:hover {
+        background: #ffffff;
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transform: translateX(3px);
+    }
+    .task-item-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .task-icon-box {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex-shrink: 0;
+    }
+    .task-icon-blue { background-color: #eff6ff; color: #2563eb; }
+    .task-icon-orange { background-color: #fff7ed; color: #ea580c; }
+    .task-icon-purple { background-color: #f5f3ff; color: #7c3aed; }
+    .task-icon-green { background-color: #ecfdf5; color: #059669; }
+
+    .task-content {
+        display: flex;
+        flex-direction: column;
+    }
+    .task-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+    }
+    .task-desc {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 1px;
+    }
+    .task-item-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .task-badge {
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        min-width: 24px;
+        text-align: center;
+    }
+    .badge-task-blue { background-color: #e0f2fe; color: #0284c7; }
+    .badge-task-red { background-color: #fee2e2; color: #dc2626; }
+    .badge-task-purple { background-color: #ede9fe; color: #7c3aed; }
+    .badge-task-green { background-color: #d1fae5; color: #059669; }
+
+    .task-arrow {
+        color: #94a3b8;
+        font-size: 13px;
+        transition: transform 0.15s ease;
+    }
+    .task-item:hover .task-arrow {
+        transform: translateX(3px);
+        color: #2563eb;
+    }
+
+    /* Recent Employees Table (Row 3 Right) */
+    .table-responsive-clean {
+        width: 100%;
+        overflow-x: auto;
+    }
+    .table-clean {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .table-clean th {
+        color: #64748b;
+        font-weight: 600;
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 10px 8px;
+        border-bottom: 1px solid #f1f5f9;
+        text-align: left;
+    }
+    .table-clean td {
+        padding: 11px 8px;
+        border-bottom: 1px solid #f8fafc;
+        vertical-align: middle;
+        color: #334155;
+    }
+    .table-clean tr:last-child td {
+        border-bottom: none;
+    }
+    .table-clean tr:hover td {
+        background-color: #f8fafc;
+    }
+    .emp-cell-user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .emp-avatar-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background-color: #e2e8f0;
+        color: #475569;
+        font-weight: 700;
+        font-size: 11.5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .emp-fullname {
+        font-weight: 600;
+        color: #0f172a;
+        white-space: nowrap;
+    }
+    .emp-code-cell {
+        color: #64748b;
+        font-family: monospace;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    .emp-status-pill {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+        background-color: #ecfdf5;
+        color: #059669;
+    }
+    .btn-action-view {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #475569;
+        background-color: #ffffff;
+        text-decoration: none;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+    }
+    .btn-action-view:hover {
+        background-color: #f8fafc;
+        border-color: #cbd5e1;
+        color: #2563eb;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 1200px) {
+        .hr-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    @@media (max-width: 900px) {
+        .hr-row-2col {
+            grid-template-columns: 1fr;
+        }
+        .hr-stats-grid {
+            grid-template-columns: 1fr;
+        }
+        .donut-layout {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
 </style>
-<div class="hr-dashboard">
- <div class="hrms-page-header"><div class="hrms-page-header-main"><h1 class="hrms-page-title"><span class="hrms-page-icon blue"><i class="fa-solid fa-people-group"></i></span>Tổng quan nhân sự</h1><p class="hrms-page-subtitle">Theo dõi tình hình nhân sự và các hồ sơ cần xử lý.</p></div></div>
- <section class="hrms-kpi-grid hrms-kpi-grid-4"><div class="hrms-kpi-card kpi-blue"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Nhân viên đang làm việc</div><div class="hrms-kpi-value kpi-blue">@Model.ActiveEmployeeCount.ToString("N0")</div></div></div><div class="hrms-kpi-card kpi-green"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-user-check"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Có mặt hôm nay</div><div class="hrms-kpi-value kpi-green">@Model.PresentTodayCount.ToString("N0")</div></div></div><div class="hrms-kpi-card kpi-yellow"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-list-check"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Việc cần xử lý</div><div class="hrms-kpi-value kpi-yellow">@Model.PendingActionCount.ToString("N0")</div></div></div><div class="hrms-kpi-card kpi-red"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-file-circle-exclamation"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Hợp đồng hết hạn trong 30 ngày</div><div class="hrms-kpi-value kpi-red">@Model.ExpiringContractCount.ToString("N0")</div></div></div></section>
- <section class="hrms-card"><div class="hrms-card-header"><h2 class="hrms-card-title">Việc cần xử lý</h2></div><div class="hrms-card-body p-0">@if(Model.PendingWork.Any()){<div class="hr-table-wrap"><table class="hrms-table"><thead><tr><th>Mã</th><th>Loại</th><th>Nhân viên</th><th>Nội dung</th><th>Thời gian</th><th></th></tr></thead><tbody>@foreach(var item in Model.PendingWork){<tr><td><strong>@item.Code</strong></td><td>@item.Type</td><td>@item.EmployeeName</td><td>@item.Summary</td><td>@item.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</td><td><a class="hrms-btn hrms-btn-sm hrms-btn-ghost" href="@(Url.Action(item.Action, item.Controller) + item.RouteQuery)">Mở</a></td></tr>}</tbody></table></div>}else{<div class="hr-empty"><h5>Không có hồ sơ cần xử lý</h5><p>Tất cả công việc hiện đã được cập nhật.</p></div>}</div></section>
- <div class="hr-columns"><section class="hrms-card"><div class="hrms-card-header"><h2 class="hrms-card-title">Truy cập nhanh</h2></div><div class="hrms-card-body"><div class="hr-quick"><a class="hrms-btn hrms-btn-primary" asp-controller="Employee" asp-action="Create"><i class="fa-solid fa-user-plus"></i> Tạo hồ sơ nhân viên</a><a class="hrms-btn hrms-btn-secondary" asp-controller="Onboarding" asp-action="Index">Hội nhập</a><a class="hrms-btn hrms-btn-secondary" asp-controller="Contract" asp-action="Create">Tạo hợp đồng</a><a class="hrms-btn hrms-btn-secondary" asp-controller="TaskTracking" asp-action="Index">Công việc HR</a></div></div></section><section class="hrms-card"><div class="hrms-card-header"><h2 class="hrms-card-title">Nhân sự theo đơn vị</h2></div><div class="hrms-card-body p-0">@if(Model.Departments.Any()){<div class="hr-table-wrap"><table class="hrms-table"><thead><tr><th>Đơn vị</th><th class="text-end">Nhân viên</th></tr></thead><tbody>@foreach(var d in Model.Departments){<tr><td>@d.Department</td><td class="text-end"><strong>@d.Employees</strong></td></tr>}</tbody></table></div>}else{<div class="hr-empty">Chưa có dữ liệu đơn vị.</div>}</div></section></div>
+
+<div class="hr-dashboard-container">
+    <!-- Breadcrumb -->
+    <nav class="hr-breadcrumb">
+        <a href="/"><i class="fa-solid fa-house"></i> Trang chủ</a>
+        <span class="separator">&gt;</span>
+        <span class="current">Tổng quan</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="hr-header">
+        <div class="hr-header-icon">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+            <h1 class="hr-title">Tổng quan nhân sự</h1>
+            <p class="hr-subtitle">Theo dõi tình hình nhân sự, các chỉ số quan trọng và công việc HR trong hôm nay.</p>
+        </div>
+    </div>
+
+    <!-- 4 Stat Cards Row -->
+    <div class="hr-stats-grid">
+        <!-- Card 1: Tổng nhân sự -->
+        <div class="hr-stat-card">
+            <div class="stat-left">
+                <div class="stat-icon-box icon-blue">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Tổng nhân sự</span>
+                    <span class="stat-value">@Model.TotalEmployees</span>
+                    <span class="stat-subtext @(Model.MonthlyGrowth > 0 ? "growth" : "")">
+                        @Model.GrowthText
+                    </span>
+                </div>
+            </div>
+            <div class="stat-right">
+                <div class="sparkline-bars">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Đang làm việc -->
+        <div class="hr-stat-card">
+            <div class="stat-left">
+                <div class="stat-icon-box icon-green">
+                    <i class="fa-solid fa-user-check"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Đang làm việc</span>
+                    <span class="stat-value">@Model.ActiveEmployeeCount</span>
+                    <span class="stat-subtext">@Model.WorkingPercentage.ToString("F1")% tổng nhân sự</span>
+                </div>
+            </div>
+            <div class="stat-right">
+                <div class="radial-ring-wrap">
+                    @{
+                        var workingPct = Math.Min(100.0, Math.Max(0.0, Model.WorkingPercentage));
+                        var circumference = 2 * Math.PI * 18;
+                        var strokeOffset = circumference - (workingPct / 100.0 * circumference);
+                    }
+                    <svg viewBox="0 0 44 44">
+                        <circle class="ring-bg" cx="22" cy="22" r="18" />
+                        <circle class="ring-progress" cx="22" cy="22" r="18"
+                                stroke="#10b981"
+                                stroke-dasharray="@circumference"
+                                stroke-dashoffset="@strokeOffset" />
+                    </svg>
+                    <span class="ring-text">@Model.WorkingPercentage.ToString("F1")%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Đang nghỉ phép -->
+        <div class="hr-stat-card">
+            <div class="stat-left">
+                <div class="stat-icon-box icon-orange">
+                    <i class="fa-regular fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Đang nghỉ phép</span>
+                    <span class="stat-value">@Model.OnLeaveTodayCount</span>
+                    <span class="stat-subtext">@Model.OnLeavePercentage.ToString("F1")% tổng nhân sự</span>
+                </div>
+            </div>
+            <div class="stat-right">
+                <div class="radial-ring-wrap">
+                    @{
+                        var leavePct = Math.Min(100.0, Math.Max(0.0, Model.OnLeavePercentage));
+                        var leaveStrokeOffset = circumference - (leavePct / 100.0 * circumference);
+                    }
+                    <svg viewBox="0 0 44 44">
+                        <circle class="ring-bg" cx="22" cy="22" r="18" />
+                        <circle class="ring-progress" cx="22" cy="22" r="18"
+                                stroke="#f59e0b"
+                                stroke-dasharray="@circumference"
+                                stroke-dashoffset="@leaveStrokeOffset" />
+                    </svg>
+                    <span class="ring-text">@Model.OnLeavePercentage.ToString("F1")%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Sắp hết hạn hợp đồng -->
+        <div class="hr-stat-card">
+            <div class="stat-left">
+                <div class="stat-icon-box icon-red">
+                    <i class="fa-regular fa-file-lines"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Sắp hết hạn hợp đồng</span>
+                    <span class="stat-value">@Model.ExpiringContractCount</span>
+                    <span class="stat-subtext">Trong 30 ngày</span>
+                </div>
+            </div>
+            <div class="stat-right" style="opacity: 0.15; font-size: 28px; color: #ef4444; margin-right: 4px;">
+                <i class="fa-solid fa-file-contract"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Charts (50% / 50%) -->
+    <div class="hr-row-2col">
+        <!-- Left: Cơ cấu nhân sự theo phòng ban -->
+        <div class="hr-card">
+            <div class="hr-card-header">
+                <div class="hr-card-title-group">
+                    <div class="hr-card-icon"><i class="fa-solid fa-chart-pie"></i></div>
+                    <h2 class="hr-card-title">Cơ cấu nhân sự theo phòng ban</h2>
+                </div>
+                <select class="hr-card-select" id="deptUnitFilter" onchange="filterDeptChart(this.value)">
+                    <option value="all">Tất cả đơn vị</option>
+                    @foreach (var dept in Model.DepartmentChartItems)
+                    {
+                        <option value="@dept.Name">@dept.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="hr-card-body">
+                <div class="donut-layout">
+                    <div class="donut-chart-container">
+                        <canvas id="deptDonutCanvas"></canvas>
+                        <div class="donut-center-text">
+                            <div class="donut-center-number" id="donutTotalText">@Model.TotalEmployees</div>
+                            <div class="donut-center-label">Nhân sự</div>
+                        </div>
+                    </div>
+                    <div class="dept-legend-list" id="deptLegendContainer">
+                        @if (Model.DepartmentChartItems.Any())
+                        {
+                            @foreach (var item in Model.DepartmentChartItems)
+                            {
+                                <div class="dept-legend-row" data-dept="@item.Name">
+                                    <span class="dept-dot" style="background-color: @item.Color;"></span>
+                                    <span class="dept-name" title="@item.Name">@item.Name</span>
+                                    <span class="dept-count">@item.Count</span>
+                                    <span class="dept-pct">@item.Percentage.ToString("F1")%</span>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-muted small py-3">Chưa có dữ liệu phòng ban</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Biến động nhân sự theo tháng -->
+        <div class="hr-card">
+            <div class="hr-card-header">
+                <div class="hr-card-title-group">
+                    <div class="hr-card-icon"><i class="fa-solid fa-chart-simple"></i></div>
+                    <h2 class="hr-card-title">Biến động nhân sự theo tháng</h2>
+                </div>
+                <select class="hr-card-select" id="turnoverYearSelect" onchange="changeYear(this.value)">
+                    @foreach (var y in Model.AvailableYears)
+                    {
+                        if (y == Model.SelectedYear)
+                        {
+                            <option value="@y" selected>Năm @y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">Năm @y</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="hr-card-body">
+                <div class="bar-chart-container">
+                    <canvas id="turnoverBarCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 3: Actionable items & Recent employees (50% / 50%) -->
+    <div class="hr-row-2col">
+        <!-- Left: Công việc HR cần xử lý hôm nay -->
+        <div class="hr-card">
+            <div class="hr-card-header">
+                <div class="hr-card-title-group">
+                    <div class="hr-card-icon"><i class="fa-solid fa-list-check"></i></div>
+                    <h2 class="hr-card-title">Công việc HR cần xử lý hôm nay</h2>
+                </div>
+                <a href="@Url.Action("Index", "TaskTracking")" class="hr-card-action-link">Xem tất cả</a>
+            </div>
+            <div class="hr-card-body">
+                <div class="task-list">
+                    <!-- Task 1: Duyệt hồ sơ hội nhập -->
+                    <a href="@Url.Action("Index", "Onboarding")" class="task-item">
+                        <div class="task-item-left">
+                            <div class="task-icon-box task-icon-blue">
+                                <i class="fa-solid fa-user-plus"></i>
+                            </div>
+                            <div class="task-content">
+                                <span class="task-title">Duyệt hồ sơ hội nhập</span>
+                                <span class="task-desc">@Model.PendingOnboardingCount hồ sơ chờ duyệt</span>
+                            </div>
+                        </div>
+                        <div class="task-item-right">
+                            <span class="task-badge badge-task-blue">@Model.PendingOnboardingCount</span>
+                            <i class="fa-solid fa-arrow-right task-arrow"></i>
+                        </div>
+                    </a>
+
+                    <!-- Task 2: Hợp đồng sắp hết hạn -->
+                    <a href="@Url.Action("Index", "Contract")" class="task-item">
+                        <div class="task-item-left">
+                            <div class="task-icon-box task-icon-orange">
+                                <i class="fa-regular fa-file-lines"></i>
+                            </div>
+                            <div class="task-content">
+                                <span class="task-title">Hợp đồng sắp hết hạn</span>
+                                <span class="task-desc">@Model.ExpiringContractCount hợp đồng trong 30 ngày</span>
+                            </div>
+                        </div>
+                        <div class="task-item-right">
+                            <span class="task-badge badge-task-red">@Model.ExpiringContractCount</span>
+                            <i class="fa-solid fa-arrow-right task-arrow"></i>
+                        </div>
+                    </a>
+
+                    <!-- Task 3: Đơn nghỉ phép chờ duyệt -->
+                    <a href="@Url.Action("Index", "Leave")" class="task-item">
+                        <div class="task-item-left">
+                            <div class="task-icon-box task-icon-purple">
+                                <i class="fa-regular fa-calendar-check"></i>
+                            </div>
+                            <div class="task-content">
+                                <span class="task-title">Đơn nghỉ phép chờ duyệt</span>
+                                <span class="task-desc">@Model.PendingLeaveCount đơn nghỉ phép</span>
+                            </div>
+                        </div>
+                        <div class="task-item-right">
+                            <span class="task-badge badge-task-purple">@Model.PendingLeaveCount</span>
+                            <i class="fa-solid fa-arrow-right task-arrow"></i>
+                        </div>
+                    </a>
+
+                    <!-- Task 4: Yêu cầu thuyên chuyển -->
+                    <a href="@Url.Action("Index", "Transfer")" class="task-item">
+                        <div class="task-item-left">
+                            <div class="task-icon-box task-icon-green">
+                                <i class="fa-solid fa-right-left"></i>
+                            </div>
+                            <div class="task-content">
+                                <span class="task-title">Yêu cầu thuyên chuyển</span>
+                                <span class="task-desc">@Model.PendingTransferCount yêu cầu mới</span>
+                            </div>
+                        </div>
+                        <div class="task-item-right">
+                            <span class="task-badge badge-task-green">@Model.PendingTransferCount</span>
+                            <i class="fa-solid fa-arrow-right task-arrow"></i>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Nhân sự mới nhất -->
+        <div class="hr-card">
+            <div class="hr-card-header">
+                <div class="hr-card-title-group">
+                    <div class="hr-card-icon"><i class="fa-solid fa-users"></i></div>
+                    <h2 class="hr-card-title">Nhân sự mới nhất</h2>
+                </div>
+                <a href="@Url.Action("Index", "Employee")" class="hr-card-action-link">Xem tất cả</a>
+            </div>
+            <div class="hr-card-body p-0">
+                <div class="table-responsive-clean">
+                    <table class="table-clean">
+                        <thead>
+                            <tr>
+                                <th style="width: 32px; padding-left: 20px;">#</th>
+                                <th>HỌ VÀ TÊN</th>
+                                <th>MÃ NV</th>
+                                <th>PHÒNG BAN</th>
+                                <th>NGÀY VÀO LÀM</th>
+                                <th>TRẠNG THÁI</th>
+                                <th style="text-align: right; padding-right: 20px;">THAO TÁC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.RecentEmployees.Any())
+                            {
+                                int idx = 1;
+                                foreach (var emp in Model.RecentEmployees)
+                                {
+                                    <tr>
+                                        <td style="padding-left: 20px; color: #94a3b8; font-weight: 500;">@idx</td>
+                                        <td>
+                                            <div class="emp-cell-user">
+                                                <div class="emp-avatar-circle">@emp.AvatarLetter</div>
+                                                <span class="emp-fullname">@emp.Name</span>
+                                            </div>
+                                        </td>
+                                        <td class="emp-code-cell">@emp.EmployeeCode</td>
+                                        <td style="color: #475569;">@emp.Department</td>
+                                        <td style="color: #64748b;">@emp.JoinDate.ToString("dd/MM/yyyy")</td>
+                                        <td>
+                                            <span class="emp-status-pill">@emp.Status</span>
+                                        </td>
+                                        <td style="text-align: right; padding-right: 20px;">
+                                            <a href="@Url.Action("Details", "Employee", new { id = emp.Id })" class="btn-action-view">
+                                                <i class="fa-regular fa-eye"></i> Xem
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    idx++;
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">Chưa có thông tin nhân sự mới</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    // --- 1. DONUT CHART (CƠ CẤU NHÂN SỰ THEO PHÒNG BAN) ---
+    const deptLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentChartItems.Select(x => x.Name)));
+    const deptCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentChartItems.Select(x => x.Count)));
+    const deptColors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DepartmentChartItems.Select(x => x.Color)));
+
+    let donutChartInstance = null;
+    const donutCtx = document.getElementById('deptDonutCanvas');
+
+    if (donutCtx && deptLabels.length > 0) {
+        donutChartInstance = new Chart(donutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: deptLabels,
+                datasets: [{
+                    data: deptCounts,
+                    backgroundColor: deptColors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleFont: { size: 12, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 10,
+                        cornerRadius: 8,
+                        callbacks: {
+                            label: function(context) {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const val = context.raw || 0;
+                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                return ` ${context.label}: ${val} (${pct}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function filterDeptChart(selectedDept) {
+        const rows = document.querySelectorAll('.dept-legend-row');
+        if (selectedDept === 'all') {
+            rows.forEach(r => r.style.opacity = '1');
+            if (donutChartInstance) {
+                donutChartInstance.data.datasets[0].backgroundColor = deptColors;
+                donutChartInstance.update();
+                document.getElementById('donutTotalText').innerText = '@Model.TotalEmployees';
+            }
+        } else {
+            rows.forEach(r => {
+                if (r.getAttribute('data-dept') === selectedDept) {
+                    r.style.opacity = '1';
+                } else {
+                    r.style.opacity = '0.35';
+                }
+            });
+            if (donutChartInstance) {
+                const newColors = deptLabels.map((lbl, idx) => lbl === selectedDept ? deptColors[idx] : '#e2e8f0');
+                donutChartInstance.data.datasets[0].backgroundColor = newColors;
+                donutChartInstance.update();
+                const foundIdx = deptLabels.indexOf(selectedDept);
+                if (foundIdx >= 0) {
+                    document.getElementById('donutTotalText').innerText = deptCounts[foundIdx];
+                }
+            }
+        }
+    }
+
+    // --- 2. GROUPED BAR CHART (BIẾN ĐỘNG NHÂN SỰ THEO THÁNG) ---
+    const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+    const newHiresData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyNewHires));
+    const terminationsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTerminations));
+    const transfersData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyTransfers));
+
+    const barCtx = document.getElementById('turnoverBarCanvas');
+    if (barCtx) {
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Tuyển mới',
+                        data: newHiresData,
+                        backgroundColor: '#2563eb',
+                        borderRadius: 3,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    },
+                    {
+                        label: 'Nghỉ việc',
+                        data: terminationsData,
+                        backgroundColor: '#10b981',
+                        borderRadius: 3,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    },
+                    {
+                        label: 'Thuyên chuyển',
+                        data: transfersData,
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 3,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: { size: 11 },
+                            color: '#64748b'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9'
+                        },
+                        ticks: {
+                            stepSize: 5,
+                            font: { size: 11 },
+                            color: '#64748b'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'rectRounded',
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            padding: 15,
+                            font: { size: 12, weight: '500' },
+                            color: '#334155'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleFont: { size: 12, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 10,
+                        cornerRadius: 8
+                    }
+                }
+            }
+        });
+    }
+
+    function changeYear(selectedYear) {
+        window.location.href = '@Url.Action("Index", "HR")?year=' + selectedYear;
+    }
+</script>

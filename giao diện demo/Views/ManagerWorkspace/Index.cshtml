@@ -1,19 +1,119 @@
 @model giao_dien_demo.Models.ManagerWorkspaceViewModel
-@{ ViewData["Title"] = "Tổng quan quản lý"; }
-<div class="hrms-page-header"><div class="hrms-page-header-left"><h1 class="hrms-page-title"><span class="hrms-page-icon blue"><i class="fa-solid fa-gauge-high"></i></span>Tổng quan quản lý</h1><div class="hrms-breadcrumb manager-scope-note"><i class="fa-solid fa-shield-halved"></i><span>Phạm vi quản lý:</span><strong>@(Model.OrganizationalUnits.Any() ? string.Join(", ", Model.OrganizationalUnits) : "Chưa được phân công đơn vị")</strong></div></div></div>
-<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
-    <div class="hrms-kpi-card hrms-kpi-horizontal kpi-blue"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Nhân viên trong phạm vi</div><div class="hrms-kpi-value kpi-blue">@Model.ManagedEmployeeCount</div></div></div>
-    <div class="hrms-kpi-card hrms-kpi-horizontal kpi-green"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-user-check"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Có mặt hôm nay</div><div class="hrms-kpi-value kpi-green">@Model.PresentTodayCount</div></div></div>
-    <div class="hrms-kpi-card hrms-kpi-horizontal kpi-purple"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-umbrella-beach"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Nghỉ phép được giao</div><div class="hrms-kpi-value kpi-purple">@Model.AssignedLeavePendingCount</div></div></div>
-    <div class="hrms-kpi-card hrms-kpi-horizontal kpi-red"><div class="hrms-kpi-top"><div class="hrms-kpi-icon"><i class="fa-solid fa-clock-rotate-left"></i></div></div><div class="hrms-kpi-body"><div class="hrms-kpi-label">Điều chỉnh công được giao</div><div class="hrms-kpi-value kpi-red">@Model.AssignedAdjustmentPendingCount</div></div></div>
+@using System.Globalization
+@{
+    ViewData["Title"] = "Tổng quan quản lý";
+    var culture = CultureInfo.GetCultureInfo("vi-VN");
+    var colors = new[] { "#2962ff", "#00bc88", "#ff9800", "#e83e9b", "#9365e9", "#69829f" };
+    var stops = new List<string>();
+    decimal cursor = 0;
+    for (var i = 0; i < Model.PositionGroups.Count; i++)
+    {
+        var end = cursor + 100m * Model.PositionGroups[i].Count / Model.ManagedEmployeeCount;
+        stops.Add($"{colors[i % colors.Length]} {cursor.ToString(CultureInfo.InvariantCulture)}% {end.ToString(CultureInfo.InvariantCulture)}%");
+        cursor = end;
+    }
+    var gradient = stops.Count > 0 ? $"conic-gradient({string.Join(",", stops)})" : "#edf2f8";
+    var max = Math.Max(4, Model.Movement.SelectMany(m => new[] { m.Joined, m.Left, m.Transferred }).DefaultIfEmpty().Max());
+    var ceiling = (int)(Math.Ceiling(max / 4d) * 4);
+    var movementsExist = Model.Movement.Any(m => m.Joined + m.Left + m.Transferred > 0);
+}
+<link rel="stylesheet" href="~/css/manager-dashboard.css" asp-append-version="true" />
+<div class="manager-dashboard" id="manager-dashboard">
+    <header class="md-heading">
+        <span class="md-heading-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+        <div><h1>Tổng quan quản lý</h1><p>Theo dõi tình hình nhân sự và hiệu suất làm việc của đội nhóm trong phạm vi quản lý.</p></div>
+    </header>
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="md-error" role="alert"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i><h2>Chưa thể tải Dashboard</h2><p>@Model.ErrorMessage</p><a asp-action="Index" class="md-button">Thử lại</a></div>
+    }
+    else
+    {
+        <form method="get" asp-action="Index" class="md-filters" data-dashboard-filter>
+            <label for="md-unit"><i class="fa-solid fa-building" aria-hidden="true"></i> Phạm vi được phân công</label>
+            <select name="unit" id="md-unit">
+                <option value="">Tất cả đơn vị được phân công</option>
+                @foreach (var unit in Model.OrganizationalUnits) { <option value="@unit" selected="@(Model.Unit == unit)">@unit</option> }
+                @if (Model.Unit != "" && !Model.OrganizationalUnits.Contains(Model.Unit)) { <option value="@Model.Unit" selected>Đơn vị ngoài phạm vi</option> }
+            </select>
+            <input type="hidden" name="year" value="@Model.Year" />
+            <button type="submit" class="md-button">Áp dụng</button>
+            <span class="md-loading" role="status" hidden>Đang tải dữ liệu…</span>
+        </form>
+        @if (!Model.OrganizationalUnits.Any()) { <div class="md-notice" role="status">Bạn chưa được phân công phạm vi quản lý. Liên hệ HR để được thiết lập đơn vị phụ trách.</div> }
+        <section class="md-kpis" aria-label="Thống kê đội nhóm">
+            <article class="md-kpi md-blue"><span class="md-kpi-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span><div><h2>Tổng nhân sự đội nhóm</h2><strong>@Model.ManagedEmployeeCount</strong><p>Trong phạm vi được phân công</p></div><i class="fa-solid fa-chart-simple md-kpi-decoration" aria-hidden="true"></i></article>
+            <article class="md-kpi md-green"><span class="md-kpi-icon"><i class="fa-solid fa-user-check" aria-hidden="true"></i></span><div><h2>Đang làm việc</h2><strong>@Model.WorkingEmployeeCount</strong><p>@Model.WorkingPercent.ToString("0.#", culture)% tổng nhân sự</p></div><span class="md-ring" style="--progress:@(Model.WorkingPercent.ToString(CultureInfo.InvariantCulture))%"><span>@Model.WorkingPercent.ToString("0.#", culture)%</span></span></article>
+            <article class="md-kpi md-orange"><span class="md-kpi-icon"><i class="fa-solid fa-umbrella-beach" aria-hidden="true"></i></span><div><h2>Đang nghỉ phép</h2><strong>@Model.OnLeaveTodayCount</strong><p>Đã duyệt · @DateTime.Today.ToString("dd/MM/yyyy")</p></div><span class="md-ring" style="--progress:@(Model.LeavePercent.ToString(CultureInfo.InvariantCulture))%"><span>@Model.LeavePercent.ToString("0.#", culture)%</span></span></article>
+            <article class="md-kpi md-red"><span class="md-kpi-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span><div><h2>Cần phê duyệt</h2><strong>@Model.PendingApprovalCount</strong><p>Yêu cầu bạn có quyền xử lý</p></div><i class="fa-solid fa-file-lines md-kpi-decoration" aria-hidden="true"></i></article>
+        </section>
+        <div class="md-charts">
+            <section class="md-card">
+                <div class="md-card-heading"><h2><i class="fa-solid fa-chart-pie" aria-hidden="true"></i>Cơ cấu nhân sự theo vị trí</h2><span class="md-caption">@Model.ManagedEmployeeCount nhân sự</span></div>
+                @if (Model.PositionGroups.Any())
+                {
+                    <div class="md-composition">
+                        <div class="md-donut" style="background:@gradient" role="img" aria-label="Cơ cấu vị trí của @Model.ManagedEmployeeCount nhân sự; chi tiết trong chú giải"><div><strong>@Model.ManagedEmployeeCount</strong><span>Nhân sự</span></div></div>
+                        <ul class="md-position-legend">
+                            @for (var i = 0; i < Model.PositionGroups.Count; i++)
+                            {
+                                var group = Model.PositionGroups[i];
+                                <li><span class="md-dot" style="background:@colors[i % colors.Length]"></span><span>@group.Label</span><strong>@group.Count</strong><span>@group.Percent.ToString("0.#", culture)%</span></li>
+                            }
+                        </ul>
+                    </div>
+                }
+                else { <div class="md-empty"><i class="fa-solid fa-users-slash" aria-hidden="true"></i><p>Chưa có nhân sự trong phạm vi đã chọn.</p></div> }
+            </section>
+            <section class="md-card">
+                <div class="md-card-heading"><h2><i class="fa-solid fa-chart-column" aria-hidden="true"></i>Biến động nhân sự đội nhóm</h2><form method="get" asp-action="Index" data-dashboard-filter class="md-year-filter"><input type="hidden" name="unit" value="@Model.Unit" /><label class="visually-hidden" for="md-year">Năm thống kê</label><select id="md-year" name="year">@foreach (var year in Model.AvailableYears) { <option value="@year" selected="@(Model.Year == year)">Năm @year</option> }</select><button type="submit" class="md-button md-compact" aria-label="Xem thống kê theo năm"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button></form></div>
+                <div class="md-movement">
+                    <div class="md-bar-chart">
+                        <div class="md-axis">@for (var tick = 4; tick >= 0; tick--) { <span>@(ceiling * tick / 4)</span> }</div>
+                        <div class="md-plot"><svg viewBox="0 0 720 200" preserveAspectRatio="none" role="img" aria-label="Biến động nhân sự năm @Model.Year; mở bảng số liệu để xem chi tiết">
+                            @for (var tick = 0; tick <= 4; tick++) { <line x1="0" y1="@(tick * 48 + 4)" x2="720" y2="@(tick * 48 + 4)" stroke="#e9eff7" stroke-width="1" /> }
+                            @foreach (var month in Model.Movement)
+                            {
+                                var values = new[] { month.Joined, month.Left, month.Transferred };
+                                var labels = new[] { "Gia nhập", "Nghỉ việc", "Điều chuyển" };
+                                @for (var j = 0; j < values.Length; j++)
+                                {
+                                    var height = 192d * values[j] / ceiling;
+                                    <rect x="@((month.Month - 1) * 60 + 12 + j * 12)" y="@((196 - height).ToString(CultureInfo.InvariantCulture))" width="10" height="@(height.ToString(CultureInfo.InvariantCulture))" rx="3" fill="@colors[j]"><title>Tháng @month.Month · @labels[j]: @values[j]</title></rect>
+                                }
+                            }
+                        </svg><div class="md-months">@for (var month = 1; month <= 12; month++) { <span>T@(month)</span> }</div></div>
+                    </div>
+                    <div class="md-chart-legend"><span><i style="background:#2962ff"></i>Gia nhập</span><span><i style="background:#00bc88"></i>Nghỉ việc</span><span><i style="background:#ff9800"></i>Điều chuyển</span></div>
+                    @if (!movementsExist) { <p class="md-chart-empty" role="status">Chưa ghi nhận biến động có ngày hiệu lực trong năm @Model.Year.</p> }
+                    <details class="md-chart-details"><summary>Nguồn dữ liệu và bảng số liệu</summary><p>Lịch sử của nhân sự hiện thuộc phạm vi được phân công. Gia nhập: ngày hội nhập đầu tiên; nghỉ việc: ngày hiệu lực hồ sơ đã hoàn tất; điều chuyển: ngày hiệu lực quyết định đã áp dụng. Không thay thế ngày thiếu bằng ngày tạo hồ sơ.</p><p>@Model.MissingJoinDateCount nhân sự chưa có ngày gia nhập hợp lệ; không tính vào cột gia nhập.</p><div class="md-table-scroll"><table><thead><tr><th>Tháng</th><th>Gia nhập</th><th>Nghỉ việc</th><th>Điều chuyển</th></tr></thead><tbody>@foreach(var month in Model.Movement) { <tr><td>@month.Month</td><td>@month.Joined</td><td>@month.Left</td><td>@month.Transferred</td></tr> }</tbody></table></div></details>
+                </div>
+            </section>
+        </div>
+        <div class="md-bottom">
+            <section class="md-card">
+                <div class="md-card-heading"><h2><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Đơn cần phê duyệt</h2><span class="md-caption">@Model.PendingApprovalCount đang chờ</span></div>
+                <div class="md-approvals">
+                    <a asp-action="LeaveApprovals" class="md-approval-row"><span class="md-approval-icon md-green"><i class="fa-solid fa-umbrella-beach" aria-hidden="true"></i></span><span><strong>Đơn nghỉ phép</strong><small>@Model.AssignedLeavePendingCount đơn chờ phê duyệt</small></span><b class="md-badge @(Model.AssignedLeavePendingCount > 0 ? "md-pending" : "")">@Model.AssignedLeavePendingCount</b><i class="fa-solid fa-angle-right" aria-hidden="true"></i></a>
+                    <a asp-action="AttendanceAdjustments" class="md-approval-row"><span class="md-approval-icon md-blue"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i></span><span><strong>Yêu cầu điều chỉnh công</strong><small>@Model.AssignedAdjustmentPendingCount yêu cầu chờ phê duyệt</small></span><b class="md-badge @(Model.AssignedAdjustmentPendingCount > 0 ? "md-pending" : "")">@Model.AssignedAdjustmentPendingCount</b><i class="fa-solid fa-angle-right" aria-hidden="true"></i></a>
+                </div>
+                @if (Model.PendingApprovalCount == 0) { <p class="md-approval-empty">Không có yêu cầu bạn được phép duyệt đang chờ xử lý.</p> }
+                <p class="md-card-footnote">Chỉ tính đơn trong phạm vi được giao và loại trừ đơn của chính bạn.</p>
+            </section>
+            <section class="md-card md-employees">
+                <div class="md-card-heading"><h2><i class="fa-solid fa-user-group" aria-hidden="true"></i>Nhân viên trực thuộc gần đây</h2><a asp-action="Employees" asp-route-department="@Model.Unit">Xem tất cả <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+                <div class="md-table-scroll"><table><thead><tr><th>STT</th><th>Họ và tên</th><th>Vị trí</th><th>Đơn vị</th><th>Trạng thái</th><th>Ngày vào làm</th><th>Thao tác</th></tr></thead><tbody>
+                    @for (var i = 0; i < Model.RecentEmployees.Count; i++)
+                    {
+                        var employee = Model.RecentEmployees[i];
+                        var active = employee.Status == "Active" || employee.Status == "Đang làm việc";
+                        <tr><td>@(i + 1)</td><td><div class="md-person"><span class="md-avatar" aria-hidden="true">@(string.IsNullOrWhiteSpace(employee.Name) ? "?" : employee.Name.Trim()[..1])</span><strong>@(employee.Name ?? "Chưa có họ tên")</strong></div></td><td>@(employee.JobTitle ?? employee.Position ?? "Chưa có dữ liệu")</td><td>@(employee.Department ?? "Chưa có dữ liệu")</td><td><span class="md-status @(active ? "md-active" : "")">@(employee.Status == "Active" ? "Đang làm việc" : employee.Status == "Offboarded" ? "Đã nghỉ việc" : employee.Status ?? "Chưa có dữ liệu")</span></td><td>@(employee.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa có dữ liệu")</td><td><a asp-action="EmployeeDetails" asp-route-id="@employee.Id" class="md-view" aria-label="Xem hồ sơ @(employee.Name)"><i class="fa-regular fa-eye" aria-hidden="true"></i> Xem</a></td></tr>
+                    }
+                    @if (!Model.RecentEmployees.Any()) { <tr><td colspan="7" class="md-table-empty">Chưa có nhân viên trong phạm vi đã chọn.</td></tr> }
+                </tbody></table></div>
+                <p class="md-card-footnote">Tối đa 5 hồ sơ, ưu tiên ngày gia nhập gần nhất. Hồ sơ thiếu ngày gia nhập được xếp sau.</p>
+            </section>
+        </div>
+    }
 </div>
-<div class="hrms-card mb-4">
-    <div class="hrms-card-header"><h3 class="hrms-card-title"><i class="fa-solid fa-chart-simple card-title-icon"></i>Tình trạng đội nhóm</h3></div>
-    <div class="hrms-card-body"><div class="row g-3">
-        <div class="col-md-6"><div class="d-flex align-items-center gap-3"><span class="hrms-kpi-icon green"><i class="fa-solid fa-person-walking-luggage"></i></span><div><div class="text-muted small">Đang nghỉ hôm nay</div><div class="fs-4 fw-bold">@Model.OnLeaveTodayCount</div></div></div></div>
-        <div class="col-md-6"><div class="d-flex align-items-center gap-3"><span class="hrms-kpi-icon purple"><i class="fa-solid fa-chart-line"></i></span><div><div class="text-muted small">KPI đã hoàn tất</div><div class="fs-4 fw-bold">@Model.CompletedKpiCount</div></div></div></div>
-    </div></div>
-</div>
-<div class="hrms-card"><div class="hrms-card-header"><h3 class="hrms-card-title">Việc cần xử lý</h3><div><a asp-action="LeaveApprovals" class="hrms-btn hrms-btn-primary">Xử lý nghỉ phép</a> <a asp-action="AttendanceAdjustments" class="hrms-btn hrms-btn-secondary">Xử lý chấm công</a></div></div><div class="hrms-card-body p-0">
-@if(Model.RecentApprovals.Any()){<div class="hrms-table-wrap"><table class="hrms-table"><thead><tr><th>Mã</th><th>Nhân viên</th><th>Đơn vị</th><th>Nội dung</th><th>Gửi lúc</th><th></th></tr></thead><tbody>@foreach(var x in Model.RecentApprovals){<tr><td><b>@x.Code</b></td><td>@x.EmployeeName</td><td>@x.Department</td><td class="manager-detail">@x.Summary</td><td>@x.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</td><td><a class="hrms-btn hrms-btn-sm hrms-btn-primary" href="@(x.Type == "LEAVE" ? Url.Action("LeaveApprovals") : Url.Action("AttendanceAdjustments"))">Xem</a></td></tr>}</tbody></table></div>}else{<div class="hrms-empty-state manager-empty"><div class="hrms-empty-icon"><i class="fa-regular fa-circle-check"></i></div><div class="hrms-empty-state-title">Không có yêu cầu được giao đang chờ xử lý</div><div class="hrms-empty-state-desc">Các yêu cầu mới sẽ xuất hiện tại đây khi được giao cho bạn.</div></div>}
-</div></div>
+@section Scripts { <script src="~/js/manager-dashboard.js" asp-append-version="true"></script> }

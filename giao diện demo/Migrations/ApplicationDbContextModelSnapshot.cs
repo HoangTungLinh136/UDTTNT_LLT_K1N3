@@ -1267,6 +1267,53 @@ namespace giao_diện_demo.Migrations
                     b.ToTable("CourseEnrollments", (string)null);
                 });
 
+            modelBuilder.Entity("giao_dien_demo.Models.Department", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UpdatedByUserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Departments");
+                });
+
             modelBuilder.Entity("giao_dien_demo.Models.DismissalHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -1479,6 +1526,9 @@ namespace giao_diện_demo.Migrations
                     b.Property<string>("Department")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("DepartmentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
@@ -1500,6 +1550,9 @@ namespace giao_diện_demo.Migrations
                     b.Property<string>("KPIScore")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ManagerId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
@@ -1518,6 +1571,11 @@ namespace giao_diện_demo.Migrations
                     b.Property<decimal>("RegionalAllowanceSystem")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<decimal>("Salary")
                         .HasColumnType("decimal(18,2)");
 
@@ -1526,11 +1584,62 @@ namespace giao_diện_demo.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DepartmentId");
+
                     b.HasIndex("EmployeeCode")
                         .IsUnique()
                         .HasFilter("[EmployeeCode] IS NOT NULL");
 
-                    b.ToTable("Employees");
+                    b.HasIndex("ManagerId");
+
+                    b.ToTable("Employees", t =>
+                        {
+                            t.HasCheckConstraint("CK_Employees_ManagerId_NotSelf", "[ManagerId] IS NULL OR [ManagerId] <> [Id]");
+                        });
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.EmployeeReportingHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ChangeReason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("ChangedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("NewManagerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PreviousManagerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedByUserId");
+
+                    b.HasIndex("NewManagerId");
+
+                    b.HasIndex("PreviousManagerId");
+
+                    b.HasIndex("EmployeeId", "EffectiveDate");
+
+                    b.ToTable("EmployeeReportingHistory");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.EventOutboxMessage", b =>
@@ -2244,7 +2353,7 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal?>("FinalScore")
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("ManagerUserId")
                         .HasColumnType("int");
@@ -2329,10 +2438,10 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal?>("ManagerScore")
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Progress")
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -2340,7 +2449,7 @@ namespace giao_diện_demo.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<decimal>("Weight")
-                        .HasColumnType("decimal(5,2)");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -4162,6 +4271,9 @@ namespace giao_diện_demo.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<bool>("AllowNullManagerException")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("AppliedAt")
                         .HasColumnType("datetime2");
 
@@ -4226,6 +4338,9 @@ namespace giao_diện_demo.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("NullManagerReason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
 
@@ -4247,8 +4362,14 @@ namespace giao_diện_demo.Migrations
                     b.Property<string>("TargetDepartment")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("TargetDepartmentId")
+                        .HasColumnType("int");
+
                     b.Property<string>("TargetJobTitle")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TargetManagerId")
+                        .HasColumnType("int");
 
                     b.Property<string>("TargetPosition")
                         .HasColumnType("nvarchar(max)");
@@ -4256,6 +4377,10 @@ namespace giao_diện_demo.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EmployeeId");
+
+                    b.HasIndex("TargetDepartmentId");
+
+                    b.HasIndex("TargetManagerId");
 
                     b.ToTable("TransferRecords");
                 });
@@ -4304,7 +4429,9 @@ namespace giao_diện_demo.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EmployeeId");
+                    b.HasIndex("EmployeeId")
+                        .IsUnique()
+                        .HasFilter("[EmployeeId] IS NOT NULL");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -4596,6 +4723,56 @@ namespace giao_diện_demo.Migrations
                         .IsRequired();
 
                     b.Navigation("Employee");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Employee", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.Department", "DepartmentEntity")
+                        .WithMany("Employees")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "Manager")
+                        .WithMany("Subordinates")
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("DepartmentEntity");
+
+                    b.Navigation("Manager");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.EmployeeReportingHistory", b =>
+                {
+                    b.HasOne("giao_dien_demo.Models.User", "ChangedByUser")
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "NewManager")
+                        .WithMany()
+                        .HasForeignKey("NewManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "PreviousManager")
+                        .WithMany()
+                        .HasForeignKey("PreviousManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ChangedByUser");
+
+                    b.Navigation("Employee");
+
+                    b.Navigation("NewManager");
+
+                    b.Navigation("PreviousManager");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.HrTask", b =>
@@ -5021,7 +5198,20 @@ namespace giao_diện_demo.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("giao_dien_demo.Models.Department", "TargetDepartmentEntity")
+                        .WithMany()
+                        .HasForeignKey("TargetDepartmentId");
+
+                    b.HasOne("giao_dien_demo.Models.Employee", "TargetManager")
+                        .WithMany()
+                        .HasForeignKey("TargetManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Employee");
+
+                    b.Navigation("TargetDepartmentEntity");
+
+                    b.Navigation("TargetManager");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.User", b =>
@@ -5060,9 +5250,19 @@ namespace giao_diện_demo.Migrations
                     b.Navigation("Certificate");
                 });
 
+            modelBuilder.Entity("giao_dien_demo.Models.Department", b =>
+                {
+                    b.Navigation("Employees");
+                });
+
             modelBuilder.Entity("giao_dien_demo.Models.DismissalRecord", b =>
                 {
                     b.Navigation("Histories");
+                });
+
+            modelBuilder.Entity("giao_dien_demo.Models.Employee", b =>
+                {
+                    b.Navigation("Subordinates");
                 });
 
             modelBuilder.Entity("giao_dien_demo.Models.IncidentRecord", b =>

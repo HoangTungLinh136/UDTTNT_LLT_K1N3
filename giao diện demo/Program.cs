@@ -43,12 +43,15 @@ builder.Services.AddControllersWithViews(options =>
     >();
 });
 
+builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
+
 
 // =========================================================
 // AVA / AI
 // =========================================================
 
 builder.Services.AddHttpClient<AiService>();
+builder.Services.AddScoped<IAiPermissionService, AiPermissionService>();
 
 builder.Services.AddHttpClient(
     "AvaGateway",
@@ -269,6 +272,20 @@ builder.Services.AddScoped<
 builder.Services.AddScoped<
     IManagerAssignmentService,
     ManagerAssignmentService
+>();
+
+builder.Services.AddScoped<
+    IDirectManagerService,
+    DirectManagerService
+>();
+
+builder.Services.AddScoped<
+    IOrganizationHierarchyService,
+    OrganizationHierarchyService
+>();
+
+builder.Services.AddScoped<
+    DepartmentManagementService
 >();
 
 builder.Services.AddScoped<

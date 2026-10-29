@@ -31,6 +31,8 @@ namespace giao_dien_demo.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Employee> Employees { get; set; }
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<EmployeeReportingHistory> EmployeeReportingHistories { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<Attendance> Attendances { get; set; } // Giữ lại 1 dòng này thôi
         public DbSet<AttendancePeriod> AttendancePeriods { get; set; }
@@ -184,9 +186,65 @@ namespace giao_dien_demo.Data
                 .HasIndex(e => e.EmployeeCode)
                 .IsUnique();
 
-            modelBuilder.Entity<User>()
+                        modelBuilder.Entity<User>()
                 .HasIndex(u => u.Username)
                 .IsUnique();
+
+            // Filtered Unique Index on Users.EmployeeId (OD-15)
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.EmployeeId)
+                .IsUnique()
+                .HasFilter("[EmployeeId] IS NOT NULL");
+
+            // Department Configuration (OD-01, OD-13, OD-19, CR-01)
+            modelBuilder.Entity<Department>(entity =>
+            {
+                entity.HasKey(d => d.Id);
+                entity.HasIndex(d => d.Code).IsUnique();
+                entity.Property(d => d.Code).IsRequired().HasMaxLength(20);
+                entity.Property(d => d.Name).IsRequired().HasMaxLength(100);
+                entity.Property(d => d.IsActive).HasDefaultValue(true);
+                entity.HasMany(d => d.Employees)
+                    .WithOne(e => e.DepartmentEntity)
+                    .HasForeignKey(e => e.DepartmentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Employee Manager & Department Indexes (OD-02, OD-07, OD-08, OD-18, OD-24)
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.HasIndex(e => e.DepartmentId);
+                entity.HasIndex(e => e.ManagerId);
+                entity.HasOne(e => e.Manager)
+                    .WithMany(m => m.Subordinates)
+                    .HasForeignKey(e => e.ManagerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.ToTable(t => t.HasCheckConstraint("CK_Employees_ManagerId_NotSelf", "[ManagerId] IS NULL OR [ManagerId] <> [Id]"));
+            });
+
+            // EmployeeReportingHistory Configuration (OD-09, OD-23)
+            modelBuilder.Entity<EmployeeReportingHistory>(entity =>
+            {
+                entity.HasKey(h => h.Id);
+                entity.Property(h => h.ChangeReason).IsRequired().HasMaxLength(500);
+                entity.HasIndex(h => new { h.EmployeeId, h.EffectiveDate });
+                entity.HasOne(h => h.Employee)
+                    .WithMany()
+                    .HasForeignKey(h => h.EmployeeId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(h => h.PreviousManager)
+                    .WithMany()
+                    .HasForeignKey(h => h.PreviousManagerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(h => h.NewManager)
+                    .WithMany()
+                    .HasForeignKey(h => h.NewManagerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(h => h.ChangedByUser)
+                    .WithMany()
+                    .HasForeignKey(h => h.ChangedByUserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
 
             modelBuilder.Entity<AiConversation>(entity =>
             {

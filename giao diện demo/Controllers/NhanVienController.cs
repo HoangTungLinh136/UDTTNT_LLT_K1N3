@@ -79,6 +79,47 @@ namespace giao_dien_demo.Controllers
                 .AsNoTracking()
                 .CountAsync(n => n.RecipientUserId == currentUser.Id && !n.IsRead);
 
+            var recentNotifications = await _context.Notifications
+                .AsNoTracking()
+                .Where(n => n.RecipientUserId == currentUser.Id)
+                .OrderByDescending(n => n.CreatedAt)
+                .Take(5)
+                .Select(n => new EmployeeDashboardNotificationItem
+                {
+                    Id = n.Id,
+                    Message = n.Message ?? string.Empty,
+                    CreatedAt = n.CreatedAt,
+                    NotificationType = n.NotificationType,
+                    IsRead = n.IsRead,
+                    SenderName = n.SenderName
+                })
+                .ToListAsync();
+
+            WorkShift? todayShift = null;
+            try
+            {
+                var shiftAssignments = await _context.WorkShiftAssignments
+                    .AsNoTracking()
+                    .Include(a => a.WorkShift)
+                    .Where(a => (!a.EffectiveFrom.HasValue || a.EffectiveFrom.Value.Date <= todayStart) &&
+                                (!a.EffectiveTo.HasValue || a.EffectiveTo.Value.Date >= todayStart))
+                    .ToListAsync();
+
+                todayShift = shiftAssignments.FirstOrDefault(a => a.TargetType == "Employee" && a.TargetValue == employee.EmployeeCode)?.WorkShift
+                          ?? shiftAssignments.FirstOrDefault(a => a.TargetType == "Department" && a.TargetValue == employee.Department)?.WorkShift
+                          ?? shiftAssignments.FirstOrDefault(a => a.TargetType == "Company")?.WorkShift;
+            }
+            catch { }
+
+            var jobTitle = !string.IsNullOrWhiteSpace(employee.JobTitle) ? employee.JobTitle : (employee.Position ?? "Nhân viên");
+            var displayStatus = employee.Status switch
+            {
+                "Active" or "Đang làm việc" or "Hoạt động" => "Đang làm việc",
+                "Probation" or "Thử việc" => "Thử việc",
+                "Resigned" or "Đã nghỉ việc" => "Đã nghỉ việc",
+                _ => employee.Status ?? "Đang làm việc"
+            };
+
             var trainingQuery = _context.CourseEnrollments
                 .AsNoTracking()
                 .Where(e => e.EmployeeId == employeeId);
@@ -116,8 +157,14 @@ namespace giao_dien_demo.Controllers
                 EmployeeCode = employee.EmployeeCode ?? string.Empty,
                 Department = employee.Department ?? string.Empty,
                 Position = string.IsNullOrWhiteSpace(employee.Position) ? employee.JobTitle ?? string.Empty : employee.Position,
+                JobTitle = jobTitle,
+                EmploymentStatus = displayStatus,
+                AvatarPath = employee.AvatarPath,
+                StandardWorkDaysThisMonth = 26,
                 Today = todayStart,
                 TodayAttendance = todayAttendance,
+                TodayShift = todayShift,
+                RecentNotifications = recentNotifications,
                 AttendanceCountThisMonth = attendanceCountThisMonth,
                 PendingLeaveCount = pendingLeaveCount,
                 ContractCount = contractCount,

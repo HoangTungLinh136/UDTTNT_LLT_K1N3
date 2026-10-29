@@ -1,4 +1,4 @@
-using giao_dien_demo.Data;
+﻿using giao_dien_demo.Data;
 using giao_dien_demo.Models;
 using giao_dien_demo.Services;
 using Microsoft.AspNetCore.Http;
@@ -88,43 +88,40 @@ namespace giao_dien_demo.Controllers
             return View(model);
         }
 
-        public async Task<IActionResult> Index()
+        [HttpGet]
+        public async Task<IActionResult> Index(int? year = null, string unit = "")
         {
             if (!IsManager) return Denied();
-            var scopedEmployeeQuery = _scope.GetScopedEmployeeQuery().AsNoTracking();
-            var managedEmployeeCount = await scopedEmployeeQuery.CountAsync();
-            var employees = await scopedEmployeeQuery.ToListAsync();
-            var employeeIds = employees.Select(e => e.Id).ToList();
-            var employeeCodes = employees.Select(e => e.EmployeeCode).Where(x => x != null).Cast<string>().ToList();
-            var today = DateTime.Today;
-            var managerUserId = await _context.Users.Where(u => u.Username == Username).Select(u => (int?)u.Id).FirstOrDefaultAsync();
-            var leaves = await AssignedLeaves(employeeIds).OrderByDescending(x => x.CreatedDate).Take(5).ToListAsync();
-            var adjustments = await AssignedAdjustments(employeeCodes).OrderByDescending(x => x.CreatedAt).Take(5).ToListAsync();
-            var vm = new ManagerWorkspaceViewModel
+            try
             {
-                ManagedEmployeeCount = managedEmployeeCount,
-                PresentTodayCount = await _context.Attendances.CountAsync(a => a.CheckIn >= today && a.CheckIn < today.AddDays(1) &&
-                    a.EmployeeId != null && employeeIds.Contains(a.EmployeeId.Value)),
-                AssignedLeavePendingCount = await AssignedLeaves(employeeIds).CountAsync(),
-                AssignedAdjustmentPendingCount = await AssignedAdjustments(employeeCodes).CountAsync(),
-                OnLeaveTodayCount = await _context.Leaves.CountAsync(l => l.EmployeeId.HasValue && employeeIds.Contains(l.EmployeeId.Value)
-                    && (l.Status == "Đã duyệt" || l.Status == "APPROVED")
-                    && l.FromDate.Date <= today && l.ToDate.Date >= today),
-                CompletedKpiCount = managerUserId.HasValue
-                    ? await _context.KPIEvaluations.CountAsync(k => k.ManagerUserId == managerUserId.Value && employeeIds.Contains(k.EmployeeId) && k.Status == "COMPLETED")
-                    : 0,
-                OrganizationalUnits = _scope.GetManagedOrganizationalUnits().OrderBy(x => x).ToList(),
-                RecentApprovals = leaves.Select(ToLeaveRow).Concat(adjustments.Select(a => ToAdjustmentRow(a, employees)))
-                    .OrderByDescending(x => x.SubmittedAt).Take(6).ToList()
-            };
-            return View(vm);
+                var actor = await CurrentActor.ResolveUserAsync(User, _context);
+                if (actor == null || actor.Role != AppRoles.Manager) return Denied();
+                return View(await new ManagerDashboardService(_context, _scope).LoadAsync(actor, year, unit));
+            }
+            catch (Exception ex) when (ex is System.Data.Common.DbException || ex is TimeoutException)
+            {
+                HttpContext.RequestServices.GetService<ILogger<ManagerWorkspaceController>>()?
+                    .LogError(ex, "Unable to load Manager Dashboard");
+                Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                return View("DashboardUnavailable", new ManagerWorkspaceViewModel { ErrorMessage = "Không thể tải dữ liệu tổng quan. Vui lòng thử lại sau." });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EmployeeDetails(int id)
+        {
+            if (!IsManager) return Denied();
+            var actor = await CurrentActor.ResolveUserAsync(User, _context);
+            if (actor == null || actor.Role != AppRoles.Manager) return Denied();
+            var employee = await new ManagerDashboardService(_context, _scope).FindEmployeeAsync(id);
+            return employee == null ? NotFound() : View(employee);
         }
 
         public async Task<IActionResult> Employees(string search = "", string department = "", int page = 1)
         {
             if (!IsManager) return Denied();
             var hasManagerScope = _scope.GetManagedOrganizationalUnits().Any();
-            var query = _scope.GetScopedEmployeeQuery().AsNoTracking();
+            var query = _scope.GetScopedEmployeeQuery().Include(e => e.Manager).AsNoTracking();
             if (!string.IsNullOrWhiteSpace(search)) query = query.Where(e => (e.Name ?? "").Contains(search) || (e.EmployeeCode ?? "").Contains(search));
             if (!string.IsNullOrWhiteSpace(department))
             {

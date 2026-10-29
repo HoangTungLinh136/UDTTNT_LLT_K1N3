@@ -85,6 +85,19 @@
         </form>
     </div>
 
+    @if (ViewBag.ActiveView == "reporting")
+    {
+        <div class="hrms-alert hrms-alert-info mb-3 d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fa-solid fa-diagram-project me-2"></i>
+                <strong>Chế độ quản lý trực tiếp:</strong> Bạn đang xem danh sách nhân sự kèm thông tin Quản lý trực tiếp (ManagerId). Nhấn biểu tượng sơ đồ ở cột thao tác để xem chi tiết hoặc thay đổi tuyến báo cáo.
+            </div>
+            <a href="@Url.Action("Hierarchy", "Employee")" class="btn btn-sm btn-primary" style="border-radius:8px;">
+                <i class="fa-solid fa-sitemap me-1"></i> Xem Cây phân cấp
+            </a>
+        </div>
+    }
+
     @* ============= TABLE CARD ============= *@
     <div class="hrms-card">
         <div class="hrms-card-header d-flex justify-content-between align-items-center">
@@ -104,6 +117,7 @@
                             <th style="text-align: left;">Thông tin nhân viên</th>
                             <th style="text-align: left;">Phòng ban</th>
                             <th style="text-align: left;">Chức vụ</th>
+                            <th style="text-align: left;">Quản lý trực tiếp</th>
                             <th style="text-align: left;">Trình độ</th>
                             <th style="text-align: center;">Trạng thái</th>
                             <th style="text-align: right;" class="col-money">Mức lương CB</th>
@@ -131,6 +145,18 @@
                                     </td>
                                     <td><span class="hrms-badge hrms-badge-neutral">@(string.IsNullOrEmpty(item.Department) ? "---" : item.Department)</span></td>
                                     <td><span class="hrms-badge hrms-badge-info">@(string.IsNullOrEmpty(item.Position) ? "---" : item.Position)</span></td>
+                                    <td>
+                                        @if (item.Manager != null)
+                                        {
+                                            <span class="hrms-badge hrms-badge-blue" title="Quản lý trực tiếp: @item.Manager.Name (@item.Manager.EmployeeCode)">
+                                                <i class="fa-solid fa-user-tie me-1"></i> @item.Manager.Name
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fst-italic" style="font-size:12px;">Chưa gán</span>
+                                        }
+                                    </td>
                                     <td><span class="hrms-badge hrms-badge-purple">@(string.IsNullOrEmpty(item.AcademicLevel) ? "---" : item.AcademicLevel)</span></td>
                                     <td style="text-align: center;">
                                         @if(item.Status == "Active") { <span class="hrms-badge hrms-badge-success">Đang làm việc</span> }
@@ -149,6 +175,9 @@
                                             <a asp-action="Edit" asp-route-id="@item.Id" class="hrms-btn hrms-btn-xs hrms-btn-ghost" title="Chỉnh sửa">
                                                 <i class="fas fa-edit text-warning"></i>
                                             </a>
+                                            <a asp-action="Details" asp-route-id="@item.Id" asp-route-tab="reporting" class="hrms-btn hrms-btn-xs hrms-btn-ghost" title="Quản lý trực tiếp & Tuyến báo cáo">
+                                                <i class="fa-solid fa-diagram-project text-info"></i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>
@@ -158,7 +187,7 @@
                         else
                         {
                             <tr id="emptyRow">
-                                <td colspan="8">
+                                <td colspan="9">
                                     <div class="hrms-empty-state py-5 text-center">
                                         <div class="hrms-empty-state-icon mb-2"><i class="fas fa-user-slash fa-2x text-muted"></i></div>
                                         <div class="hrms-empty-state-title fw-bold">Không tìm thấy dữ liệu</div>

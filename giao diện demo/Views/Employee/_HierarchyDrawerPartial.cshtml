@@ -1,0 +1,160 @@
+@model giao_dien_demo.Models.OrganizationHierarchyViewModel
+@{
+    var isAdminOrHr = Model.CurrentUserRole == "Admin" || Model.CurrentUserRole == "HR";
+}
+
+<div class="hierarchy-drawer" id="hierarchyDrawer">
+    <!-- Header -->
+    <div class="drawer-header">
+        <h5 class="drawer-title">
+            Thông tin nhân viên
+        </h5>
+        <button type="button" class="btn-close-drawer" onclick="closeHierarchyDrawer()" title="Đóng panel" aria-label="Đóng">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- Empty placeholder when no node selected -->
+    <div class="drawer-empty-state" id="drawerEmptyState">
+        <div class="drawer-empty-icon">
+            <i class="fa-solid fa-arrow-pointer"></i>
+        </div>
+        <h6>Chọn một nhân sự trên sơ đồ</h6>
+        <p class="text-muted">Nhấn vào thẻ bất kỳ trên cây phân cấp để xem chi tiết hồ sơ, cấp dưới và lịch sử quản lý trực tiếp.</p>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="drawer-content" id="drawerContent" style="display: none;">
+        <!-- Top Profile Card -->
+        <div class="drawer-profile-card">
+            <div class="drawer-avatar-wrap">
+                <div class="drawer-avatar" id="drawerAvatar">
+                    <span>N</span>
+                </div>
+            </div>
+            <div class="drawer-profile-info">
+                <div class="drawer-profile-name-row">
+                    <h5 class="drawer-name" id="drawerName">Nguyễn Đức Long</h5>
+                    <span class="drawer-code-pill" id="drawerCode">NV001</span>
+                    <span class="drawer-status-pill badge-active" id="drawerStatus">Đang làm việc</span>
+                </div>
+                <div class="drawer-job-title" id="drawerJobTitle">Tổng Giám đốc</div>
+                <div class="drawer-dept-pill" id="drawerDept">Phòng Nhân sự</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="drawer-nav-tabs">
+            <button type="button" class="drawer-tab-btn active" id="tabBtnGeneral" onclick="switchDrawerTab('general')">
+                Thông tin chung
+            </button>
+            <button type="button" class="drawer-tab-btn" id="tabBtnSubordinates" onclick="switchDrawerTab('subordinates')">
+                Cấp dưới (<span id="drawerSubordinatesCount">0</span>)
+            </button>
+            <button type="button" class="drawer-tab-btn" id="tabBtnHistory" onclick="switchDrawerTab('history')">
+                Lịch sử quản lý
+            </button>
+        </div>
+
+        <!-- Tab 1: General Info -->
+        <div class="drawer-tab-pane active" id="paneGeneral">
+            <div class="drawer-info-list">
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-regular fa-user me-2 text-secondary"></i>Họ và tên</div>
+                    <div class="drawer-info-value fw-semibold text-dark" id="detailName">-</div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-regular fa-id-badge me-2 text-secondary"></i>Mã nhân viên</div>
+                    <div class="drawer-info-value" id="detailCode">-</div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-solid fa-briefcase me-2 text-secondary"></i>Chức danh</div>
+                    <div class="drawer-info-value" id="detailJobTitle">-</div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-solid fa-building me-2 text-secondary"></i>Phòng ban</div>
+                    <div class="drawer-info-value" id="detailDepartment">-</div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-solid fa-user-tie me-2 text-secondary"></i>Quản lý trực tiếp</div>
+                    <div class="drawer-info-value" id="detailManager">
+                        <span id="detailManagerText">Không có (Cấp quản lý cao nhất)</span>
+                        <a href="javascript:void(0)" id="detailManagerFocusBtn" class="ms-1 text-primary text-decoration-none" style="display:none;" title="Chuyển đến quản lý này trên cây">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-solid fa-phone me-2 text-secondary"></i>Số điện thoại</div>
+                    <div class="drawer-info-value" id="detailPhone">-</div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-regular fa-envelope me-2 text-secondary"></i>Email</div>
+                    <div class="drawer-info-value" id="detailEmail">-</div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-solid fa-gear me-2 text-secondary"></i>Trạng thái</div>
+                    <div class="drawer-info-value">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" id="detailStatus">Đang làm việc</span>
+                    </div>
+                </div>
+                <div class="drawer-info-row">
+                    <div class="drawer-info-label"><i class="fa-regular fa-calendar-check me-2 text-secondary"></i>Ngày vào làm</div>
+                    <div class="drawer-info-value" id="detailJoinDate">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Subordinates -->
+        <div class="drawer-tab-pane" id="paneSubordinates">
+            <div id="drawerSubordinatesList" class="subordinates-list">
+                <!-- Dynamically populated -->
+            </div>
+            <div id="drawerSubordinatesEmpty" class="text-center py-4 text-muted" style="display:none;">
+                <i class="fa-solid fa-user-group fa-2x mb-2 text-secondary" style="opacity:0.4;"></i>
+                <p class="small mb-0">Nhân sự này hiện chưa có cấp dưới trực tiếp nào.</p>
+            </div>
+        </div>
+
+        <!-- Tab 3: History -->
+        <div class="drawer-tab-pane" id="paneHistory">
+            @if (isAdminOrHr)
+            {
+                <div id="drawerHistoryList" class="history-timeline">
+                    <!-- Dynamically populated -->
+                </div>
+                <div id="drawerHistoryEmpty" class="text-center py-4 text-muted" style="display:none;">
+                    <i class="fa-solid fa-clock-rotate-left fa-2x mb-2 text-secondary" style="opacity:0.4;"></i>
+                    <p class="small mb-0">Chưa ghi nhận lịch sử thay đổi người quản lý trực tiếp (OD-07).</p>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 text-muted">
+                    <i class="fa-solid fa-shield-halved fa-2x mb-2 text-secondary" style="opacity:0.4;"></i>
+                    <p class="small mb-0">Lịch sử thay đổi quản lý chỉ hiển thị cho Quản trị viên và Nhân sự theo chính sách bảo mật HRMS.</p>
+                </div>
+            }
+        </div>
+
+        <!-- Drawer Footer Actions -->
+        <div class="drawer-footer">
+            <a href="javascript:void(0)" id="btnDrawerFullDetails" class="btn btn-outline-secondary btn-drawer-action" title="Xem hồ sơ chi tiết">
+                Xem hồ sơ chi tiết
+            </a>
+            @if (isAdminOrHr)
+            {
+                <a href="javascript:void(0)" id="btnDrawerReportingHistory" class="btn btn-primary btn-drawer-action" title="Xem lịch sử quản lý chi tiết">
+                    Xem lịch sử quản lý
+                </a>
+            }
+            else
+            {
+                <button type="button" class="btn btn-primary btn-drawer-action" onclick="switchDrawerTab('general')">
+                    Đóng chi tiết
+                </button>
+            }
+        </div>
+    </div>
+</div>
+

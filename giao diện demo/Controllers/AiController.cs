@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Net.Http;
 using System.Linq;
@@ -204,8 +204,12 @@ public sealed class AiController : ControllerBase
 
     [HttpPost("transcribe")]
     [RequestSizeLimit(30_000_000)]
-    public async Task<IActionResult> Transcribe([FromBody] AiBrowserTranscribeRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Transcribe([FromBody] AiBrowserTranscribeRequest request, [FromServices] IAiPermissionService permissions, CancellationToken cancellationToken)
     {
+        var actor = await CurrentActor.ResolveUserAsync(User, _db);
+        if (actor == null) return Unauthorized();
+        var context = await permissions.GetContextAsync(actor, cancellationToken);
+        if (!context.Permissions.Contains("ai.chat") || !context.Permissions.Contains("ai.audio.stt")) return Forbid();
         var file = new AiBrowserAttachment
         {
             FileName = request.FileName,

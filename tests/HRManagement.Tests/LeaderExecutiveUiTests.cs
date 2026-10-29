@@ -72,8 +72,8 @@ public sealed class LeaderExecutiveUiTests
             return new Fixture(connection, context) { InScopeId = employee.Id };
         }
         public LeaderController Leader() => new(Context, new StaticScope("UNIT_A")) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
-        public LeaderAnalyticsController Analytics() => new(Context, new StaticScope("UNIT_A"));
-        public LeaderReportController Reports() => new(Context, new StaticScope("UNIT_A"));
+        public LeaderAnalyticsController Analytics() => new(Context, new StaticScope("UNIT_A"), new PayrollCalculationService(Context));
+        public LeaderReportController Reports() => new(Context, new StaticScope("UNIT_A"), new PayrollCalculationService(Context));
         public async ValueTask DisposeAsync() { await Context.DisposeAsync(); await _connection.DisposeAsync(); }
     }
     private sealed class StaticScope : ILeadershipScopeService

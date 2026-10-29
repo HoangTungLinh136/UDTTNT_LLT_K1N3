@@ -1,0 +1,96 @@
+@model giao_dien_demo.Models.HierarchyNodeViewModel
+@{
+    var hasChildren = Model.DirectReports != null && Model.DirectReports.Any();
+    var isManager = hasChildren;
+    var isRootLeader = !Model.ManagerId.HasValue && hasChildren;
+    var isStandalone = !Model.ManagerId.HasValue && !hasChildren;
+    var isAdminOrHr = (bool)(ViewData["IsAdminOrHr"] ?? false);
+    var cardClass = Model.IsCycleDetected ? "is-cycle" : (isRootLeader ? "is-root" : (isManager ? "is-manager" : (isStandalone ? "is-standalone" : "")));
+    var initial = !string.IsNullOrWhiteSpace(Model.Name) ? Model.Name.Trim().Substring(0, 1).ToUpper() : "N";
+}
+
+<li class="tree-item" id="node-emp-@Model.Id">
+    <div class="node-card @cardClass">
+        @if (hasChildren)
+        {
+            <button type="button" class="node-toggle" onclick="toggleNode(this)" aria-expanded="true" title="Thu gọn / Mở rộng nhánh">
+                <i class="fa-solid fa-minus"></i>
+            </button>
+        }
+        else
+        {
+            <span style="width: 24px; display: inline-block;"></span>
+        }
+
+        <div class="node-avatar">
+            @if (!string.IsNullOrEmpty(Model.AvatarPath))
+            {
+                <img src="@Model.AvatarPath" alt="@Model.Name" onerror="this.onerror=null; this.parentElement.innerText='@initial';" />
+            }
+            else
+            {
+                <span>@initial</span>
+            }
+        </div>
+
+        <div class="node-details">
+            <div class="node-name-row">
+                <span class="node-name">@Model.Name</span>
+                <span class="node-code-badge">@Model.EmployeeCode</span>
+                @if (Model.IsCurrentUser)
+                {
+                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:10px; font-weight:600;"><i class="fa-solid fa-user-check me-1"></i>Bạn</span>
+                }
+                @if (isRootLeader && !Model.IsCycleDetected)
+                {
+                    <span class="badge bg-purple-soft text-purple" style="background:#f3e8ff; color:#7e22ce; font-size:10px; font-weight:600;">Lãnh đạo nhánh</span>
+                }
+                else if (isStandalone && !Model.IsCycleDetected)
+                {
+                    <span class="badge" style="background:#fef3c7; color:#b45309; font-size:10px; font-weight:600;">Chưa gán quản lý</span>
+                }
+                @if (Model.IsCycleDetected)
+                {
+                    <span class="badge bg-danger text-white" style="font-size:10px; font-weight:600;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Chu trình
+                    </span>
+                }
+            </div>
+            <div class="node-meta-row">
+                <span>@(Model.JobTitle ?? Model.Position ?? "Nhân viên")</span>
+                <span>•</span>
+                <span class="node-dept-badge">@(Model.Department ?? "Chưa phân phòng")</span>
+                @if (hasChildren)
+                {
+                    <span class="node-reports-badge">
+                        <i class="fa-solid fa-users"></i> @Model.DirectReports.Count trực tiếp (@Model.TotalDescendantsCount toàn nhánh)
+                    </span>
+                }
+            </div>
+        </div>
+
+        @if (isAdminOrHr)
+        {
+            <a href="@Url.Action("Details", "Employee", new { id = Model.Id, tab = "reporting" })" class="node-action-btn" title="Xem thông tin & tuyến báo cáo chi tiết">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Chi tiết
+            </a>
+        }
+        else if (Model.IsCurrentUser)
+        {
+            <a href="@Url.Action("MyProfile", "Employee")" class="node-action-btn" style="color:#2563eb; border-color:#bfdbfe; background:#eff6ff;" title="Xem hồ sơ cá nhân của tôi">
+                <i class="fa-solid fa-id-card"></i> Hồ sơ của tôi
+            </a>
+        }
+    </div>
+
+    @if (hasChildren)
+    {
+        <ul class="tree-branch" style="display: block;">
+            @foreach (var child in Model.DirectReports)
+            {
+                @await Html.PartialAsync("_HierarchyNodePartial", child, ViewData)
+            }
+        </ul>
+    }
+</li>
+

@@ -594,6 +594,19 @@ namespace giao_dien_demo.Controllers
                 // Nếu Effective Date đã đến, chuyển trạng thái Employee ngay
                 if (record.EffectiveDate.Date <= DateTime.Today && record.Employee != null)
                 {
+                    // OD-12 Guard: Kiểm tra người quản lý còn cấp dưới trực tiếp đang Active không
+                    bool hasActiveSubordinates = await _context.Employees
+                        .AnyAsync(e => e.ManagerId == record.EmployeeId && e.Status == "Active");
+
+                    if (hasActiveSubordinates)
+                    {
+                        await transaction.RollbackAsync();
+                        return Json(new { 
+                            success = false, 
+                            message = "Không thể hoàn tất bước có hiệu lực nghỉ việc: Người quản lý vẫn còn cấp dưới trực tiếp đang hoạt động. Cần tái phân công cấp dưới hoặc phê duyệt ngoại lệ trước khi hoàn tất (OD-12)." 
+                        });
+                    }
+
                     record.Employee.Status = "Offboarded";
                     
                     // Khóa tài khoản User tương ứng
@@ -613,7 +626,7 @@ namespace giao_dien_demo.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 
-                _ = _auditLogService.LogAsync("Complete", "EmployeeLifecycle", "Offboarding", record.Id.ToString(), "Activity", "Success");
+                await _auditLogService.LogAsync("Complete", "EmployeeLifecycle", "Offboarding", record.Id.ToString(), "Activity", "Success");
                 return Json(new { success = true });
             }
             catch (Exception ex)

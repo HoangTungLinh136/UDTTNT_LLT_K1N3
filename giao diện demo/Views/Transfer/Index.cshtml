@@ -1,4 +1,5 @@
 @model List<giao_dien_demo.Models.TransferRecord>
+<form id="antiForgeryForm" style="display:none;">@Html.AntiForgeryToken()</form>
 @using Microsoft.AspNetCore.Http
 @{
     ViewData["Title"] = "Quyết định thuyên chuyển";
@@ -395,6 +396,31 @@
                 <label>Chức danh (Vai trò) mới</label>
                 <input type="text" id="targetTitle" class="form-control" placeholder="Vd: Nhóm trưởng, Team Lead...">
             </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Quản lý trực tiếp mới (OD-04)</label>
+                    <select id="targetManagerId" class="form-control">
+                        <option value="">-- Chọn quản lý trực tiếp --</option>
+                        @if(ViewBag.EligibleManagers != null)
+                        {
+                            foreach(var m in ViewBag.EligibleManagers)
+                            {
+                                <option value="@m.Id">@m.Name (@m.EmployeeCode) - @m.Department</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="form-group" style="display:flex; flex-direction:column; justify-content:center;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:20px;">
+                        <input type="checkbox" id="allowNullManagerException" onchange="toggleNullManagerReason()" style="width:18px; height:18px;"/>
+                        <span style="font-size:13px; font-weight:600; color:#475569;">Miễn trừ Quản lý (OD-11)</span>
+                    </label>
+                </div>
+            </div>
+            <div class="form-group" id="nullManagerReasonGroup" style="display:none;">
+                <label>Lý do miễn trừ Quản lý trực tiếp <span class="req">*</span></label>
+                <textarea id="nullManagerReason" class="form-control" rows="2" placeholder="Nêu rõ lý do được duyệt ngoại lệ theo OD-11..."></textarea>
+            </div>
         </div>
 
         <div class="form-section">
@@ -477,6 +503,7 @@
             <div class="compare-val"><span>Phòng:</span> <strong id="dt_targetDept"></strong></div>
             <div class="compare-val"><span>Chức vụ:</span> <strong id="dt_targetPos"></strong></div>
             <div class="compare-val"><span>Vai trò:</span> <strong id="dt_targetTitle"></strong></div>
+            <div class="compare-val"><span>Quản lý:</span> <strong id="dt_targetManager"></strong></div>
         </div>
     </div>
 
@@ -519,6 +546,10 @@ function openCreateDrawer() {
     document.getElementById('effectiveDate').value = '';
     document.getElementById('reason').value = '';
     document.getElementById('notes').value = '';
+    document.getElementById('targetManagerId').value = '';
+    document.getElementById('allowNullManagerException').checked = false;
+    document.getElementById('nullManagerReason').value = '';
+    document.getElementById('nullManagerReasonGroup').style.display = 'none';
 }
 
 function closeCreateDrawer() {
@@ -589,23 +620,43 @@ function selectEmployee(emp) {
     empDropdown.classList.remove('show');
 }
 
+function toggleNullManagerReason() {
+    const chk = document.getElementById('allowNullManagerException');
+    const group = document.getElementById('nullManagerReasonGroup');
+    group.style.display = chk.checked ? 'block' : 'none';
+}
+
 function submitCreateForm(isSubmit) {
     const empId = document.getElementById('formEmployeeId').value;
     const targetDept = document.getElementById('targetDept').value;
     const targetPos = document.getElementById('targetPos').value;
     const effDate = document.getElementById('effectiveDate').value;
     const reason = document.getElementById('reason').value;
+    const targetManagerId = document.getElementById('targetManagerId').value;
+    const allowNull = document.getElementById('allowNullManagerException').checked;
+    const nullReason = document.getElementById('nullManagerReason').value;
 
     if(!empId) { alert('Vui lòng chọn nhân viên.'); return; }
     if(!targetDept || !targetPos) { alert('Vui lòng chọn phòng ban và chức vụ mới.'); return; }
     if(!effDate) { alert('Vui lòng chọn ngày hiệu lực.'); return; }
     if(!reason.trim()) { alert('Vui lòng nhập lý do thuyên chuyển.'); return; }
+    if(!targetManagerId && !allowNull) {
+        alert('Vui lòng chỉ định Quản lý trực tiếp mới hoặc chọn Miễn trừ theo OD-11.');
+        return;
+    }
+    if(allowNull && !nullReason.trim()) {
+        alert('Vui lòng nhập lý do miễn trừ Quản lý trực tiếp (OD-11).');
+        return;
+    }
 
     const payload = {
         employeeId: parseInt(empId),
-        newDepartment: targetDept,
+        targetDepartment: targetDept,
         targetPosition: targetPos,
-        newJobTitle: document.getElementById('targetTitle').value,
+        targetJobTitle: document.getElementById('targetTitle').value,
+        targetManagerId: targetManagerId ? parseInt(targetManagerId) : null,
+        allowNullManagerException: allowNull,
+        nullManagerReason: allowNull ? nullReason : null,
         effectiveDate: effDate,
         reason: reason,
         notes: document.getElementById('notes').value,
@@ -613,18 +664,23 @@ function submitCreateForm(isSubmit) {
         decisionDate: document.getElementById('decisionDate').value || null
     };
 
-    fetch(`/Transfer/Create?isSubmit=${isSubmit}`, {
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+    fetch('/Transfer/Create?isSubmit=' + isSubmit + '&actionType=' + (isSubmit ? 'SUBMIT' : 'CREATE'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'RequestVerificationToken': token
+        },
         body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(data => {
         if(data.success) {
-            alert(data.message);
+            alert(data.message || 'Thao tác thành công.');
             window.location.reload();
         } else {
-            alert('Lỗi: ' + data.message);
+            alert('Lỗi: ' + (data.message || 'Không thể tạo thuyên chuyển'));
         }
     })
     .catch(err => {
@@ -632,7 +688,6 @@ function submitCreateForm(isSubmit) {
         alert('Có lỗi xảy ra khi kết nối server.');
     });
 }
-
 // =============== DETAIL DRAWER LOGIC ===============
 let currentRecordId = null;
 
@@ -698,7 +753,15 @@ function renderDetail(data) {
 
     template.getElementById('dt_targetDept').textContent = data.newDepartment;
     template.getElementById('dt_targetPos').textContent = data.targetPosition;
-    template.getElementById('dt_targetTitle').textContent = data.newJobTitle;
+    template.getElementById('dt_targetTitle').textContent = data.targetJobTitle || data.newJobTitle;
+    let mgrDisplay = 'Chưa phân công';
+    if (data.targetManager) {
+        mgrDisplay = ${data.targetManager.name} ();
+    } else if (data.allowNullManagerException) {
+        mgrDisplay = Miễn trừ OD-11 ();
+    }
+    const mgrElem = template.getElementById('dt_targetManager');
+    if (mgrElem) mgrElem.textContent = mgrDisplay;
 
     template.getElementById('dt_decNum').textContent = data.decisionNumber;
     template.getElementById('dt_decDate').textContent = data.decisionDate || '---';
@@ -776,7 +839,11 @@ function actionRecord(action, id, requireReason = false) {
         if (!confirm(`Xác nhận thực hiện: ${action}?`)) return;
     }
 
-    fetch(url, { method: 'POST' })
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    fetch(url, { 
+        method: 'POST',
+        headers: { 'RequestVerificationToken': token }
+    })
     .then(res => res.json())
     .then(data => {
         alert(data.message || 'Thành công');

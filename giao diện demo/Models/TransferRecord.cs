@@ -21,8 +21,20 @@ namespace giao_dien_demo.Models
 
         // Target assignment after transfer
         public string? TargetDepartment { get; set; }
+        public int? TargetDepartmentId { get; set; }
+        [ForeignKey("TargetDepartmentId")]
+        public Department? TargetDepartmentEntity { get; set; }
+
         public string? TargetPosition { get; set; } 
         public string? TargetJobTitle { get; set; } 
+
+        // Target direct manager (OD-04)
+        public int? TargetManagerId { get; set; }
+        [ForeignKey("TargetManagerId")]
+        public Employee? TargetManager { get; set; }
+
+        public bool AllowNullManagerException { get; set; } = false;
+        public string? NullManagerReason { get; set; }
 
         public DateTime EffectiveDate { get; set; }
         public string? Reason { get; set; }

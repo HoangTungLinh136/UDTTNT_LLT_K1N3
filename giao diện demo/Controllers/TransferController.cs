@@ -159,6 +159,11 @@ namespace giao_dien_demo.Controllers
                 .OrderBy(j => j.Name)
                 .ToListAsync();
 
+            ViewBag.EligibleManagers = await _context.Employees
+                .Where(e => e.Status == "Active")
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
             ViewBag.CurrentSearch = searchName;
             ViewBag.CurrentDept = department;
             ViewBag.CurrentStatus = status;
@@ -174,6 +179,8 @@ namespace giao_dien_demo.Controllers
         {
             var record = await _context.TransferRecords
                 .Include(a => a.Histories)
+                .Include(a => a.TargetManager)
+                .Include(a => a.TargetDepartmentEntity)
                 .FirstOrDefaultAsync(a => a.Id == id);
 
             if (record == null) return NotFound();
@@ -225,8 +232,13 @@ namespace giao_dien_demo.Controllers
         // 4. CREATE — Tạo mới (Lưu nháp hoặc Trình duyệt)
         [HttpPost]
         [Authorize(Roles = "Manager")]
-        public async Task<IActionResult> Create(TransferRecord model, string actionType)
+        public async Task<IActionResult> Create([FromBody] TransferRecord model, [FromQuery] string? actionType = null, [FromQuery] bool? isSubmit = null)
         {
+            if (string.IsNullOrEmpty(actionType) && isSubmit == true)
+            {
+                actionType = "SUBMIT";
+            }
+
             var employee = await _context.Employees.FindAsync(model.EmployeeId);
             if (employee == null) return Json(new { success = false, message = "Nhân viên không tồn tại." });
 
@@ -243,9 +255,18 @@ namespace giao_dien_demo.Controllers
             // Kiểm tra xem có thực sự thay đổi không
             if (employee.Department == model.TargetDepartment &&
                 employee.Position == model.TargetPosition &&
-                employee.JobTitle == model.TargetJobTitle)
+                employee.JobTitle == model.TargetJobTitle && employee.ManagerId == model.TargetManagerId)
             {
                 return Json(new { success = false, message = "Không có thay đổi nào về phòng ban, vị trí hoặc chức danh để thực hiện thuyên chuyển." });
+            }
+
+            if (!model.TargetDepartmentId.HasValue && !string.IsNullOrEmpty(model.TargetDepartment))
+            {
+                var dept = await _context.Departments.FirstOrDefaultAsync(d => d.Name == model.TargetDepartment);
+                if (dept != null)
+                {
+                    model.TargetDepartmentId = dept.Id;
+                }
             }
 
             model.EmployeeCodeSnapshot = employee.EmployeeCode;
@@ -291,7 +312,7 @@ namespace giao_dien_demo.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            _ = _auditLogService.LogAsync("Create", "EmployeeLifecycle", "Transfer", model.Id.ToString(), "Activity", "Success");
+            await _auditLogService.LogAsync("Create", "EmployeeLifecycle", "Transfer", model.Id.ToString(), "Activity", "Success");
 
             return Json(new { success = true });
         }
@@ -299,7 +320,7 @@ namespace giao_dien_demo.Controllers
         // 5. UPDATE — Cập nhật bản nháp
         [HttpPost]
         [Authorize(Roles = "Manager")]
-        public async Task<IActionResult> Update(TransferRecord model, string actionType)
+        public async Task<IActionResult> Update([FromBody] TransferRecord model, [FromQuery] string? actionType = null, [FromQuery] bool? isSubmit = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
             try
@@ -324,6 +345,19 @@ namespace giao_dien_demo.Controllers
                 record.TargetDepartment = model.TargetDepartment;
                 record.TargetPosition = model.TargetPosition;
                 record.TargetJobTitle = model.TargetJobTitle;
+                record.TargetDepartmentId = model.TargetDepartmentId;
+                record.TargetManagerId = model.TargetManagerId;
+                record.AllowNullManagerException = model.AllowNullManagerException;
+                record.NullManagerReason = model.NullManagerReason;
+
+                if (!record.TargetDepartmentId.HasValue && !string.IsNullOrEmpty(record.TargetDepartment))
+                {
+                    var dept = await _context.Departments.FirstOrDefaultAsync(d => d.Name == record.TargetDepartment);
+                    if (dept != null)
+                    {
+                        record.TargetDepartmentId = dept.Id;
+                    }
+                }
                 record.EffectiveDate = model.EffectiveDate;
                 record.Reason = model.Reason;
                 record.Notes = model.Notes;
@@ -355,7 +389,7 @@ namespace giao_dien_demo.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                _ = _auditLogService.LogAsync("Update", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success");
+                await _auditLogService.LogAsync("Update", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success");
 
                 return Json(new { success = true });
             }
@@ -393,7 +427,7 @@ namespace giao_dien_demo.Controllers
                 _context.TransferHistories.Add(history);
                 await _context.SaveChangesAsync();
 
-                _ = _auditLogService.LogAsync("Approve", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success");
+                await _auditLogService.LogAsync("Approve", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success");
 
                 // P0-C3: If Leader approved and EffectiveDate is reached, apply immediately via EffectiveService
                 if (approverRole == AppRoles.Leader && record.ApprovalStatus == "APPROVED" && record.EffectiveDate.Date <= DateTime.Today)
@@ -435,7 +469,7 @@ namespace giao_dien_demo.Controllers
                 _context.TransferHistories.Add(history);
                 await _context.SaveChangesAsync();
 
-                _ = _auditLogService.LogAsync("Reject", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success");
+                await _auditLogService.LogAsync("Reject", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success");
             }
 
             return Json(new { success = result.Success, message = result.Message });
@@ -481,7 +515,7 @@ namespace giao_dien_demo.Controllers
 
             await _context.SaveChangesAsync();
 
-            _ = _auditLogService.LogAsync("Cancel", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success", null, null, null, reason);
+            await _auditLogService.LogAsync("Cancel", "EmployeeLifecycle", "Transfer", record.Id.ToString(), "Activity", "Success", null, null, null, reason);
 
             return Json(new { success = true });
         }

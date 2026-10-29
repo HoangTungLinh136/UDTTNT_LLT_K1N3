@@ -1,4 +1,4 @@
-﻿import os
+import os
 
 from dotenv import load_dotenv
 
@@ -14,7 +14,7 @@ class Settings:
         "http://localhost:11434",
     ).strip().rstrip("/")
     OLLAMA_TIMEOUT_SECONDS = float(
-        os.getenv("OLLAMA_TIMEOUT_SECONDS", "120")
+        os.getenv("OLLAMA_TIMEOUT_SECONDS", "240")
     )
     OLLAMA_TEXT_MODEL = os.getenv(
         "OLLAMA_TEXT_MODEL",

@@ -46,3 +46,9 @@ body {
 tr {
     transition: all 0.5s ease;
 }
+
+/* Use one explicit breadcrumb text size across overview and detail pages. */
+:is(.hrms-global-breadcrumb, .hr-breadcrumb, .payroll-breadcrumb, .hierarchy-breadcrumb, .hrms-breadcrumb, .topbar-breadcrumb, .breadcrumb),
+:is(.hrms-global-breadcrumb, .hr-breadcrumb, .payroll-breadcrumb, .hierarchy-breadcrumb, .hrms-breadcrumb, .topbar-breadcrumb, .breadcrumb) * {
+    font-size: 14px !important;
+}

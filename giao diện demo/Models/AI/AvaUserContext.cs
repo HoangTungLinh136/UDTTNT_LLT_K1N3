@@ -12,4 +12,7 @@ public sealed class AvaUserContext
     public IReadOnlyList<string> Permissions { get; init; } = [];
     public IReadOnlyList<string> DepartmentIds { get; init; } = [];
     public IReadOnlyList<string> DepartmentNames { get; init; } = [];
+    public string DataScope { get; init; } = "SELF";
+    public IReadOnlyList<string> AssignedEmployeeIds { get; init; } = [];
+    public bool AllowSensitivePayroll { get; init; }
 }

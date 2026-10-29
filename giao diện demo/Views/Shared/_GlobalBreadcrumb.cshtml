@@ -1,0 +1,574 @@
+@using Microsoft.AspNetCore.Http
+@{
+    if (ViewData["HideBreadcrumb"] as bool? == true)
+    {
+        return;
+    }
+
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    var role = Context.Session.GetString("Role") ?? "";
+    if (string.IsNullOrEmpty(role))
+    {
+        if (User.IsInRole("Admin")) role = "Admin";
+        else if (User.IsInRole("HR")) role = "HR";
+        else if (User.IsInRole("Leader")) role = "Leader";
+        else if (User.IsInRole("Manager")) role = "Manager";
+        else role = "Employee";
+    }
+
+    string homeUrl = role switch
+    {
+        "Admin" => Url.Action("Index", "Admin") ?? "/Admin",
+        "HR" => Url.Action("Index", "HR") ?? "/HR",
+        "Leader" => Url.Action("Index", "Leader") ?? "/Leader",
+        "Manager" => Url.Action("Index", "ManagerWorkspace") ?? "/ManagerWorkspace",
+        _ => Url.Action("Index", "NhanVien") ?? "/NhanVien"
+    };
+
+    var items = new List<(string Label, string? Url)>();
+
+    var customItems = ViewData["Breadcrumbs"] as IEnumerable<(string Label, string? Url)>;
+    if (customItems != null && customItems.Any())
+    {
+        items.AddRange(customItems);
+    }
+    else
+    {
+        if (role == "Employee")
+        {
+            if (currentController == "NhanVien")
+            {
+                items.Add(("Tổng quan", null));
+            }
+            else if (currentController == "Employee")
+            {
+                if (currentAction == "MyProfile")
+                {
+                    items.Add(("Hồ sơ của tôi", null));
+                }
+                else if (currentAction == "Hierarchy")
+                {
+                    items.Add(("Hồ sơ", Url.Action("MyProfile", "Employee")));
+                    items.Add(("Cây phân cấp", null));
+                }
+                else
+                {
+                    items.Add(("Hồ sơ", Url.Action("MyProfile", "Employee")));
+                    items.Add((ViewData["Title"]?.ToString() ?? "Chi tiết", null));
+                }
+            }
+            else if (currentController == "Attendance" || currentController == "AttendanceAdjustment")
+            {
+                if (currentController == "AttendanceAdjustment" || currentAction == "Manage" || currentAction == "Create")
+                {
+                    items.Add(("Chấm công", Url.Action("Index", "Attendance")));
+                    items.Add(("Yêu cầu điều chỉnh", null));
+                }
+                else
+                {
+                    items.Add(("Chấm công", null));
+                }
+            }
+            else if (currentController == "MyRequest")
+            {
+                items.Add(("Đơn từ", null));
+            }
+            else if (currentController == "Leave")
+            {
+                items.Add(("Đơn từ", Url.Action("Index", "MyRequest")));
+                if (currentAction == "Create")
+                {
+                    items.Add(("Nghỉ phép", Url.Action("Index", "Leave")));
+                    items.Add(("Tạo đơn nghỉ phép", null));
+                }
+                else
+                {
+                    items.Add(("Nghỉ phép", null));
+                }
+            }
+            else if (currentController == "MyPayroll" || currentController == "Salary")
+            {
+                items.Add(("Tiền lương", null));
+            }
+            else if (currentController == "MyKPI")
+            {
+                if (currentAction == "Details")
+                {
+                    items.Add(("KPI của tôi", Url.Action("Index", "MyKPI")));
+                    items.Add(("Chi tiết KPI", null));
+                }
+                else
+                {
+                    items.Add(("KPI của tôi", null));
+                }
+            }
+            else if (currentController == "Contract")
+            {
+                items.Add(("Hợp đồng", null));
+            }
+            else if (currentController == "Benefit")
+            {
+                items.Add(("Phúc lợi", null));
+            }
+            else if (currentController == "Training")
+            {
+                items.Add(("Đào tạo", null));
+            }
+            else if (currentController == "Reward")
+            {
+                items.Add(("Khen thưởng", null));
+            }
+            else if (currentController == "Notification")
+            {
+                items.Add(("Thông báo", null));
+            }
+            else
+            {
+                var title = ViewData["Title"]?.ToString() ?? currentController;
+                items.Add((title, null));
+            }
+        }
+        else if (role == "Admin")
+        {
+            if (currentController == "Admin" && (currentAction == "Index" || currentAction == ""))
+            {
+                items.Add(("Tổng quan hệ thống", null));
+            }
+            else if (currentController == "Admin" && (currentAction == "Users" || currentAction == "Details" || currentAction == "EditUser" || currentAction == "CreateUser"))
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                if (currentAction == "Users")
+                {
+                    items.Add(("Người dùng", null));
+                }
+                else
+                {
+                    items.Add(("Người dùng", Url.Action("Users", "Admin")));
+                    items.Add((currentAction == "Details" ? "Chi tiết tài khoản" : currentAction == "EditUser" ? "Chỉnh sửa tài khoản" : "Thêm mới tài khoản", null));
+                }
+            }
+            else if (currentController == "AdminRole")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Vai trò & phân quyền", null));
+            }
+            else if (currentController == "AdminOrg")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Đơn vị tổ chức", null));
+            }
+            else if (currentController == "AdminCategory")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Danh mục hệ thống", null));
+            }
+            else if (currentController == "AdminSecurity")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Chính sách bảo mật", null));
+            }
+            else if (currentController == "AdminNotificationConfig")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Cấu hình thông báo", null));
+            }
+            else if (currentController == "AdminIntegration")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Tích hợp hệ thống", null));
+            }
+            else if (currentController == "AdminAudit")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Audit Log", null));
+            }
+            else if (currentController == "AdminBackup")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Sao lưu & phục hồi", null));
+            }
+            else if (currentController == "AdminSettings")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("Cấu hình hệ thống", null));
+            }
+            else if (currentController == "AdminMonitoring")
+            {
+                items.Add(("Quản trị", Url.Action("Index", "Admin")));
+                items.Add(("System Monitoring", null));
+            }
+            else if (currentController == "Employee" && currentAction == "Hierarchy")
+            {
+                items.Add(("Hồ sơ", Url.Action("Index", "Employee")));
+                items.Add(("Cây phân cấp", null));
+            }
+            else
+            {
+                var title = ViewData["Title"]?.ToString() ?? currentController;
+                items.Add((title, null));
+            }
+        }
+        else if (role == "Manager")
+        {
+            if (currentController == "ManagerWorkspace" && (currentAction == "Index" || currentAction == ""))
+            {
+                items.Add(("Tổng quan", null));
+            }
+            else if (currentController == "ManagerWorkspace")
+            {
+                items.Add(("Quản lý", Url.Action("Index", "ManagerWorkspace")));
+                var subTitle = currentAction switch
+                {
+                    "Profile" => "Hồ sơ cá nhân",
+                    "Employees" => "Nhân viên trực thuộc",
+                    "Attendance" => "Chấm công đội nhóm",
+                    "LeaveApprovals" => "Duyệt nghỉ phép",
+                    "AttendanceAdjustments" => "Duyệt giải trình công",
+                    "Reports" => "Báo cáo",
+                    "Notifications" => "Thông báo",
+                    _ => currentAction
+                };
+                items.Add((subTitle, null));
+            }
+            else if (currentController == "ManagerKPI")
+            {
+                items.Add(("Quản lý KPI", Url.Action("Index", "ManagerKPI")));
+                if (currentAction == "Create")
+                {
+                    items.Add(("Thiết lập KPI mới", null));
+                }
+                else if (currentAction == "Details")
+                {
+                    items.Add(("Chi tiết đánh giá KPI", null));
+                }
+                else
+                {
+                    items.Add(("Danh sách KPI", null));
+                }
+            }
+            else if (currentController == "Appointment" || currentController == "Dismissal" || currentController == "Transfer" || currentController == "Reward")
+            {
+                items.Add(("Đề xuất nhân sự", null));
+                var proposalName = currentController switch
+                {
+                    "Appointment" => "Bổ nhiệm",
+                    "Dismissal" => "Miễn nhiệm",
+                    "Transfer" => "Điều chuyển",
+                    "Reward" => "Khen thưởng",
+                    _ => currentController
+                };
+                items.Add((proposalName, null));
+            }
+            else if (currentController == "Employee" && currentAction == "Hierarchy")
+            {
+                items.Add(("Hồ sơ", Url.Action("Employees", "ManagerWorkspace")));
+                items.Add(("Cây phân cấp", null));
+            }
+            else
+            {
+                var title = ViewData["Title"]?.ToString() ?? currentController;
+                items.Add((title, null));
+            }
+        }
+        else if (role == "Leader")
+        {
+            if (currentController == "Leader" && (currentAction == "Index" || currentAction == ""))
+            {
+                items.Add(("Tổng quan", null));
+            }
+            else if (currentController == "LeaderPersonnel")
+            {
+                items.Add(("Nhân sự", null));
+            }
+            else if (currentController == "LeaderAttendance")
+            {
+                if (currentAction == "LateReport")
+                {
+                    items.Add(("Chấm công", Url.Action("Index", "LeaderAttendance")));
+                    items.Add(("Báo cáo đi muộn", null));
+                }
+                else
+                {
+                    items.Add(("Chấm công", null));
+                }
+            }
+            else if (currentController == "LeaderLeave")
+            {
+                items.Add(("Nghỉ phép", null));
+            }
+            else if (currentController == "LeaderContract")
+            {
+                items.Add(("Hợp đồng", null));
+            }
+            else if (currentController == "LeaderCost")
+            {
+                items.Add(("Chi phí nhân sự", null));
+            }
+            else if (currentController == "LeaderKPI")
+            {
+                if (currentAction == "Details")
+                {
+                    items.Add(("KPI / Hiệu suất", Url.Action("Index", "LeaderKPI")));
+                    items.Add(("Chi tiết đánh giá KPI", null));
+                }
+                else
+                {
+                    items.Add(("KPI / Hiệu suất", null));
+                }
+            }
+            else if (currentController == "LeaderAnalytics")
+            {
+                items.Add(("Phân tích", null));
+            }
+            else if (currentController == "LeaderReport")
+            {
+                items.Add(("Báo cáo", null));
+            }
+            else if (currentController == "LeaderApproval")
+            {
+                items.Add(("Phê duyệt", null));
+            }
+            else if (currentController == "Employee" && currentAction == "Hierarchy")
+            {
+                items.Add(("Hồ sơ", Url.Action("Index", "LeaderPersonnel")));
+                items.Add(("Cây phân cấp", null));
+            }
+            else
+            {
+                var title = ViewData["Title"]?.ToString() ?? currentController;
+                items.Add((title, null));
+            }
+        }
+        else // HR
+        {
+            if (currentController == "HR" || (currentController == "Home" && currentAction == "Index"))
+            {
+                items.Add(("Tổng quan", null));
+            }
+            else if (currentController == "Onboarding")
+            {
+                items.Add(("Hội nhập", null));
+            }
+            else if (currentController == "Employee")
+            {
+                items.Add(("Hồ sơ", Url.Action("Index", "Employee")));
+                if (currentAction == "Hierarchy")
+                {
+                    items.Add(("Cây phân cấp", null));
+                }
+                else if (currentAction == "Create")
+                {
+                    items.Add(("Danh sách nhân viên", Url.Action("Index", "Employee")));
+                    items.Add(("Thêm mới nhân viên", null));
+                }
+                else if (currentAction == "Edit")
+                {
+                    items.Add(("Danh sách nhân viên", Url.Action("Index", "Employee")));
+                    items.Add(("Chỉnh sửa hồ sơ", null));
+                }
+                else if (currentAction == "Details")
+                {
+                    items.Add(("Danh sách nhân viên", Url.Action("Index", "Employee")));
+                    items.Add(("Chi tiết hồ sơ", null));
+                }
+                else if (currentAction == "MyProfile")
+                {
+                    items.Add(("Hồ sơ cá nhân", null));
+                }
+                else
+                {
+                    items.Add(("Danh sách nhân viên", null));
+                }
+            }
+            else if (currentController == "AdminOrg")
+            {
+                items.Add(("Hồ sơ", Url.Action("Index", "Employee")));
+                items.Add(("Danh mục phòng ban", null));
+            }
+            else if (currentController == "Attendance" || currentController == "Timesheet" || currentController == "AttendanceRule" || currentController == "WorkShift" || currentController == "Approval" || currentController == "Holiday" || currentController == "AttendanceReport" || currentController == "AttendanceAdjustment")
+            {
+                items.Add(("Chấm công", Url.Action("Index", "Attendance")));
+                var attSub = currentController switch
+                {
+                    "Timesheet" => "Bảng chấm công",
+                    "AttendanceRule" => "Quy tắc chấm công",
+                    "WorkShift" => "Ca làm việc",
+                    "Approval" => "Đơn chờ duyệt",
+                    "Holiday" => "Ngày nghỉ lễ",
+                    "AttendanceAdjustment" => "Yêu cầu điều chỉnh",
+                    "AttendanceReport" => (currentAction == "Late" ? "Báo cáo đi muộn" : "Báo cáo chấm công"),
+                    _ => (currentAction == "Index" ? "Dữ liệu chấm công" : currentAction)
+                };
+                items.Add((attSub, null));
+            }
+            else if (new[] { "Salary", "PayrollPayment", "PayrollInput", "PayrollValidation", "PayrollCostReport", "PayrollTaxReport", "PayrollTemplate", "PayrollComponent", "PayrollSetting" }.Contains(currentController))
+            {
+                items.Add(("Tiền lương", Url.Action("Index", "Salary")));
+                var salSub = currentController switch
+                {
+                    "PayrollPayment" => "Thanh toán lương",
+                    "PayrollInput" => "Nhập liệu",
+                    "PayrollValidation" => "Kiểm tra dữ liệu",
+                    "PayrollCostReport" => "Báo cáo chi phí",
+                    "PayrollTaxReport" => "Báo cáo thuế",
+                    "PayrollTemplate" => "Mẫu bảng lương",
+                    "PayrollComponent" => "Thành phần lương",
+                    "PayrollSetting" => "Thiết lập",
+                    _ => "Bảng lương"
+                };
+                items.Add((salSub, null));
+            }
+            else if (currentController == "Leave")
+            {
+                items.Add(("Nghỉ phép", null));
+            }
+            else if (currentController == "Contract")
+            {
+                items.Add(("Hợp đồng", null));
+            }
+            else if (currentController == "Appointment")
+            {
+                items.Add(("Bổ nhiệm", null));
+            }
+            else if (currentController == "Dismissal")
+            {
+                items.Add(("Miễn nhiệm", null));
+            }
+            else if (currentController == "Transfer")
+            {
+                items.Add(("Thuyên chuyển", null));
+            }
+            else if (currentController == "Offboarding")
+            {
+                items.Add(("Nghỉ việc", null));
+            }
+            else if (currentController == "Reward")
+            {
+                items.Add(("Khen thưởng", null));
+            }
+            else if (currentController == "Incident")
+            {
+                items.Add(("Sự cố nhân sự", null));
+            }
+            else if (currentController == "Training")
+            {
+                items.Add(("Đào tạo", null));
+            }
+            else if (currentController == "Benefit")
+            {
+                items.Add(("Phúc lợi", null));
+            }
+            else if (currentController == "Succession")
+            {
+                items.Add(("Quy hoạch", null));
+            }
+            else if (currentController == "TaskTracking")
+            {
+                items.Add(("Công việc HR", null));
+            }
+            else if (currentController == "Proposal")
+            {
+                items.Add(("Đề xuất", null));
+            }
+            else if (currentController == "KPIPeriod" || currentController == "KPIConfig")
+            {
+                items.Add(("KPI / Hiệu suất", null));
+                items.Add((currentController == "KPIPeriod" ? "Kỳ đánh giá KPI" : "Cấu hình hệ số", null));
+            }
+            else
+            {
+                var title = ViewData["Title"]?.ToString() ?? currentController;
+                items.Add((title, null));
+            }
+        }
+    }
+}
+
+<style>
+    .hrms-global-breadcrumb {
+        margin-bottom: 14px;
+        margin-top: 2px;
+        padding: 0;
+        display: block;
+        font-family: inherit;
+    }
+    .hrms-breadcrumb-list {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.4;
+    }
+    .hrms-breadcrumb-item {
+        display: inline-flex;
+        align-items: center;
+    }
+    .hrms-breadcrumb-link {
+        color: #64748B;
+        text-decoration: none;
+        transition: color 0.15s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 400;
+    }
+    .hrms-breadcrumb-link:hover {
+        color: #2563EB;
+        text-decoration: underline;
+    }
+    .hrms-breadcrumb-home-icon {
+        font-size: 13px;
+        color: #64748B;
+    }
+    .hrms-breadcrumb-link:hover .hrms-breadcrumb-home-icon {
+        color: #2563EB;
+    }
+    .hrms-breadcrumb-separator {
+        color: #94A3B8;
+        margin: 0 10px;
+        font-size: 12px;
+        font-weight: 400;
+        user-select: none;
+    }
+    .hrms-breadcrumb-text {
+        color: #64748B;
+        font-weight: 400;
+    }
+    .hrms-breadcrumb-current {
+        color: #0F172A;
+        font-weight: 700;
+    }
+</style>
+
+<nav class="hrms-global-breadcrumb" aria-label="Breadcrumb">
+    <ol class="hrms-breadcrumb-list">
+        <li class="hrms-breadcrumb-item">
+            <a href="@homeUrl" class="hrms-breadcrumb-link">
+                <i class="fa-solid fa-house hrms-breadcrumb-home-icon"></i>
+                <span>Trang chủ</span>
+            </a>
+        </li>
+        @for (int i = 0; i < items.Count; i++)
+        {
+            var item = items[i];
+            var isLast = (i == items.Count - 1);
+            <li class="hrms-breadcrumb-separator" aria-hidden="true">&gt;</li>
+            <li class="hrms-breadcrumb-item @(isLast ? "active" : "")">
+                @if (!string.IsNullOrEmpty(item.Url) && !isLast)
+                {
+                    <a href="@item.Url" class="hrms-breadcrumb-link">@item.Label</a>
+                }
+                else
+                {
+                    <span class="@(isLast ? "hrms-breadcrumb-current" : "hrms-breadcrumb-text")">@item.Label</span>
+                }
+            </li>
+        }
+    </ol>
+</nav>
+

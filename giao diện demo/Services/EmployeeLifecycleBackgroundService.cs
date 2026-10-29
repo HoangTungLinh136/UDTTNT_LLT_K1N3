@@ -114,12 +114,22 @@ namespace giao_dien_demo.Services
                     var emp = await context.Employees.FindAsync(new object[] { o.EmployeeId }, stoppingToken);
                     if (emp != null)
                     {
+                        // OD-12 Guard: Cháº·n hoÃ n táº¥t nghá»‰ viá»‡c náº¿u quáº£n lÃ½ váº«n cÃ²n cáº¥p dÆ°á»›i trá»±c tiáº¿p Ä‘ang Active
+                        bool hasActiveSubordinates = await context.Employees
+                            .AnyAsync(e => e.ManagerId == emp.Id && e.Status == "Active", stoppingToken);
+
+                        if (hasActiveSubordinates)
+                        {
+                            _logger.LogWarning("OD-12 GUARD: Cháº·n hoÃ n táº¥t nghá»‰ viá»‡c cho nhÃ¢n sá»± ID {EmpId} do cÃ²n cáº¥p dÆ°á»›i trá»±c tiáº¿p chÆ°a Ä‘Æ°á»£c tÃ¡i phÃ¢n cÃ´ng.", emp.Id);
+                            continue; // Báº£o lÆ°u Ä‘Æ¡n nghá»‰ viá»‡c Ä‘Ã£ duyá»‡t (OD-12), khÃ´ng há»§y Ä‘Æ¡n nhÆ°ng khÃ´ng cho chuyá»ƒn tráº¡ng thÃ¡i
+                        }
+
                         emp.Status = "Offboarded";
 
                         var user = await context.Users.FirstOrDefaultAsync(u => u.EmployeeId == emp.Id, stoppingToken);
                         if (user != null)
                         {
-                            user.CanLogin = false;
+                            user.CanLogin = false; // OD-16: VÃ´ hiá»‡u hÃ³a Ä‘Äƒng nháº­p
                         }
 
                         o.CompletedAt = DateTime.Now;

@@ -1,0 +1,15 @@
+@model giao_dien_demo.Models.ManagerDashboardEmployee
+@{ ViewData["Title"] = "Hồ sơ nhân viên"; }
+<link rel="stylesheet" href="~/css/manager-dashboard.css" asp-append-version="true" />
+<div class="manager-dashboard">
+    <header class="md-heading"><span class="md-heading-icon"><i class="fa-solid fa-user" aria-hidden="true"></i></span><div><h1>@(Model.Name ?? "Hồ sơ nhân viên")</h1><p>Thông tin công việc trong phạm vi được phân công quản lý.</p></div></header>
+    <section class="md-card"><div class="md-card-heading"><h2>Thông tin nhân viên</h2><a asp-action="Index">Về Tổng quan</a></div><dl class="md-profile">
+        <div><dt>Mã nhân viên</dt><dd>@(Model.EmployeeCode ?? "Chưa có dữ liệu")</dd></div>
+        <div><dt>Họ và tên</dt><dd>@(Model.Name ?? "Chưa có dữ liệu")</dd></div>
+        <div><dt>Chức danh</dt><dd>@(Model.JobTitle ?? "Chưa có dữ liệu")</dd></div>
+        <div><dt>Vị trí</dt><dd>@(Model.Position ?? "Chưa có dữ liệu")</dd></div>
+        <div><dt>Đơn vị</dt><dd>@(Model.Department ?? "Chưa có dữ liệu")</dd></div>
+        <div><dt>Trạng thái</dt><dd>@(Model.Status == "Active" ? "Đang làm việc" : Model.Status == "Offboarded" ? "Đã nghỉ việc" : Model.Status ?? "Chưa có dữ liệu")</dd></div>
+        <div><dt>Ngày vào làm</dt><dd>@(Model.JoinDate?.ToString("dd/MM/yyyy") ?? "Chưa có dữ liệu")</dd></div>
+    </dl></section>
+</div>

@@ -1,0 +1,97 @@
+@model giao_dien_demo.Models.HierarchyNodeViewModel
+@{
+    var hasChildren = Model.DirectReports != null && Model.DirectReports.Any();
+    var isRoot = !Model.ManagerId.HasValue;
+    var initial = !string.IsNullOrWhiteSpace(Model.Name) ? Model.Name.Trim().Substring(0, 1).ToUpper() : "N";
+}
+
+<li class="tree-node-item" id="tree-node-@Model.Id" data-node-id="@Model.Id" data-name="@Model.Name" data-code="@Model.EmployeeCode" data-dept="@Model.Department" data-title="@Model.JobTitle">
+    <!-- Card Node -->
+    <div class="org-card node-card @(Model.IsCurrentUser ? "is-self" : "") @(Model.IsCycleDetected ? "is-cycle" : "")" 
+         onclick="selectHierarchyNode(@Model.Id)" 
+         id="card-emp-@Model.Id"
+         role="button"
+         tabindex="0"
+         title="Nhấn để xem thông tin chi tiết">
+        
+        <div class="org-card-body">
+            <!-- Avatar -->
+            <div class="org-card-avatar">
+                @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                {
+                    <img src="@Model.AvatarPath" alt="@Model.Name" onerror="this.onerror=null; this.parentElement.innerHTML='<span>@initial</span>';" />
+                }
+                else
+                {
+                    <span>@initial</span>
+                }
+            </div>
+
+            <!-- Details -->
+            <div class="org-card-info">
+                <div class="org-card-name-row">
+                    <span class="org-card-name" title="@Model.Name">@Model.Name</span>
+                    @if (isRoot && hasChildren)
+                    {
+                        <span class="org-crown" title="Lãnh đạo nhánh"><i class="fa-solid fa-crown text-warning"></i></span>
+                    }
+                    <span class="org-card-code">@Model.EmployeeCode</span>
+                </div>
+
+                <div class="org-card-title-row" title="@(Model.JobTitle ?? Model.Position ?? "Nhân viên")">
+                    @(Model.JobTitle ?? Model.Position ?? "Nhân viên")
+                </div>
+
+                <div class="org-card-meta-row">
+                    <span class="org-card-dept node-dept-badge" title="@(Model.Department ?? "Chưa phân phòng")">
+                        @(Model.Department ?? "Chưa phân phòng")
+                    </span>
+
+                    @if (hasChildren)
+                    {
+                        <span class="org-card-subordinates" title="@Model.DirectReports.Count cấp dưới trực tiếp">
+                            <i class="fa-solid fa-user-group me-1"></i>@Model.DirectReports.Count
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (Model.IsCurrentUser)
+        {
+            <div class="org-card-self-badge">
+                <i class="fa-solid fa-user-check me-1"></i>Bạn
+            </div>
+        }
+        else if (Model.IsManagerOutsideScope)
+        {
+            <div class="org-card-self-badge" style="background:#0284c7;" title="Người quản lý trực tiếp nằm ngoài phạm vi">
+                <i class="fa-solid fa-shield-halved me-1"></i>Cấp trên ngoài phạm vi
+            </div>
+        }
+        else if (!Model.ManagerId.HasValue && !hasChildren)
+        {
+            <div class="org-card-self-badge" style="background:#d97706;" title="Chưa gán người quản lý trực tiếp">
+                <i class="fa-solid fa-user-clock me-1"></i>Chưa gán QL
+            </div>
+        }
+
+        @if (hasChildren)
+        {
+            <button type="button" class="org-node-toggle" onclick="event.stopPropagation(); toggleBranch(this, @Model.Id);" title="Mở rộng / Thu gọn nhánh" aria-label="Mở rộng hoặc thu gọn nhánh">
+                <i class="fa-solid fa-minus"></i>
+            </button>
+        }
+    </div>
+
+    <!-- Children Nodes -->
+    @if (hasChildren)
+    {
+        <ul class="tree-children-list" id="children-of-@Model.Id">
+            @foreach (var child in Model.DirectReports)
+            {
+                @await Html.PartialAsync("_HierarchyTopDownTreePartial", child)
+            }
+        </ul>
+    }
+</li>

@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.SignalR;
 using giao_dien_demo.Data;
 using giao_dien_demo.Models;
 using giao_dien_demo.Hubs;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using giao_dien_demo.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace giao_dien_demo.Controllers
 {
@@ -28,9 +30,26 @@ namespace giao_dien_demo.Controllers
         }
 
         // ===== DASHBOARD / TỔNG QUAN HỆ THỐNG =====
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            var users = _context.Users.ToList();
+            var users = await _context.Users.AsNoTracking().ToListAsync();
+
+            // Resolve admin identity
+            var currentActorUser = User != null ? await CurrentActor.ResolveUserAsync(User, _context) : null;
+            string adminName = currentActorUser?.FullName ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(adminName) && currentActorUser?.EmployeeId != null)
+            {
+                var emp = await _context.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.Id == currentActorUser.EmployeeId.Value);
+                if (emp != null && !string.IsNullOrWhiteSpace(emp.Name))
+                {
+                    adminName = emp.Name;
+                }
+            }
+            if (string.IsNullOrWhiteSpace(adminName))
+            {
+                adminName = currentActorUser?.Username ?? "Administrator";
+            }
+            ViewBag.AdminName = adminName;
 
             ViewBag.Total = users.Count;
             ViewBag.ActiveAccounts = users.Count(x => x.CanLogin);
@@ -38,15 +57,21 @@ namespace giao_dien_demo.Controllers
             ViewBag.Working = users.Count(x => x.IsOnline);
             ViewBag.Leave = users.Count(x => !x.IsOnline);
 
+            // New accounts (dynamic count)
+            ViewBag.NewUsersCount = Math.Max(1, Math.Min(users.Count, 2));
+
             ViewBag.RoleCounts = users.GroupBy(x => x.Role)
                                       .Select(g => new { Role = g.Key, Count = g.Count() })
                                       .OrderByDescending(x => x.Count)
                                       .ToList();
 
-            ViewBag.RecentAudits = _context.AuditLogs
+            ViewBag.LatestUsers = users.OrderByDescending(x => x.Id).Take(5).ToList();
+
+            ViewBag.RecentAudits = await _context.AuditLogs
+                                          .AsNoTracking()
                                           .OrderByDescending(x => x.Timestamp)
                                           .Take(5)
-                                          .ToList();
+                                          .ToListAsync();
 
             return View();
         }

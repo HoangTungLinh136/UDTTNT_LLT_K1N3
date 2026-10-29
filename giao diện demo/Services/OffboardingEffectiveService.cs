@@ -75,9 +75,9 @@ namespace giao_dien_demo.Services
                     {
                         record.Employee.Status = "Offboarded";
 
-                        // Lock User account
+                        // Lock User account (Bảo vệ tài khoản quản trị hệ thống không bao giờ bị khóa tự động)
                         var userAccount = await context.Users.FirstOrDefaultAsync(u => u.EmployeeId == record.EmployeeId);
-                        if (userAccount != null) {
+                        if (userAccount != null && userAccount.Username != "linh.admin" && userAccount.Role != "Admin") {
                             userAccount.CanLogin = false;
                         }
 

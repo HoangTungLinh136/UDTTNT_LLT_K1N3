@@ -25,6 +25,8 @@ namespace giao_dien_demo.Controllers
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly giao_dien_demo.Services.IManagerAssignmentService _managerAssignmentService;
         private readonly giao_dien_demo.Services.IEmployeeCodeAssignmentService _employeeCodeAssignmentService;
+        private readonly giao_dien_demo.Services.IDirectManagerService _directManagerService;
+        private readonly giao_dien_demo.Services.IOrganizationHierarchyService _hierarchyService;
 
         // ✅ KHAI BÁO BIẾN TĨNH: Đảm bảo các Controller khác không bị lỗi "Red line"
         public static List<Employee> list = new List<Employee>();
@@ -35,7 +37,9 @@ namespace giao_dien_demo.Controllers
                                   IWebHostEnvironment hostEnvironment,
                                   giao_dien_demo.Services.IAuditLogService auditLogService,
                                   giao_dien_demo.Services.IManagerAssignmentService managerAssignmentService,
-                                  giao_dien_demo.Services.IEmployeeCodeAssignmentService? employeeCodeAssignmentService = null)
+                                  giao_dien_demo.Services.IEmployeeCodeAssignmentService? employeeCodeAssignmentService = null,
+                                  giao_dien_demo.Services.IDirectManagerService? directManagerService = null,
+                                  giao_dien_demo.Services.IOrganizationHierarchyService? hierarchyService = null)
         {
             _context = context;
             _hubContext = hubContext;
@@ -43,16 +47,25 @@ namespace giao_dien_demo.Controllers
             _auditLogService = auditLogService;
             _managerAssignmentService = managerAssignmentService;
             _employeeCodeAssignmentService = employeeCodeAssignmentService ?? new giao_dien_demo.Services.EmployeeCodeAssignmentService(context);
+            _directManagerService = directManagerService ?? new giao_dien_demo.Services.DirectManagerService(context, auditLogService);
+            _hierarchyService = hierarchyService ?? new giao_dien_demo.Services.OrganizationHierarchyService(
+                context,
+                new giao_dien_demo.Services.ManagerScopeService(context, new Microsoft.AspNetCore.Http.HttpContextAccessor()),
+                new giao_dien_demo.Services.LeadershipScopeService(context, new Microsoft.AspNetCore.Http.HttpContextAccessor()));
         }
 
         // =========================================================================
         // 🔥 1. DÀNH SÁCH NHÂN SỰ - XỬ LÝ TRÙNG MÃ & TÌM KIẾM
         // =========================================================================
         [Authorize(Policy = AppPolicies.HROnly)]
-        public async Task<IActionResult> Index(string? searchName, string? department, string? status = "Active", int? page = null)
+        public async Task<IActionResult> Index(string? searchName, string? department, string? status = "Active", int? page = null, string? view = null)
         {
+            ViewBag.ActiveView = view;
             // --- TRUY VẤN TÌM KIẾM VÀ LỌC ---
-            var query = _context.Employees.AsQueryable();
+            var query = _context.Employees
+                .Include(e => e.Manager)
+                .Include(e => e.DepartmentEntity)
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(searchName))
             {
@@ -95,7 +108,10 @@ namespace giao_dien_demo.Controllers
         [Authorize(Policy = AppPolicies.HROnly)]
         public async Task<IActionResult> Details(int id)
         {
-            var emp = await _context.Employees.FindAsync(id);
+            var emp = await _context.Employees
+                .Include(e => e.Manager)
+                .Include(e => e.DepartmentEntity)
+                .FirstOrDefaultAsync(e => e.Id == id);
             if (emp == null) return NotFound();
 
             // Link related records
@@ -105,6 +121,22 @@ namespace giao_dien_demo.Controllers
             ViewBag.Transfers = await _context.TransferRecords.Where(t => t.EmployeeId == emp.Id).ToListAsync();
             ViewBag.Rewards = await _context.RewardRecords.Where(r => r.EmployeeId == emp.Id).ToListAsync();
             ViewBag.Leaves = await _context.Leaves.Where(l => l.EmployeeId == emp.Id).ToListAsync();
+
+            // Direct Manager & Reporting History (OD-07, OD-08, OD-09, OD-11)
+            ViewBag.ReportingHistories = await _context.EmployeeReportingHistories
+                .Include(h => h.PreviousManager)
+                .Include(h => h.NewManager)
+                .Include(h => h.ChangedByUser)
+                .Where(h => h.EmployeeId == emp.Id)
+                .OrderByDescending(h => h.EffectiveDate)
+                .ThenByDescending(h => h.Id)
+                .ToListAsync();
+
+            ViewBag.EligibleManagers = await _context.Employees
+                .Where(e => e.Id != emp.Id && e.Status == "Active")
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
             if (_managerAssignmentService != null)
                 ViewBag.ManagerScope = await _managerAssignmentService.GetDetailsAsync(emp.Id);
             
@@ -151,13 +183,66 @@ namespace giao_dien_demo.Controllers
             return RedirectToAction(nameof(Details), new { id = employeeId });
         }
 
+        // =========================================================================
+        // WF-01: THAY ĐỔI QUẢN LÝ TRỰC TIẾP (OD-07, OD-08, OD-09, OD-11, BD-06)
+        // =========================================================================
+        [HttpPost]
+        [Authorize(Policy = AppPolicies.HROnly)]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeDirectManager(DirectManagerChangeInput input)
+        {
+            var currentActor = CurrentActor.Username(User) ?? HttpContext.Session.GetString("User") ?? "HR";
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == currentActor);
+
+            var request = new giao_dien_demo.Services.DirectManagerChangeRequest
+            {
+                EmployeeId = input.EmployeeId,
+                NewManagerId = input.NewManagerId,
+                AllowNullManagerException = input.AllowNullManagerException,
+                NullManagerReason = input.NullManagerReason,
+                Reason = input.Reason,
+                RowVersion = input.RowVersion
+            };
+
+            var result = await _directManagerService.ChangeDirectManagerAsync(request, currentActor, currentUser?.Id);
+            if (!result.Success)
+            {
+                TempData["Error"] = result.Error;
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                {
+                    return Json(new { success = false, message = result.Error });
+                }
+                return RedirectToAction(nameof(Details), new { id = input.EmployeeId });
+            }
+
+            TempData["Success"] = "Đã thay đổi quản lý trực tiếp thành công.";
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                return Json(new { success = true, historyId = result.History?.Id });
+            }
+            return RedirectToAction(nameof(Details), new { id = input.EmployeeId });
+        }
+
+        // =========================================================================
+        // 🔥 CÂY PHÂN CẤP QUẢN LÝ TRỰC TIẾP (OD-07 & OD-11 COMPLIANT)
+        // =========================================================================
+        [Authorize]
+        public async Task<IActionResult> Hierarchy(string? department = null)
+        {
+            var model = await _hierarchyService.BuildHierarchyAsync(User, department);
+            return View(model);
+        }
+
         // --- 3. TRANG CÁ NHÂN: TỰ CẬP NHẬT & UPLOAD ẢNH ---
         [Authorize]
         public async Task<IActionResult> MyProfile()
         {
             var currentUser = await CurrentActor.ResolveUserAsync(User, _context);
             if (currentUser?.EmployeeId == null) return Forbid();
-            var emp = await _context.Employees.FindAsync(currentUser.EmployeeId.Value);
+            var emp = await _context.Employees
+                .Include(e => e.Manager)
+                .Include(e => e.DepartmentEntity)
+                .FirstOrDefaultAsync(e => e.Id == currentUser.EmployeeId.Value);
             if (emp == null) return NotFound("Hồ sơ không tồn tại.");
             return View(emp);
         }

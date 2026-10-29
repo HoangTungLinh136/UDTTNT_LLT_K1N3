@@ -19,17 +19,51 @@
 .hrms-modal-close:hover { color: var(--hrms-text-main, #334155); }
 .hrms-modal-body { padding: 20px; }
 .hrms-modal-footer { padding: 16px 20px; border-top: 1px solid var(--hrms-border, #f1f5f9); display: flex; justify-content: flex-end; gap: 12px; background: var(--hrms-background, #f8fafc); }
+
+/* Modern Tabs Styling */
+.hrms-tabs {
+    display: inline-flex !important;
+    gap: 6px !important;
+    background: #f1f5f9 !important;
+    padding: 5px !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    margin-bottom: 24px !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.hrms-tab, .hrms-tab-btn, .admin-module-tab {
+    padding: 8px 18px !important;
+    border: none !important;
+    outline: none !important;
+    border-radius: 8px !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
+    font-family: inherit !important;
+    color: #64748b !important;
+    background: transparent !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    line-height: 1.4 !important;
+    text-decoration: none !important;
+}
+.hrms-tab:hover, .hrms-tab-btn:hover, .admin-module-tab:hover {
+    color: #0f172a !important;
+    background: rgba(255, 255, 255, 0.6) !important;
+}
+.hrms-tab.active, .hrms-tab-btn.active, .admin-module-tab.active {
+    background: #ffffff !important;
+    color: #2563eb !important;
+    font-weight: 600 !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+}
 </style>
 
 <div class="hrms-page-header">
     <div class="hrms-page-header-left">
-        <div class="hrms-breadcrumb" style="font-size:13px; color: var(--hrms-text-muted, #94a3b8); display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-            <a href="@Url.Action("Index","Admin")" style="color: var(--hrms-text-muted, #64748b); text-decoration:none;">
-                <i class="fa-solid fa-house" style="font-size:11px;"></i>
-            </a>
-            <span>/</span><span>Vai trò & phân quyền</span>
-        </div>
-        <h1 class="hrms-page-title">
+<h1 class="hrms-page-title">
             <span class="hrms-page-icon blue"><i class="fa-solid fa-shield-halved"></i></span>
             Vai trò & phân quyền
         </h1>
@@ -43,12 +77,6 @@
         <i class="fa-solid fa-circle-check me-2"></i> @successMsg
     </div>
 }
-
-<!-- LƯU Ý PHÂN QUYỀN (ROLE ≠ DATA SCOPE) -->
-<div class="hrms-alert hrms-alert-info mb-4" style="background:#eff6ff; border-left:4px solid #3b82f6; border-radius:8px; padding:12px 16px; color:#1e40af; font-size:13px; line-height:1.6;">
-    <i class="fa-solid fa-circle-info me-2"></i>
-    <strong>Nguyên tắc phân quyền:</strong> Vai trò (Role) xác định tính năng người dùng được phép thao tác. Vai trò <code>Manager</code> hoặc <code>Leader</code> <strong>không đồng nghĩa</strong> với việc truy cập toàn bộ dữ liệu tổ chức; phạm vi dữ liệu được kiểm soát qua phân công quản lý trực tiếp.
-</div>
 
 <!-- Summary Cards -->
 <div class="hrms-kpi-grid hrms-kpi-grid-3 mb-4">
@@ -85,8 +113,8 @@
 
 <!-- Tabs -->
 <div class="hrms-tabs mb-4">
-    <button class="hrms-tab active admin-module-tab" onclick="switchTab('role', this)"><i class="fa-solid fa-tag me-1"></i> Vai trò</button>
-    <button class="hrms-tab admin-module-tab" onclick="switchTab('userrole', this)"><i class="fa-solid fa-users-gear me-1"></i> Người dùng - Vai trò</button>
+    <button type="button" class="hrms-tab active admin-module-tab" onclick="switchTab('role', this)"><i class="fa-solid fa-tag me-1"></i> Vai trò</button>
+    <button type="button" class="hrms-tab admin-module-tab" onclick="switchTab('userrole', this)"><i class="fa-solid fa-users-gear me-1"></i> Người dùng - Vai trò</button>
 </div>
 
 <!-- Tab Content: Role -->

@@ -247,6 +247,27 @@ def local_ocr(attachment: RawAttachment) -> str:
         image.close()
 
 
+def _prepare_image_for_vision(content_bytes: bytes | None) -> bytes:
+    if not content_bytes:
+        return b""
+    try:
+        image = Image.open(io.BytesIO(content_bytes))
+        max_dim = max(image.width, image.height)
+        if max_dim > 960:
+            scale = 960.0 / max_dim
+            new_size = (max(1, int(image.width * scale)), max(1, int(image.height * scale)))
+            resized = image.resize(new_size, Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            fmt = image.format or "PNG"
+            if fmt.upper() not in {"PNG", "JPEG", "JPG", "WEBP"}:
+                fmt = "PNG"
+            resized.save(buf, format=fmt)
+            return buf.getvalue()
+    except Exception:
+        pass
+    return content_bytes
+
+
 def _ollama_image_json(attachment: RawAttachment, prompt: str) -> dict:
     try:
         parsed = urlparse(settings.OLLAMA_BASE_URL)
@@ -256,6 +277,7 @@ def _ollama_image_json(attachment: RawAttachment, prompt: str) -> dict:
             session.trust_env = False
             content = ""
             last_error: Exception | None = None
+            optimized_bytes = _prepare_image_for_vision(attachment.content_bytes)
             for attempt in range(2):
                 try:
                     response = session.post(
@@ -266,15 +288,15 @@ def _ollama_image_json(attachment: RawAttachment, prompt: str) -> dict:
                             "format": "json",
                             "messages": [{
                                 "role": "user", "content": prompt,
-                                "images": [base64.b64encode(attachment.content_bytes or b"").decode("ascii")],
+                                "images": [base64.b64encode(optimized_bytes).decode("ascii")],
                             }],
                             "options": {
                                 "temperature": 0,
-                                "num_predict": 1600,
+                                "num_predict": 1000,
                                 "num_gpu": settings.OLLAMA_VISION_NUM_GPU,
                             },
                         },
-                        timeout=min(settings.OLLAMA_TIMEOUT_SECONDS, 120),
+                        timeout=min(settings.OLLAMA_TIMEOUT_SECONDS, 240),
                     )
                     response.raise_for_status()
                     content = str(response.json().get("message", {}).get("content", "")).strip()

@@ -18,6 +18,51 @@ namespace giao_dien_demo.Models
         public List<HRWorkspaceModule> Modules { get; set; } = new();
         public List<HRPendingWorkItem> PendingWork { get; set; } = new();
         public List<HRDepartmentSummary> Departments { get; set; } = new();
+
+        // --- ENHANCEMENTS FOR MODERN HR DASHBOARD ---
+        public int TotalEmployees { get; set; }
+        public int MonthlyGrowth { get; set; }
+        public string GrowthText { get; set; } = string.Empty;
+        public double WorkingPercentage { get; set; }
+        public int OnLeaveTodayCount { get; set; }
+        public double OnLeavePercentage { get; set; }
+
+        // Chart 1: Donut Departments
+        public List<HRDepartmentChartItem> DepartmentChartItems { get; set; } = new();
+
+        // Chart 2: Monthly Headcount Turnover
+        public int SelectedYear { get; set; } = 2026;
+        public List<int> AvailableYears { get; set; } = new();
+        public int[] MonthlyNewHires { get; set; } = new int[12];
+        public int[] MonthlyTerminations { get; set; } = new int[12];
+        public int[] MonthlyTransfers { get; set; } = new int[12];
+
+        // Today HR Tasks
+        public int PendingOnboardingCount { get; set; }
+        public int PendingLeaveCount { get; set; }
+        public int PendingTransferCount { get; set; }
+
+        // Recent Employees
+        public List<HRRecentEmployeeItem> RecentEmployees { get; set; } = new();
+    }
+
+    public class HRDepartmentChartItem
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public double Percentage { get; set; }
+        public string Color { get; set; } = "#2563eb";
+    }
+
+    public class HRRecentEmployeeItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string EmployeeCode { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public DateTime JoinDate { get; set; }
+        public string Status { get; set; } = "Đang làm việc";
+        public string AvatarLetter { get; set; } = "N";
     }
 
     public class HRWorkspaceModule

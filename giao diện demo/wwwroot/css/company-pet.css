@@ -1,0 +1,217 @@
+/* Articulated Company AI companion. No image downloads or animation libraries. */
+.company-ai .company-pet-bubble.bubble-dismissed{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+.company-ai .company-pet-bubble-copy{padding-right:10px}
+.company-ai svg.company-pet-art{display:block;width:100%;height:100%;overflow:visible;flex-shrink:0;stroke:none;animation:none;filter:drop-shadow(0 7px 8px #5671c51a)}
+.company-ai .company-pet-art :is(.pet-pose,.pet-head,.pet-sprout,.pet-arm,.pet-leg,.pet-blink,.pet-mouth-talk,.pet-floor-shadow){transform-box:view-box}
+.company-ai .pet-pose{transform-origin:120px 155px;animation:companyPetHover 4.4s ease-in-out infinite}
+.company-ai .pet-head{transform-origin:120px 146px;transform:rotate(var(--pet-tilt,0deg));transition:transform .22s ease-out}
+.company-ai .pet-sprout{transform-origin:120px 46px;animation:companyPetLeaf 5.5s ease-in-out infinite}
+.company-ai .pet-arm-left{transform-origin:75px 165px;animation:companyPetLeftRest 4.4s ease-in-out infinite}
+.company-ai .pet-arm-right{transform-origin:165px 165px;animation:companyPetRightRest 4.4s ease-in-out infinite}
+.company-ai .pet-leg-left{transform-origin:100px 205px}.company-ai .pet-leg-right{transform-origin:140px 205px}
+.company-ai .pet-gaze{transform:translate(var(--pet-look-x,0px),var(--pet-look-y,0px));transition:transform .15s ease-out}
+.company-ai .pet-blink{transform-origin:120px 94px;animation:companyPetBlink 5.7s infinite}
+.company-ai .pet-floor-shadow{transform-origin:120px 235px;animation:companyPetShadow 4.4s ease-in-out infinite}
+.company-ai :is(.pet-eyes-smile,.pet-eyes-think,.pet-eyes-surprised,.pet-eyes-sleep,.pet-mouth-talk,.pet-mouth-o,.pet-mouth-sleep,.pet-thinking-dots,.pet-alert,.pet-bell,.pet-sleep-symbols,.pet-listening-wave,.pet-happy-sparkles){display:none}
+
+/* Change actual face geometry independently of the body pose. */
+.company-ai[data-pet-state=idle] .company-pet-dock:hover .pet-arm-right{animation:companyPetWave 1.25s ease-in-out 2}
+.company-ai[data-pet-state=dragging] :is(.pet-eyes-normal,.pet-mouth-smile){display:none}
+.company-ai[data-pet-state=dragging] :is(.pet-eyes-surprised,.pet-mouth-o){display:block}
+.company-ai[data-pet-state=dragging] .pet-pose{animation:companyPetCarry .8s ease-in-out infinite}
+.company-ai[data-pet-state=dragging] .pet-arm-left{animation:none;transform:rotate(42deg)}
+.company-ai[data-pet-state=dragging] .pet-arm-right{animation:none;transform:rotate(-42deg)}
+.company-ai[data-pet-state=dragging] .pet-leg-left{animation:companyPetKick .6s ease-in-out infinite alternate}
+.company-ai[data-pet-state=dragging] .pet-leg-right{animation:companyPetKick .6s .3s ease-in-out infinite alternate-reverse}
+.company-ai[data-pet-state=thinking] :is(.pet-eyes-normal,.pet-mouth-smile){display:none}
+.company-ai[data-pet-state=thinking] :is(.pet-eyes-think,.pet-mouth-o,.pet-thinking-dots){display:block}
+.company-ai[data-pet-state=thinking] .pet-pose{animation:companyPetPonder 3.5s ease-in-out infinite}
+.company-ai[data-pet-state=thinking] .pet-arm-right{animation:companyPetChin 2.5s ease-in-out infinite}
+.company-ai[data-pet-state=thinking] .pet-thinking-dots circle{animation:companyPetDot 1.2s ease-in-out infinite}
+.company-ai[data-pet-state=thinking] .pet-thinking-dots circle:nth-child(2){animation-delay:.18s}
+.company-ai[data-pet-state=thinking] .pet-thinking-dots circle:nth-child(3){animation-delay:.36s}
+.company-ai[data-pet-state=talking] :is(.pet-eyes-normal,.pet-mouth-smile){display:none}
+.company-ai[data-pet-state=talking] :is(.pet-eyes-smile,.pet-mouth-talk){display:block}
+.company-ai[data-pet-state=talking] .pet-mouth-talk{transform-origin:120px 116px;animation:companyPetTalk .36s ease-in-out infinite alternate}
+.company-ai[data-pet-state=talking] .pet-arm-right{animation:companyPetExplain 1.2s ease-in-out infinite}
+.company-ai[data-pet-state=talking] .pet-head{animation:companyPetNod 1.5s ease-in-out infinite}
+.company-ai[data-pet-state=listening] .pet-listening-wave{display:block;animation:companyPetListen 1s ease-in-out infinite}
+.company-ai[data-pet-state=listening] .pet-pose{animation:companyPetListenPose 2.1s ease-in-out infinite}
+.company-ai[data-pet-state=listening] .pet-head{transform:rotate(-7deg)}
+.company-ai[data-pet-state=listening] .pet-arm-right{animation:none;transform:rotate(-35deg)}
+.company-ai[data-pet-state=listening] .pet-mouth-smile{stroke:#A0EAFF}
+.company-ai[data-pet-state=notification] :is(.pet-eyes-normal,.pet-mouth-smile){display:none}
+.company-ai[data-pet-state=notification] :is(.pet-eyes-surprised,.pet-mouth-o,.pet-alert){display:block}
+.company-ai[data-pet-state=notification] .pet-pose{animation:companyPetNotice .75s ease-in-out 2,companyPetHover 4.4s 1.5s ease-in-out infinite}
+.company-ai[data-pet-state=notification] .pet-alert{animation:companyPetBadge 1.6s ease-in-out infinite;transform-origin:211px 46px}
+.company-ai[data-pet-state=notification] .pet-arm-right{animation:companyPetWave 1.2s ease-in-out infinite}
+.company-ai[data-pet-state=happy] :is(.pet-eyes-normal,.pet-mouth-smile){display:none}
+.company-ai[data-pet-state=happy] :is(.pet-eyes-smile,.pet-mouth-talk,.pet-happy-sparkles,.pet-bell){display:block}
+.company-ai[data-pet-state=happy] .pet-pose{animation:companyPetCelebrate 1.1s ease-in-out infinite}
+.company-ai[data-pet-state=happy] .pet-arm-left{animation:companyPetCheerLeft 1.1s ease-in-out infinite}
+.company-ai[data-pet-state=happy] .pet-arm-right{animation:companyPetCheerRight 1.1s ease-in-out infinite}
+.company-ai[data-pet-state=happy] .pet-happy-sparkles{animation:companyPetListen 1.1s ease-in-out infinite}
+.company-ai[data-pet-state=happy] .pet-bell{transform-origin:211px 26px;animation:companyPetBellRing 1.1s ease-in-out infinite}
+.company-ai[data-pet-state=happy] .pet-bell-ring-wave{animation:companyPetBellWave .7s ease-in-out infinite alternate}
+.company-ai[data-pet-state=happy] .pet-cheek{fill:#E49BCE;opacity:.65}
+.company-ai[data-pet-state=sleeping] :is(.pet-eyes-normal,.pet-mouth-smile){display:none}
+.company-ai[data-pet-state=sleeping] :is(.pet-eyes-sleep,.pet-mouth-sleep,.pet-sleep-symbols){display:block}
+.company-ai[data-pet-state=sleeping] .pet-pose{animation:companyPetSleep 5s ease-in-out infinite;transform-origin:120px 205px}
+.company-ai[data-pet-state=sleeping] .pet-head{transform:rotate(-9deg)}
+.company-ai[data-pet-state=sleeping] .pet-gaze{transform:none}
+.company-ai[data-pet-state=sleeping] :is(.pet-blink,.pet-sprout,.pet-arm){animation:none}
+.company-ai[data-pet-state=sleeping] .pet-arm-left{transform:rotate(-12deg)}
+.company-ai[data-pet-state=sleeping] .pet-arm-right{transform:rotate(12deg)}
+.company-ai[data-pet-state=sleeping] .pet-sleep-symbols{animation:companyPetDream 3.4s ease-in-out infinite}
+.company-ai[data-pet-state=sleeping] .company-pet-sleep{display:none}
+
+/* Keep a recognizable robot rather than a static star in minimode. */
+.company-ai.pet-mini .company-pet-dock{width:58px;height:64px}
+.company-ai.pet-mini svg.company-pet-art{display:block}
+.company-ai.pet-mini .company-pet-mini-mark{display:none}
+.company-ai.pet-mini .company-pet-options{width:21px;height:21px;right:-4px;top:-1px;font-size:9px}
+.company-ai.pet-mini .company-pet-dock :is(.pet-floor-shadow,.pet-thinking-dots,.pet-listening-wave,.pet-happy-sparkles){display:none}
+.company-ai.pet-mini .company-pet-dock .pet-pose{animation:companyPetHover 6s ease-in-out infinite}
+.company-ai[data-pet-state=mini] .pet-eyes-normal{display:none}
+.company-ai[data-pet-state=mini] .pet-eyes-smile{display:block}
+
+/* The settings preview reuses the real companion and state controller. */
+.company-ai .company-pet-expression-settings{margin-top:22px;padding:20px;border:1px solid #dce5f7;border-radius:18px;background:#f9fbff}
+.company-ai .company-pet-expression-settings h3{margin:0 0 7px;font-size:15px;color:#233b68}
+.company-ai .company-pet-expression-settings>p{margin:4px 0 12px;color:#687b9d;font-size:12px;line-height:1.6}
+.company-ai .company-pet-preview-stage{display:grid;place-items:center;min-height:185px;margin:4px 0 15px;border:1px solid white;border-radius:15px;background:#edf3ff;overflow:hidden}
+.company-ai .company-pet-preview-stage svg.company-pet-art{width:160px;height:172px}
+.company-ai .company-pet-preview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.company-ai .company-pet-preview-button{padding:10px 9px;border:1px solid #d9e3f8;border-radius:11px;background:white;color:#425d8b;font-size:12px;text-align:center;line-height:1.4;min-height:40px}
+.company-ai .company-pet-preview-button:hover{background:#eaf1ff;border-color:#a8bff1}
+.company-ai .company-pet-preview-button[aria-pressed=true],.company-ai .company-pet-preview-button.is-active{background:#e3ecff;border-color:#8cacf2;color:#244fae;font-weight:600}
+@media(max-width:620px){.company-ai .company-pet-expression-settings{padding:15px}.company-ai .company-pet-preview-grid{gap:6px}.company-ai .company-pet-preview-button{font-size:11px;padding:9px 6px}.company-ai .company-pet-preview-stage{min-height:170px}.company-ai .company-pet-preview-stage svg.company-pet-art{width:145px;height:157px}}
+
+@keyframes companyPetHover{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes companyPetShadow{0%,100%{transform:scaleX(1);opacity:.17}50%{transform:scaleX(.86);opacity:.1}}
+@keyframes companyPetLeaf{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(5deg)}}
+@keyframes companyPetBlink{0%,42%,46%,91%,95%,100%{transform:scaleY(1)}44%,93%{transform:scaleY(.07)}}
+@keyframes companyPetLeftRest{0%,100%{transform:rotate(0)}50%{transform:rotate(-5deg)}}
+@keyframes companyPetRightRest{0%,100%{transform:rotate(0)}50%{transform:rotate(5deg)}}
+@keyframes companyPetWave{0%,100%{transform:rotate(-25deg)}25%{transform:rotate(-68deg)}55%{transform:rotate(-40deg)}80%{transform:rotate(-65deg)}}
+@keyframes companyPetCarry{0%,100%{transform:rotate(-5deg) translateY(-3px)}50%{transform:rotate(5deg) translateY(-5px)}}
+@keyframes companyPetKick{from{transform:rotate(-12deg)}to{transform:rotate(15deg)}}
+@keyframes companyPetPonder{0%,100%{transform:rotate(-4deg) translateY(-2px)}50%{transform:rotate(3deg) translateY(-5px)}}
+@keyframes companyPetChin{0%,100%{transform:rotate(-52deg)}50%{transform:rotate(-67deg)}}
+@keyframes companyPetDot{0%,75%,100%{opacity:.25;transform:translateY(0)}35%{opacity:1;transform:translateY(-4px)}}
+@keyframes companyPetTalk{from{transform:scaleY(.42)}to{transform:scaleY(1)}}
+@keyframes companyPetExplain{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(-38deg)}}
+@keyframes companyPetNod{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg)}}
+@keyframes companyPetListen{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes companyPetListenPose{0%,100%{transform:translateY(-2px) rotate(-2deg)}50%{transform:translateY(-5px) rotate(1deg)}}
+@keyframes companyPetNotice{0%,100%{transform:translateY(0)}45%{transform:translateY(-11px)}70%{transform:translateY(-3px)}}
+@keyframes companyPetBadge{0%,100%{transform:rotate(-5deg) scale(1)}50%{transform:rotate(5deg) scale(1.07)}}
+@keyframes companyPetCelebrate{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(3deg)}}
+@keyframes companyPetBellRing{0%,100%{transform:rotate(0) scale(1)}20%{transform:rotate(-18deg) scale(1.18)}40%{transform:rotate(16deg) scale(1.18)}60%{transform:rotate(-12deg) scale(1.12)}80%{transform:rotate(8deg) scale(1.08)}}
+@keyframes companyPetBellWave{0%{opacity:.2;transform:scale(.8)}100%{opacity:1;transform:scale(1.2)}}
+@keyframes companyPetCheerLeft{0%,100%{transform:rotate(42deg)}50%{transform:rotate(63deg)}}
+@keyframes companyPetCheerRight{0%,100%{transform:rotate(-42deg)}50%{transform:rotate(-63deg)}}
+@keyframes companyPetSleep{0%,100%{transform:translateY(5px) scaleY(.95)}50%{transform:translateY(3px) scaleY(.97)}}
+@keyframes companyPetDream{0%,100%{opacity:.3;transform:translateY(3px)}50%{opacity:.85;transform:translateY(-5px)}}
+
+/* Freeze hidden-page animation; reduced motion also disables gaze movement. */
+.company-ai.pet-paused .company-pet-art,.company-ai.pet-paused .company-pet-art *{animation-play-state:paused!important}
+.company-ai.reduce-motion .company-pet-art,.company-ai.reduce-motion .company-pet-art *{animation:none!important;transition:none!important;transform:none!important}
+@media(prefers-reduced-motion:reduce){.company-ai .company-pet-art,.company-ai .company-pet-art *{animation:none!important;transition:none!important;transform:none!important}}
+
+/* ==========================================================================
+   SHOWCASE CÁC BIỂU CẢM PET TRÊN TRANG CHÀO MỪNG (DASHBOARD)
+   ========================================================================== */
+.company-pet-showcase-section {
+    margin: 18px auto 14px;
+    max-width: 1120px;
+}
+.company-pet-showcase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.company-pet-showcase-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 8px;
+    border: 1px solid #ffffffd9;
+    border-radius: 16px;
+    background: #ffffffb8;
+    color: #172d59;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(66, 111, 240, 0.05);
+}
+.company-pet-showcase-item:hover {
+    background: #ffffff;
+    border-color: #8cacf2;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 22px rgba(66, 111, 240, 0.15);
+}
+.company-pet-showcase-item[aria-pressed="true"],
+.company-pet-showcase-item.is-active {
+    background: #e3ecff;
+    border-color: #5e8bfa;
+    color: #204ec2;
+    font-weight: 600;
+}
+.company-pet-showcase-item .showcase-icon {
+    font-size: 22px;
+    margin-bottom: 5px;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+.company-pet-showcase-item:hover .showcase-icon {
+    transform: scale(1.22);
+}
+.company-pet-showcase-item strong {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 650;
+    margin-bottom: 2px;
+}
+.company-pet-showcase-item small {
+    display: block;
+    font-size: 9px;
+    color: #7281a0;
+    line-height: 1.35;
+}
+@media (max-width: 620px) {
+    .company-pet-showcase-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .company-pet-showcase-item {
+        padding: 9px 5px;
+    }
+    .company-pet-showcase-item .showcase-icon {
+        font-size: 18px;
+    }
+    .company-pet-showcase-item strong {
+        font-size: 10.5px;
+    }
+    .company-pet-showcase-item small {
+        font-size: 8px;
+    }
+}
+
+/* Ensure floating Pet dock can be grabbed and dragged smoothly across the screen */
+.company-pet-dock {
+    touch-action: none !important;
+}
+.company-pet-trigger {
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+.company-pet-art {
+    pointer-events: none !important;
+}
+.company-pet-art * {
+    pointer-events: none !important;
+}

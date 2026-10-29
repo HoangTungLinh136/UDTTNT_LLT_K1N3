@@ -13,7 +13,8 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/ava-assistant.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/company-ai.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/company-pet.css" asp-append-version="true" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
@@ -70,7 +71,7 @@
             if (currentController == "NhanVien") {
                 activeModule = "Tổng quan";
             } else if (currentController == "Employee") {
-                activeModule = "Hồ sơ của tôi";
+                activeModule = currentAction == "Hierarchy" ? "Cây phân cấp" : "Hồ sơ của tôi";
             } else if (currentController == "Attendance" || currentController == "AttendanceAdjustment") {
                 activeModule = "Chấm công";
             } else if (currentController == "MyRequest" || currentController == "Leave") {
@@ -176,8 +177,12 @@
                 activeModule = "Quản lý Hồ sơ";
                 if (currentAction == "MyProfile") activeSubModule = "Hồ sơ cá nhân";
                 else if (currentAction == "Index") activeSubModule = "Danh sách nhân viên";
+                else if (currentAction == "Hierarchy") activeSubModule = "Cây phân cấp";
                 else if (currentAction == "Details") activeSubModule = "Chi tiết hồ sơ";
                 else activeSubModule = "Hồ sơ nhân viên";
+            } else if (currentController == "AdminOrg") {
+                activeModule = "Quản lý Hồ sơ";
+                activeSubModule = "Danh mục phòng ban";
             } else if (currentController == "Attendance" || currentController == "AttendanceAdjustment" || currentController == "Timesheet") {
                 activeModule = "Chấm công";
                 if (currentController == "AttendanceAdjustment") activeSubModule = "Yêu cầu điều chỉnh";
@@ -321,16 +326,6 @@
                     <img src="~/images/logo.jpg" alt="Logo" style="height: 32px; border-radius: 4px; object-fit: cover; width: 32px;" />
                     HRMS
                 </a>
-                
-                <div class="topbar-function-path" style="display: flex; align-items: center; flex-wrap: nowrap; gap: 12px; font-size: 15px; font-weight: 600; margin-left: 16px; padding-left: 16px; border-left: 1px solid var(--hrms-border);">
-                    <div style="display: flex; align-items: center; gap: 8px; color: #3b82f6; white-space: nowrap;">
-                        <i class="@activeModuleIcon"></i> <span>@displayModule</span>
-                    </div>
-                    @if (!string.IsNullOrEmpty(activeSubModule) && role != "Employee") {
-                        <span style="color: #cbd5e1; flex-shrink: 0;">/</span>
-                        <span style="color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;">@activeSubModule</span>
-                    }
-                </div>
             </div>
             
             <div class="topbar-center" style="display: flex; align-items: center; justify-content: center; flex: 1;">
@@ -341,14 +336,7 @@
             </div>
 
             <div class="topbar-right">
-                @if (role != "Employee" && role != "Manager") {
-                    <button class="topbar-action-btn" title="Thêm nhanh" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; display: flex; align-items: center; gap: 6px; margin-right: 8px;">
-                        <i class="fa-solid fa-plus"></i> Thêm nhanh
-                    </button>
-                    <div class="topbar-new-feature">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Tính năng mới
-                    </div>
-                }
+                
                 
                 <a asp-controller="Notification" asp-action="Index" class="topbar-action-btn" style="text-decoration:none;" title="Thông báo">
                     <i class="fa-regular fa-bell"></i>
@@ -442,9 +430,16 @@
                     </li>
                     <!-- 2. Hồ sơ của tôi -->
                     <li>
-                        <a href="@Url.Action("MyProfile", "Employee")" class="@(currentController == "Employee" ? "active" : "")">
+                        <a href="@Url.Action("MyProfile", "Employee")" class="@(currentController == "Employee" && currentAction != "Hierarchy" ? "active" : "")">
                             <span class="nav-icon"><i class="fa-solid fa-address-card"></i></span>
                             <span class="nav-text">Hồ sơ của tôi</span>
+                        </a>
+                    </li>
+                    <!-- 2.1 Cây phân cấp -->
+                    <li>
+                        <a href="@Url.Action("Hierarchy", "Employee")" class="@(currentController == "Employee" && currentAction == "Hierarchy" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-diagram-project"></i></span>
+                            <span class="nav-text">Cây phân cấp</span>
                         </a>
                     </li>
                     <!-- 3. Chấm công -->
@@ -545,6 +540,12 @@
                             <span class="nav-text">Đơn vị tổ chức</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="@Url.Action("Hierarchy", "Employee")" class="@(currentController == "Employee" && currentAction == "Hierarchy" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-diagram-project"></i></span>
+                            <span class="nav-text">Cây phân cấp</span>
+                        </a>
+                    </li>
                     <!-- 5. Chính sách bảo mật -->
                     <li>
                         <a href="@Url.Action("Index", "AdminSecurity")" class="@(currentController == "AdminSecurity" ? "active" : "")">
@@ -599,6 +600,7 @@
                     <li><a href="@Url.Action("Index", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Index" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span><span class="nav-text">Tổng quan</span></a></li>
                     <li><a href="@Url.Action("Profile", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Profile" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-id-card"></i></span><span class="nav-text">Hồ sơ</span></a></li>
                     <li><a href="@Url.Action("Employees", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Employees" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-users"></i></span><span class="nav-text">Nhân viên trực thuộc</span></a></li>
+                    <li><a href="@Url.Action("Hierarchy", "Employee")" class="@(currentController == "Employee" && currentAction == "Hierarchy" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-diagram-project"></i></span><span class="nav-text">Cây phân cấp nhóm</span></a></li>
                     <li><a href="@Url.Action("Attendance", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "Attendance" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-clock"></i></span><span class="nav-text">Chấm công đội nhóm</span></a></li>
                     <li><a href="@Url.Action("LeaveApprovals", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "LeaveApprovals" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-umbrella-beach"></i></span><span class="nav-text">Duyệt nghỉ phép</span></a></li>
                     <li><a href="@Url.Action("AttendanceAdjustments", "ManagerWorkspace")" class="@(currentController == "ManagerWorkspace" && currentAction == "AttendanceAdjustments" ? "active" : "")"><span class="nav-icon"><i class="fa-solid fa-clock-rotate-left"></i></span><span class="nav-text">Duyệt giải trình công</span></a></li>
@@ -635,6 +637,12 @@
                         <a href="@Url.Action("Index", "LeaderPersonnel")" class="@(activeModule == "Nhân sự" ? "active" : "")">
                             <span class="nav-icon"><i class="fa-solid fa-users"></i></span>
                             <span class="nav-text">Nhân sự</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="@Url.Action("Hierarchy", "Employee")" class="@(currentController == "Employee" && currentAction == "Hierarchy" ? "active" : "")">
+                            <span class="nav-icon"><i class="fa-solid fa-diagram-project"></i></span>
+                            <span class="nav-text">Cây phân cấp</span>
                         </a>
                     </li>
                     <!-- 3. Chấm công -->
@@ -710,8 +718,8 @@
                         </a>
                     </li>
                     <!-- 3. Hồ sơ -->
-                    <li class="has-submenu @(currentController == "Employee" ? "open" : "")">
-                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Employee" ? "active" : "")">
+                    <li class="has-submenu @(currentController == "Employee" || currentController == "AdminOrg" ? "open" : "")">
+                        <a href="javascript:void(0);" class="menu-toggle @(currentController == "Employee" || currentController == "AdminOrg" ? "active" : "")">
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <span class="nav-icon"><i class="fa-solid fa-address-card"></i></span>
                                 <span class="nav-text">Hồ sơ</span>
@@ -721,7 +729,9 @@
                         <ul class="submenu">
                             <li><a href="@Url.Action("MyProfile", "Employee")" class="@(currentController == "Employee" && currentAction == "MyProfile" ? "active" : "")">Hồ sơ của tôi</a></li>
                             @if (role == "HR") {
-                                <li><a href="@Url.Action("Index", "Employee")" class="@(currentController == "Employee" && currentAction != "MyProfile" ? "active" : "")">Danh sách nhân viên</a></li>
+                                <li><a href="@Url.Action("Index", "Employee")" class="@(currentController == "Employee" && currentAction == "Index" ? "active" : "")">Danh sách nhân viên</a></li>
+                                <li><a href="@Url.Action("Index", "AdminOrg")" class="@(currentController == "AdminOrg" ? "active" : "")">Danh mục phòng ban</a></li>
+                                <li><a href="@Url.Action("Hierarchy", "Employee")" class="@(currentController == "Employee" && currentAction == "Hierarchy" ? "active" : "")"><i class="fa-solid fa-diagram-project" style="margin-right:6px; font-size:12px;"></i>Cây phân cấp</a></li>
                             }
                         </ul>
                     </li>
@@ -1001,6 +1011,7 @@
         <!-- MAIN CONTENT -->
         <main class="main-content">
             <div class="content-area">
+                @await Html.PartialAsync("_GlobalBreadcrumb")
                 @RenderBody()
             </div>
         </main>
@@ -1223,8 +1234,7 @@
     }
     *@
 
-    @await Html.PartialAsync("_AvaAssistant")
-
     @await RenderSectionAsync("Scripts", required: false)
+    @await Html.PartialAsync("_AvaAssistant")
 </body>
 </html>

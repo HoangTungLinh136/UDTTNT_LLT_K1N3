@@ -17,12 +17,7 @@
             Báo cáo đi muộn
         </h1>
         <p class="text-muted mb-0" style="font-size: 14px; margin-top: 4px;">Tổng hợp tình hình đi muộn của nhân viên theo tháng và bộ lọc.</p>
-        <div class="hrms-breadcrumb mt-2">
-            <a href="@Url.Action("Index", "Leader")">Ban lãnh đạo</a>
-            <i class="fa-solid fa-chevron-right separator"></i>
-            <span>Báo cáo đi muộn</span>
-        </div>
-    </div>
+</div>
     <div class="hrms-page-header-actions">
         <a href="@Url.Action("ExportExcel", "LeaderAttendance", new { month = Model?.CurrentMonth, department = Model?.SelectedDepartment })" class="hrms-btn hrms-btn-secondary">
             <i class="fa-solid fa-file-excel text-success"></i> Xuất Excel

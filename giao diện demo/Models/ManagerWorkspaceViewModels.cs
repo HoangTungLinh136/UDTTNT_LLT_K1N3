@@ -5,6 +5,18 @@ namespace giao_dien_demo.Models
 {
     public class ManagerWorkspaceViewModel
     {
+        public string? ErrorMessage { get; set; }
+        public int Year { get; set; } = DateTime.Today.Year;
+        public string Unit { get; set; } = "";
+        public List<int> AvailableYears { get; set; } = new();
+        public int WorkingEmployeeCount { get; set; }
+        public int PendingApprovalCount => AssignedLeavePendingCount + AssignedAdjustmentPendingCount;
+        public decimal WorkingPercent => ManagedEmployeeCount == 0 ? 0 : Math.Round(100m * WorkingEmployeeCount / ManagedEmployeeCount, 1);
+        public decimal LeavePercent => ManagedEmployeeCount == 0 ? 0 : Math.Round(100m * OnLeaveTodayCount / ManagedEmployeeCount, 1);
+        public List<ManagerPositionGroup> PositionGroups { get; set; } = new();
+        public List<ManagerMovementMonth> Movement { get; set; } = new();
+        public List<ManagerDashboardEmployee> RecentEmployees { get; set; } = new();
+        public int MissingJoinDateCount { get; set; }
         public int ManagedEmployeeCount { get; set; }
         public int PresentTodayCount { get; set; }
         public int AssignedLeavePendingCount { get; set; }
@@ -13,6 +25,35 @@ namespace giao_dien_demo.Models
         public int CompletedKpiCount { get; set; }
         public List<string> OrganizationalUnits { get; set; } = new();
         public List<ManagerApprovalRow> RecentApprovals { get; set; } = new();
+    }
+
+    public class ManagerPositionGroup
+    {
+        public string Label { get; set; } = "";
+        public int Count { get; set; }
+        public decimal Percent { get; set; }
+    }
+
+    public class ManagerMovementMonth
+    {
+        public int Month { get; set; }
+        public int Joined { get; set; }
+        public int Left { get; set; }
+        public int Transferred { get; set; }
+    }
+
+    // Deliberately contains only the fields already visible in the scoped employee list,
+    // plus the business join date. Never pass the full Employee entity to this dashboard.
+    public class ManagerDashboardEmployee
+    {
+        public int Id { get; set; }
+        public string? Name { get; set; }
+        public string? EmployeeCode { get; set; }
+        public string? JobTitle { get; set; }
+        public string? Position { get; set; }
+        public string? Department { get; set; }
+        public string? Status { get; set; }
+        public DateTime? JoinDate { get; set; }
     }
 
     public class ManagerListViewModel<T>

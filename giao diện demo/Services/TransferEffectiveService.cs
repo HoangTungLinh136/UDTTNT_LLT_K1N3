@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using giao_dien_demo.Data;
+using giao_dien_demo.Helpers;
 using giao_dien_demo.Models;
 
 namespace giao_dien_demo.Services
@@ -83,11 +84,35 @@ namespace giao_dien_demo.Services
 
                 var emp = record.Employee;
                 string oldDept = emp.Department ?? string.Empty;
+                int? oldDeptId = emp.DepartmentId;
+                int? oldMgrId = emp.ManagerId;
                 string oldPos = emp.Position ?? string.Empty;
                 string oldTitle = emp.JobTitle ?? string.Empty;
 
-                // Mutate Employee Master
-                emp.Department = record.TargetDepartment;
+                // WF-02 & OD-20: Mutate Employee Master with DepartmentId & legacy string in sync
+                if (record.TargetDepartmentId.HasValue)
+                {
+                    emp.DepartmentId = record.TargetDepartmentId.Value;
+                    var dept = await _context.Departments.FindAsync(record.TargetDepartmentId.Value);
+                    if (dept != null)
+                    {
+                        emp.Department = dept.Name;
+                    }
+                    else if (!string.IsNullOrWhiteSpace(record.TargetDepartment))
+                    {
+                        emp.Department = record.TargetDepartment;
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(record.TargetDepartment))
+                {
+                    emp.Department = record.TargetDepartment;
+                    var dept = await _context.Departments.FirstOrDefaultAsync(d => d.Name == record.TargetDepartment);
+                    if (dept != null)
+                    {
+                        emp.DepartmentId = dept.Id;
+                    }
+                }
+
                 if (!string.IsNullOrWhiteSpace(record.TargetPosition))
                 {
                     emp.Position = record.TargetPosition;
@@ -95,6 +120,44 @@ namespace giao_dien_demo.Services
                 if (!string.IsNullOrWhiteSpace(record.TargetJobTitle))
                 {
                     emp.JobTitle = record.TargetJobTitle;
+                }
+
+                // WF-02, OD-04, OD-07, OD-09, OD-11: Mutate ManagerId and log reporting history atomically
+                if (record.TargetManagerId.HasValue || record.AllowNullManagerException)
+                {
+                    if (emp.ManagerId != record.TargetManagerId)
+                    {
+                        var validation = await HierarchyValidationHelper.ValidateReportingHierarchyUniversalAsync(
+                            _context,
+                            emp.Id,
+                            record.TargetManagerId,
+                            record.AllowNullManagerException);
+
+                        if (!validation.IsValid)
+                        {
+                            _logger.LogError($"[TransferEffective] Transfer {record.Id} failed hierarchy validation: {validation.ErrorMessage}");
+                            await transaction.RollbackAsync();
+                            return false;
+                        }
+
+                        int? previousManagerId = emp.ManagerId;
+                        emp.ManagerId = record.TargetManagerId;
+
+                        int resolvedUserId = (await _context.Users.Where(u => u.Username == actor).Select(u => (int?)u.Id).FirstOrDefaultAsync()) ?? 
+                            (await _context.Users.OrderBy(u => u.Id).Select(u => u.Id).FirstOrDefaultAsync());
+
+                        var reportingHistory = new EmployeeReportingHistory
+                        {
+                            EmployeeId = emp.Id,
+                            PreviousManagerId = previousManagerId,
+                            NewManagerId = record.TargetManagerId,
+                            EffectiveDate = DateTime.UtcNow,
+                            ChangeReason = $"Điều chuyển sang phòng ban {emp.Department} theo quyết định #{record.Id}",
+                            ChangedByUserId = resolvedUserId,
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.EmployeeReportingHistories.Add(reportingHistory);
+                    }
                 }
 
                 // Mark Record as EFFECTIVE
@@ -161,8 +224,8 @@ namespace giao_dien_demo.Services
                         eventType: "Lifecycle",
                         status: "Success",
                         failureReason: null,
-                        oldValues: $"Dept={oldDept}, Pos={oldPos}, Title={oldTitle}",
-                        newValues: $"Dept={emp.Department}, Pos={emp.Position}, Title={emp.JobTitle}",
+                        oldValues: $"Dept={oldDept}, DeptId={oldDeptId}, ManagerId={oldMgrId}, Pos={oldPos}, Title={oldTitle}",
+                        newValues: $"Dept={emp.Department}, DeptId={emp.DepartmentId}, ManagerId={emp.ManagerId}, Pos={emp.Position}, Title={emp.JobTitle}",
                         changes: hasActiveAssignments ? $"Thuyên chuyển có hiệu lực. {assignmentWarning}" : "Thuyên chuyển nhân sự chính thức có hiệu lực.");
 
                     if (hasActiveAssignments)

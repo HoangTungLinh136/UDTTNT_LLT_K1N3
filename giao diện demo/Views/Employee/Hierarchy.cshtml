@@ -1,0 +1,2029 @@
+@model giao_dien_demo.Models.OrganizationHierarchyViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Cây phân cấp";
+    var currentUserRole = Model.CurrentUserRole;
+    var isAdminOrHr = currentUserRole == "Admin" || currentUserRole == "HR";
+
+    // Flatten all scoped nodes for instant drawer lookup
+    var allNodesList = new List<giao_dien_demo.Models.HierarchyNodeViewModel>();
+    void Flatten(giao_dien_demo.Models.HierarchyNodeViewModel n)
+    {
+        allNodesList.Add(n);
+        if (n.DirectReports != null)
+        {
+            foreach (var c in n.DirectReports) Flatten(c);
+        }
+    }
+    foreach (var r in Model.RootNodes) Flatten(r);
+
+    // Build safe JSON payload for client-side instant drawer interaction
+    var clientData = allNodesList.ToDictionary(n => n.Id, n => new {
+        id = n.Id,
+        employeeCode = n.EmployeeCode,
+        name = n.Name,
+        jobTitle = n.JobTitle ?? n.Position ?? "Nhân viên",
+        department = n.Department ?? "Chưa phân phòng",
+        position = n.Position ?? "Chính thức",
+        status = n.Status ?? "Active",
+        managerId = n.ManagerId,
+        managerName = n.ManagerName,
+        managerCode = n.ManagerCode,
+        avatarPath = n.AvatarPath,
+        email = n.Email ?? "Chưa cập nhật",
+        phoneNumber = n.PhoneNumber ?? "Chưa cập nhật",
+        joinDateFormatted = n.JoinDateFormatted ?? "Chưa cập nhật",
+        isCurrentUser = n.IsCurrentUser,
+        isManagerOutsideScope = n.IsManagerOutsideScope,
+        hierarchyState = n.HierarchyState,
+        canViewDetails = n.CanViewDetails,
+        canManageManager = n.CanManageManager,
+        directReports = n.DirectReports.Select(c => new {
+            id = c.Id,
+            employeeCode = c.EmployeeCode,
+            name = c.Name,
+            jobTitle = c.JobTitle ?? c.Position ?? "Nhân viên",
+            department = c.Department ?? "Chưa phân phòng",
+            avatarPath = c.AvatarPath
+        }).ToList(),
+        reportingHistories = n.ReportingHistories.Select(h => new {
+            id = h.Id,
+            previousManagerName = h.PreviousManagerName,
+            previousManagerCode = h.PreviousManagerCode,
+            newManagerName = h.NewManagerName,
+            newManagerCode = h.NewManagerCode,
+            changeReason = h.ChangeReason,
+            effectiveDate = h.EffectiveDate.ToString("dd/MM/yyyy"),
+            changedByName = h.ChangedByName
+        }).ToList()
+    });
+
+    var serializedData = JsonSerializer.Serialize(clientData);
+}
+
+<style>
+/* =========================================================================
+   HRMS ORGANIZATIONAL HIERARCHY V2.0 — STYLESHEET
+   Matching Reference Design: "Cơ cấu tổ chức & Cây phân cấp quản lý trực tiếp"
+   ========================================================================= */
+
+.hierarchy-page-container {
+    padding: 6px 0 24px;
+}
+
+/* --- Top Header & Breadcrumb --- */
+.hierarchy-header-card {
+    margin-bottom: 20px;
+}
+.hierarchy-breadcrumb {
+    font-size: 13px;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.hierarchy-breadcrumb a {
+    color: #64748b;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+.hierarchy-breadcrumb a:hover {
+    color: #2563eb;
+}
+.hierarchy-header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.hierarchy-icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+    flex-shrink: 0;
+}
+.hierarchy-page-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.25;
+}
+.hierarchy-page-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin: 4px 0 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.hierarchy-scope-pill {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+}
+
+/* --- 4 Statistics Cards --- */
+.hierarchy-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+@@media (max-width: 1200px) {
+    .hierarchy-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@@media (max-width: 640px) {
+    .hierarchy-stats-grid { grid-template-columns: 1fr; }
+}
+.stat-box {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+}
+.stat-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+.stat-icon-wrap.blue { background: #eff6ff; color: #2563eb; }
+.stat-icon-wrap.purple { background: #faf5ff; color: #9333ea; }
+.stat-icon-wrap.green { background: #f0fdf4; color: #16a34a; }
+.stat-icon-wrap.amber { background: #fffbeb; color: #d97706; }
+.stat-content h3 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+}
+.stat-content p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* --- Toolbar & Controls --- */
+.hierarchy-toolbar-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 12px 18px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+.toolbar-actions-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.toolbar-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.dept-select-wrap select {
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 13px;
+    padding: 7px 12px;
+    min-width: 210px;
+    background-color: #ffffff;
+    color: #334155;
+    outline: none;
+    font-weight: 500;
+}
+.dept-select-wrap select:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+.search-input-wrap {
+    position: relative;
+    min-width: 260px;
+}
+.search-input-wrap i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 13px;
+}
+.search-input-wrap input {
+    width: 100%;
+    padding: 7px 12px 7px 34px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    transition: all 0.2s;
+}
+.search-input-wrap input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+/* Switch toggle */
+.switch-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+}
+.switch-control {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 22px;
+}
+.switch-control input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #cbd5e1;
+    transition: .3s;
+    border-radius: 24px;
+}
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+.switch-control input:checked + .switch-slider {
+    background-color: #2563eb;
+}
+.switch-control input:checked + .switch-slider:before {
+    transform: translateX(18px);
+}
+
+/* Toolbar Buttons */
+.btn-tool {
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 7px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+/* --- Layout Main Wrapper (Canvas + Drawer) --- */
+.hierarchy-main-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    position: relative;
+}
+.hierarchy-canvas-column {
+    flex: 1;
+    min-width: 0;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    overflow: hidden;
+    position: relative;
+}
+.hierarchy-drawer-column {
+    width: 390px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+}
+@@media (max-width: 991px) {
+    .hierarchy-main-layout { display: block; }
+    .hierarchy-drawer-column {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 380px;
+        z-index: 1050;
+        box-shadow: -6px 0 25px rgba(0,0,0,0.15);
+        display: none;
+        max-height: 100vh;
+    }
+    .hierarchy-drawer-column.mobile-open {
+        display: block;
+    }
+}
+
+/* --- Tree Viewport & Pan-Zoom Canvas --- */
+.tree-viewport {
+    position: relative;
+    overflow: hidden !important;
+    min-height: 580px;
+    height: calc(100vh - 290px);
+    max-height: 820px;
+    background-color: #fafbfe;
+    background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+    background-size: 22px 22px;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    transition: background-color 0.2s ease;
+}
+
+.tree-viewport:active,
+.tree-viewport.is-panning {
+    cursor: grabbing !important;
+}
+
+.tree-canvas-content {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 60px 100px 60px;
+    transform-origin: 0 0;
+    will-change: transform;
+    min-width: 100%;
+}
+
+/* Ensure interactive elements keep normal cursor */
+.tree-canvas-content .node-card,
+.tree-canvas-content .org-card,
+.tree-canvas-content .org-node-toggle,
+.tree-canvas-content button,
+.tree-canvas-content a {
+    cursor: pointer !important;
+    user-select: auto;
+}
+
+/* Floating Zoom Toolbar */
+.tree-zoom-toolbar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    padding: 4px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
+}
+
+.zoom-tool-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    color: #475569;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.zoom-tool-btn:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+}
+
+.zoom-tool-btn:active {
+    transform: scale(0.92);
+}
+
+.zoom-tool-indicator {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    padding: 0 8px;
+    min-width: 48px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+}
+
+.zoom-tool-divider {
+    width: 1px;
+    height: 18px;
+    background: #e2e8f0;
+    margin: 0 2px;
+}
+
+/* Floating Navigation Hint */
+.tree-pan-instruction {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    z-index: 30;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: #64748b;
+    pointer-events: none;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+}
+
+/* Pure CSS Hierarchical Tree Structure */
+.org-chart-root {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+}
+.org-chart-root:last-child {
+    margin-bottom: 0;
+}
+.tree-children-list {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    padding: 24px 0 0 0;
+    margin: 0;
+    list-style: none;
+}
+.tree-node-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    padding: 24px 14px 0 14px;
+}
+
+/* Connectors using ::before and ::after */
+.tree-node-item::before, .tree-node-item::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 50%;
+    border-top: 2px solid #cbd5e1;
+    width: 50%;
+    height: 24px;
+}
+.tree-node-item::after {
+    right: auto;
+    left: 50%;
+    border-left: 2px solid #cbd5e1;
+}
+.tree-node-item:only-child::after, .tree-node-item:only-child::before {
+    display: none;
+}
+.tree-node-item:only-child {
+    padding-top: 0;
+}
+.tree-node-item:first-child::before {
+    border: 0 none;
+}
+.tree-node-item:last-child::after {
+    border: 0 none;
+}
+.tree-node-item:last-child::before {
+    border-right: 2px solid #cbd5e1;
+    border-radius: 0 6px 0 0;
+}
+.tree-node-item:first-child::after {
+    border-radius: 6px 0 0 0;
+}
+/* Downward stem from parent node */
+.tree-children-list::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    border-left: 2px solid #cbd5e1;
+    width: 0;
+    height: 24px;
+}
+
+/* --- Org Card Node --- */
+.org-card {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    width: 260px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    outline: none;
+}
+.org-card:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 8px 18px rgba(37,99,235,0.09);
+    transform: translateY(-2px);
+}
+.org-card.is-selected {
+    border: 2px solid #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+    background: #ffffff !important;
+}
+.org-card.is-self {
+    border-left: 4px solid #10b981;
+}
+.org-card.is-cycle {
+    border-color: #ef4444 !important;
+    background: #fef2f2 !important;
+}
+.org-card.search-match {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.3) !important;
+    background: #fffbeb !important;
+}
+
+.org-card-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.org-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 2px solid #f8fafc;
+}
+.org-card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.org-card-info {
+    flex: 1;
+    min-width: 0;
+}
+.org-card-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.org-card-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #0f172a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.org-crown {
+    font-size: 11px;
+}
+.org-card-code {
+    font-size: 10px;
+    font-weight: 700;
+    background: #e2e8f0;
+    color: #475569;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    flex-shrink: 0;
+}
+.org-card-title-row {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.org-card-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+}
+.org-card-dept {
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 130px;
+}
+.org-card-subordinates {
+    font-size: 11px;
+    font-weight: 600;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    display: inline-flex;
+    align-items: center;
+}
+.org-card-self-badge {
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    background: #10b981;
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(16,185,129,0.3);
+}
+
+.org-node-toggle {
+    position: absolute;
+    bottom: -13px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9.5px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    transition: all 0.15s ease;
+    z-index: 2;
+}
+.org-node-toggle:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+}
+
+.hide-departments .node-dept-badge {
+    visibility: hidden;
+    display: none;
+}
+
+/* --- Unassigned & Outside Scope Sections --- */
+.unassigned-section {
+    padding: 20px 24px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+}
+.unassigned-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+.unassigned-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #334155;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.unassigned-dashed-card {
+    border: 1.5px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 16px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 260px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.unassigned-dashed-card:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.unassigned-dashed-card.scope-b {
+    border-color: #7dd3fc;
+    background: #f0f9ff;
+}
+.unassigned-dashed-card.scope-b:hover {
+    border-color: #0284c7;
+    background: #e0f2fe;
+}
+.unassigned-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+/* --- Right Drawer Styles --- */
+.hierarchy-drawer {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.drawer-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.drawer-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+.btn-close-drawer {
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+.btn-close-drawer:hover {
+    color: #0f172a;
+    background: #f1f5f9;
+}
+.drawer-empty-state {
+    padding: 60px 24px;
+    text-align: center;
+}
+.drawer-empty-icon {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+.drawer-empty-state h6 {
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+.drawer-empty-state p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+
+/* Drawer Content */
+.drawer-content {
+    padding: 20px;
+}
+.drawer-profile-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 16px;
+}
+.drawer-avatar-wrap {
+    flex-shrink: 0;
+}
+.drawer-avatar {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 22px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.drawer-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.drawer-profile-info {
+    flex: 1;
+    min-width: 0;
+}
+.drawer-profile-name-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.drawer-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+.drawer-code-pill {
+    font-size: 11px;
+    font-weight: 700;
+    background: #e2e8f0;
+    color: #475569;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+}
+.drawer-status-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 12px;
+}
+.drawer-status-pill.badge-active {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+.drawer-job-title {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 3px;
+    font-weight: 500;
+}
+.drawer-dept-pill {
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-top: 6px;
+}
+
+/* Drawer Tabs */
+.drawer-nav-tabs {
+    display: flex;
+    border-bottom: 2px solid #f1f5f9;
+    margin-bottom: 16px;
+}
+.drawer-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 9px 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    text-align: center;
+}
+.drawer-tab-btn:hover {
+    color: #2563eb;
+}
+.drawer-tab-btn.active {
+    color: #2563eb;
+}
+.drawer-tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #2563eb;
+    border-radius: 2px;
+}
+
+.drawer-tab-pane {
+    display: none;
+    max-height: 380px;
+    overflow-y: auto;
+}
+.drawer-tab-pane.active {
+    display: block;
+}
+
+/* Info List */
+.drawer-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.drawer-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #f1f5f9;
+}
+.drawer-info-label {
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+}
+.drawer-info-value {
+    color: #1e293b;
+    text-align: right;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Subordinates List */
+.subordinates-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.subordinate-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #f1f5f9;
+    background: #f8fafc;
+    transition: all 0.15s;
+    cursor: pointer;
+}
+.subordinate-item:hover {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+.subordinate-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.subordinate-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+.subordinate-info {
+    min-width: 0;
+}
+.subordinate-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.subordinate-title {
+    font-size: 11.5px;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* History Timeline */
+.history-timeline {
+    position: relative;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.history-timeline::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 6px;
+    width: 2px;
+    background: #e2e8f0;
+}
+.history-item {
+    position: relative;
+    font-size: 12.5px;
+}
+.history-item::before {
+    content: '';
+    position: absolute;
+    left: -18px;
+    top: 4px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+}
+.history-date {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 600;
+}
+.history-change {
+    font-weight: 600;
+    color: #1e293b;
+    margin: 2px 0;
+}
+.history-reason {
+    color: #64748b;
+    font-size: 11.5px;
+}
+.history-by {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+
+/* Drawer Footer */
+.drawer-footer {
+    display: flex;
+    gap: 10px;
+    padding-top: 18px;
+    margin-top: 18px;
+    border-top: 1px solid #f1f5f9;
+}
+.btn-drawer-action {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+}
+</style>
+
+<div class="hierarchy-page-container">
+    <!-- Breadcrumb & Page Title -->
+    <div class="hierarchy-header-card">
+<div class="hierarchy-header-title-row">
+            <div class="hierarchy-icon-badge">
+                <i class="fa-solid fa-diagram-project"></i>
+            </div>
+            <div>
+                <h1 class="hierarchy-page-title">Cơ cấu tổ chức &amp; Cây phân cấp quản lý trực tiếp</h1>
+                <p class="hierarchy-page-desc">
+                    Mô hình hóa quan hệ tuyến quản lý trực tiếp theo chuẩn hợp đồng dữ liệu Phase C (OD-07 &amp; OD-11).
+                    <span class="hierarchy-scope-pill">@Model.DataScopeDescription</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Dashboard Statistics Cards -->
+    <div class="hierarchy-stats-grid">
+        <div class="stat-box">
+            <div class="stat-icon-wrap blue">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3>@Model.TotalEmployees</h3>
+                <p>Nhân sự trong phạm vi</p>
+            </div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-icon-wrap purple">
+                <i class="fa-solid fa-user-tie"></i>
+            </div>
+            <div class="stat-content">
+                <h3>@Model.TotalManagers</h3>
+                <p>Cán bộ có cấp dưới</p>
+            </div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-icon-wrap green">
+                <i class="fa-solid fa-sitemap"></i>
+            </div>
+            <div class="stat-content">
+                <h3>@Model.RootNodes.Count(r => r.DirectReports.Any())</h3>
+                <p>Nhánh quản lý</p>
+            </div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-icon-wrap amber">
+                <i class="fa-solid fa-user-clock"></i>
+            </div>
+            <div class="stat-content">
+                <h3>@Model.ActualManagerNullCount</h3>
+                <p>Chưa gán quản lý trực tiếp</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar Controls -->
+    <div class="hierarchy-toolbar-card">
+        <div class="toolbar-actions-left">
+            @if (Model.AvailableDepartments.Count > 1)
+            {
+                <div class="dept-select-wrap">
+                    <form method="get" asp-action="Hierarchy" id="deptFilterForm">
+                        <select name="department" onchange="this.form.submit()" aria-label="Lọc theo phòng ban">
+                            <option value="">-- Tất cả phòng ban --</option>
+                            @foreach (var dept in Model.AvailableDepartments)
+                            {
+                                <option value="@dept" selected="@(dept == Model.SelectedDepartment)">@dept</option>
+                            }
+                        </select>
+                    </form>
+                </div>
+            }
+
+            <div class="search-input-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="hierarchySearchInput" placeholder="Tìm tên, mã nhân viên, chức danh..." autocomplete="off" />
+            </div>
+
+            <!-- Switch: Hiển thị phòng ban -->
+            <label class="switch-toggle-wrap" for="toggleDepartmentView">
+                <span class="switch-control">
+                    <input type="checkbox" id="toggleDepartmentView" checked onchange="toggleDepartmentBadges(this.checked)" />
+                    <span class="switch-slider"></span>
+                </span>
+                <span>Hiển thị phòng ban</span>
+            </label>
+        </div>
+
+        <div class="toolbar-actions-right">
+            <button type="button" class="btn btn-outline-primary btn-tool" onclick="expandAllBranches()">
+                <i class="fa-solid fa-angles-down"></i> Mở rộng tất cả
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-tool" onclick="collapseAllBranches()">
+                <i class="fa-solid fa-angles-up"></i> Thu gọn tất cả
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Layout: Org Chart Canvas (Left) + Detail Drawer (Right) -->
+    <div class="hierarchy-main-layout" id="hierarchyMainLayout">
+        <!-- Canvas Column -->
+        <div class="hierarchy-canvas-column" id="canvasColumn">
+            <!-- Floating Zoom & Pan Controls -->
+            <div class="tree-zoom-toolbar" id="treeZoomToolbar" role="toolbar" aria-label="Điều khiển thu phóng cây phân cấp">
+                <button type="button" class="zoom-tool-btn" id="btnZoomIn" title="Phóng to (hoặc lăn chuột lên)">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <span class="zoom-tool-indicator" id="zoomLevelIndicator" title="Tỷ lệ thu phóng hiện tại">100%</span>
+                <button type="button" class="zoom-tool-btn" id="btnZoomOut" title="Thu nhỏ (hoặc lăn chuột xuống)">
+                    <i class="fa-solid fa-minus"></i>
+                </button>
+                <div class="zoom-tool-divider"></div>
+                <button type="button" class="zoom-tool-btn" id="btnZoomFit" title="Vừa khung hình (Fit to Screen)">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+                <button type="button" class="zoom-tool-btn" id="btnZoomReset" title="Đặt lại góc nhìn mặc định (100% & Căn giữa)">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+
+            <!-- Floating Pan & Zoom Hint -->
+            <div class="tree-pan-instruction" id="treePanInstruction">
+                <i class="fa-solid fa-hand-pointer text-primary me-1"></i> Giữ chuột kéo để di chuyển • Lăn con lăn để phóng to/thu nhỏ
+            </div>
+
+            <div class="tree-viewport" id="treeViewport">
+                <div class="tree-canvas-content" id="treeCanvasContent">
+                @{
+                    var treeRoots = Model.RootNodes.Where(r => r.DirectReports.Any()).ToList();
+                    var stateANodes = Model.RootNodes.Where(r => !r.DirectReports.Any() && !r.ManagerId.HasValue).ToList();
+                    var stateBNodes = Model.RootNodes.Where(r => !r.DirectReports.Any() && r.IsManagerOutsideScope).ToList();
+                }
+
+                @if (!Model.RootNodes.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="fa-solid fa-diagram-project fa-3x mb-3 text-secondary" style="opacity: 0.3;"></i>
+                        <h5>Không tìm thấy dữ liệu phân cấp</h5>
+                        <p class="small">Chưa có dữ liệu nhân sự hoặc phạm vi truy cập hiện tại không có nhân viên nào.</p>
+                    </div>
+                }
+                else if (treeRoots.Any())
+                {
+                    <!-- Render Multi-Level Management Trees (Top-Down CSS Tree) -->
+                    @foreach (var rootNode in treeRoots)
+                    {
+                        <div class="org-chart-root">
+                            <ul class="tree-children-list" style="padding-top: 0;">
+                                @await Html.PartialAsync("_HierarchyTopDownTreePartial", rootNode)
+                            </ul>
+                        </div>
+                    }
+                }
+                else if (currentUserRole == "Employee")
+                {
+                    <!-- Employee Personal View: Node is centered prominently on canvas -->
+                    <div class="text-center py-4">
+                        <div class="d-inline-block">
+                            <ul class="tree-children-list" style="padding-top: 0;">
+                                @foreach (var empNode in Model.RootNodes)
+                                {
+                                    @await Html.PartialAsync("_HierarchyTopDownTreePartial", empNode)
+                                }
+                            </ul>
+                        </div>
+
+                    </div>
+                }
+                else
+                {
+                    <!-- Leader / Manager / Admin view when scoped employees have no management edges configured -->
+                    <div class="p-3">
+                        <div class="alert alert-warning border-warning-subtle mb-4 mx-auto" style="max-width: 820px; font-size:13px; border-radius:10px;">
+                            <i class="fa-solid fa-triangle-exclamation me-2 text-warning"></i>
+                            <strong>Chưa thiết lập tuyến quản lý trực tiếp:</strong> 
+                            Toàn bộ @Model.TotalEmployees nhân sự trong phạm vi hiện tại chưa được gán Người quản lý trực tiếp (Employees.ManagerId = NULL). 
+                            Tất cả nhân sự đang ở trạng thái độc lập (chưa có quan hệ quản lý phân cấp).
+                        </div>
+                        <div class="d-flex justify-content-center flex-wrap gap-3">
+                            @foreach (var empNode in Model.RootNodes)
+                            {
+                                <ul class="tree-children-list" style="padding-top: 0;">
+                                    @await Html.PartialAsync("_HierarchyTopDownTreePartial", empNode)
+                                </ul>
+                            }
+                        </div>
+                    </div>
+                }
+                </div> <!-- End #treeCanvasContent -->
+            </div> <!-- End #treeViewport -->
+
+            <!-- Trạng thái B: Nhân sự có người quản lý ngoài phạm vi (Manager Outside Scope) -->
+            @if (stateBNodes.Any() && treeRoots.Any())
+            {
+                <div class="unassigned-section" id="outsideScopeSection" style="background:#f0f9ff; border-top: 1px solid #bae6fd;">
+                    <div class="unassigned-header">
+                        <h6 class="unassigned-title text-info-emphasis">
+                            <i class="fa-solid fa-shield-halved text-info"></i>
+                            Nhân sự có cấp trên trực tiếp ngoài phạm vi (@stateBNodes.Count nhân sự)
+                        </h6>
+                        <span class="text-muted small">
+                            <i class="fa-solid fa-circle-info me-1"></i>Nhân sự có ManagerId hợp lệ nhưng cấp trên không thuộc phạm vi truy cập
+                        </span>
+                    </div>
+
+                    <div class="unassigned-grid">
+                        @foreach (var emp in stateBNodes)
+                        {
+                            <div class="unassigned-dashed-card node-card scope-b" onclick="selectHierarchyNode(@emp.Id)" id="card-emp-@emp.Id" role="button" tabindex="0">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="org-card-avatar" style="width:36px; height:36px; font-size:13px; background:#e0f2fe; color:#0369a1;">
+                                        <span>@(string.IsNullOrWhiteSpace(emp.Name) ? "N" : emp.Name.Substring(0, 1).ToUpper())</span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size:13px;">@emp.Name</div>
+                                        <div class="text-muted" style="font-size:11px;">@emp.EmployeeCode • @(emp.Department ?? "Chưa phân phòng")</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle" style="font-size:10px;">Cấp trên ngoài PV</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Trạng thái A: Nhân sự chưa gán quản lý thật (Actual ManagerId IS NULL) -->
+            @if (stateANodes.Any() && treeRoots.Any())
+            {
+                <div class="unassigned-section" id="unassignedSection">
+                    <div class="unassigned-header">
+                        <h6 class="unassigned-title">
+                            <i class="fa-solid fa-user-clock text-warning"></i>
+                            Nhân sự chưa gán quản lý trực tiếp (@stateANodes.Count nhân sự)
+                        </h6>
+                        @if (isAdminOrHr)
+                        {
+                            <span class="text-muted small">
+                                <i class="fa-solid fa-circle-info me-1"></i>Nhấn vào nhân sự để xem hoặc đổi quản lý (OD-07)
+                            </span>
+                        }
+                    </div>
+
+                    <div class="unassigned-grid">
+                        @foreach (var unassignedEmp in stateANodes)
+                        {
+                            <div class="unassigned-dashed-card node-card" onclick="selectHierarchyNode(@unassignedEmp.Id)" id="card-emp-@unassignedEmp.Id" role="button" tabindex="0">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="org-card-avatar" style="width:36px; height:36px; font-size:13px;">
+                                        <span>@(string.IsNullOrWhiteSpace(unassignedEmp.Name) ? "N" : unassignedEmp.Name.Substring(0, 1).ToUpper())</span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size:13px;">@unassignedEmp.Name</div>
+                                        <div class="text-muted" style="font-size:11px;">@unassignedEmp.EmployeeCode • @(unassignedEmp.Department ?? "Chưa phân phòng")</div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle" style="font-size:10px;">Chưa gán</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Detail Drawer Column (Right) -->
+        <div class="hierarchy-drawer-column" id="drawerColumn">
+            @await Html.PartialAsync("_HierarchyDrawerPartial", Model)
+        </div>
+    </div>
+</div>
+
+<!-- Embedded Scoped Nodes JSON Data for Zero-Latency Client Interaction -->
+<script type="application/json" id="hierarchyJsonData">
+@Html.Raw(serializedData)
+</script>
+
+@section Scripts {
+<script>
+    // Hierarchy Client-Side Controller
+    var HIERARCHY_STORE = {};
+    var CURRENT_SELECTED_NODE_ID = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            var rawData = document.getElementById("hierarchyJsonData").textContent;
+            HIERARCHY_STORE = JSON.parse(rawData);
+        } catch (e) {
+            console.error("Failed to parse hierarchyJsonData:", e);
+        }
+
+        // Auto-select node: If user is employee, select self; otherwise select senior manager or first node
+        var keys = Object.keys(HIERARCHY_STORE);
+        if (keys.length > 0) {
+            var defaultId = keys[0];
+            // Check if current user exists in store
+            for (var i = 0; i < keys.length; i++) {
+                if (HIERARCHY_STORE[keys[i]].isCurrentUser) {
+                    defaultId = HIERARCHY_STORE[keys[i]].id;
+                    break;
+                }
+            }
+            // Otherwise find a manager with reports
+            if (defaultId === keys[0]) {
+                for (var i = 0; i < keys.length; i++) {
+                    var node = HIERARCHY_STORE[keys[i]];
+                    if (node.directReports && node.directReports.length > 0) {
+                        defaultId = node.id;
+                        break;
+                    }
+                }
+            }
+            selectHierarchyNode(defaultId);
+        }
+
+        // Initialize Pan & Zoom Controller
+        if (typeof HIERARCHY_PAN_ZOOM !== "undefined") {
+            HIERARCHY_PAN_ZOOM.init();
+        }
+
+        // Keyboard navigation: Escape closes drawer
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") {
+                closeHierarchyDrawer();
+            }
+        });
+    });
+
+    // Select and Highlight Node
+    function selectHierarchyNode(nodeId) {
+        if (window.HIERARCHY_WAS_DRAGGED) return;
+        if (!HIERARCHY_STORE[nodeId]) return;
+        var node = HIERARCHY_STORE[nodeId];
+        CURRENT_SELECTED_NODE_ID = nodeId;
+
+        // Clear previous selected borders
+        document.querySelectorAll('.org-card, .unassigned-dashed-card').forEach(function(el) {
+            el.classList.remove('is-selected');
+        });
+
+        // Add green selected border to current card
+        var card = document.getElementById('card-emp-' + nodeId);
+        if (card) {
+            card.classList.add('is-selected');
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+
+        // Populate Drawer
+        renderDrawerData(node);
+
+        // Open Drawer on Mobile if collapsed
+        var drawerCol = document.getElementById('drawerColumn');
+        if (drawerCol) {
+            drawerCol.classList.add('mobile-open');
+        }
+    }
+
+    // Populate and Render Drawer Data
+    function renderDrawerData(node) {
+        document.getElementById('drawerEmptyState').style.display = 'none';
+        document.getElementById('drawerContent').style.display = 'block';
+
+        // Avatar
+        var initial = (node.name || 'N').trim().charAt(0).toUpperCase();
+        var avatarHtml = node.avatarPath 
+            ? '<img src="' + node.avatarPath + '" alt="' + escapeHtml(node.name) + '" onerror="this.onerror=null; this.parentElement.innerHTML=\'<span>' + initial + '</span>\';" />'
+            : '<span>' + initial + '</span>';
+        document.getElementById('drawerAvatar').innerHTML = avatarHtml;
+
+        // Profile Top
+        document.getElementById('drawerName').textContent = node.name || 'Chưa đặt tên';
+        document.getElementById('drawerCode').textContent = node.employeeCode || '';
+        document.getElementById('drawerJobTitle').textContent = node.jobTitle || 'Nhân viên';
+        document.getElementById('drawerDept').textContent = node.department || 'Chưa phân phòng';
+
+        // Status badge
+        var statusEl = document.getElementById('drawerStatus');
+        if (node.status === 'Active') {
+            statusEl.className = 'drawer-status-pill badge-active';
+            statusEl.textContent = 'Đang làm việc';
+        } else {
+            statusEl.className = 'drawer-status-pill badge bg-secondary text-white';
+            statusEl.textContent = node.status || 'Nghỉ việc';
+        }
+
+        // Tab 1: General Info
+        document.getElementById('detailName').textContent = node.name || '-';
+        document.getElementById('detailCode').textContent = node.employeeCode || '-';
+        document.getElementById('detailJobTitle').textContent = node.jobTitle || '-';
+        document.getElementById('detailDepartment').textContent = node.department || '-';
+        document.getElementById('detailPhone').textContent = node.phoneNumber || '-';
+        document.getElementById('detailEmail').textContent = node.email || '-';
+        document.getElementById('detailStatus').textContent = node.status === 'Active' ? 'Đang làm việc' : (node.status || '-');
+        document.getElementById('detailJoinDate').textContent = node.joinDateFormatted || '-';
+
+        // Direct Manager link
+        var mgrText = document.getElementById('detailManagerText');
+        var mgrBtn = document.getElementById('detailManagerFocusBtn');
+        if (node.managerId && HIERARCHY_STORE[node.managerId]) {
+            var mgr = HIERARCHY_STORE[node.managerId];
+            mgrText.textContent = mgr.name + ' (' + mgr.employeeCode + ')';
+            mgrBtn.style.display = 'inline-block';
+            mgrBtn.onclick = function() {
+                selectHierarchyNode(node.managerId);
+            };
+        } else if (node.managerName) {
+            mgrText.textContent = node.managerName + (node.managerCode ? ' (' + node.managerCode + ')' : '');
+            mgrBtn.style.display = 'none';
+        } else {
+            mgrText.textContent = 'Không có (Chưa gán quản lý trực tiếp)';
+            mgrBtn.style.display = 'none';
+        }
+
+        // Tab 2: Subordinates
+        var subsCount = node.directReports ? node.directReports.length : 0;
+        document.getElementById('drawerSubordinatesCount').textContent = subsCount;
+        var subsList = document.getElementById('drawerSubordinatesList');
+        var subsEmpty = document.getElementById('drawerSubordinatesEmpty');
+        subsList.innerHTML = '';
+
+        if (subsCount > 0) {
+            subsEmpty.style.display = 'none';
+            subsList.style.display = 'flex';
+            node.directReports.forEach(function(sub) {
+                var subInitial = (sub.name || 'N').trim().charAt(0).toUpperCase();
+                var subAvatar = sub.avatarPath 
+                    ? '<img src="' + sub.avatarPath + '" alt="' + escapeHtml(sub.name) + '" style="width:100%;height:100%;object-fit:cover;" />' 
+                    : '<span>' + subInitial + '</span>';
+
+                var div = document.createElement('div');
+                div.className = 'subordinate-item';
+                div.onclick = function() { selectHierarchyNode(sub.id); };
+                div.title = 'Xem nhân sự này trên sơ đồ';
+                div.innerHTML = 
+                    '<div class="subordinate-left">' +
+                        '<div class="subordinate-avatar">' + subAvatar + '</div>' +
+                        '<div class="subordinate-info">' +
+                            '<div class="subordinate-name">' + escapeHtml(sub.name) + ' <span class="badge bg-light text-secondary border ms-1" style="font-size:10px;">' + escapeHtml(sub.employeeCode) + '</span></div>' +
+                            '<div class="subordinate-title">' + escapeHtml(sub.jobTitle) + ' • ' + escapeHtml(sub.department) + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-primary" style="font-size:11px; padding:3px 8px; border-radius:6px;">' +
+                        '<i class="fa-solid fa-arrow-right"></i>' +
+                    '</button>';
+                subsList.appendChild(div);
+            });
+        } else {
+            subsEmpty.style.display = 'block';
+            subsList.style.display = 'none';
+        }
+
+        // Tab 3: History
+        var histList = document.getElementById('drawerHistoryList');
+        var histEmpty = document.getElementById('drawerHistoryEmpty');
+        if (histList) {
+            histList.innerHTML = '';
+            var histories = node.reportingHistories || [];
+            if (histories.length > 0) {
+                histEmpty.style.display = 'none';
+                histList.style.display = 'flex';
+                histories.forEach(function(h) {
+                    var prev = h.previousManagerName ? (h.previousManagerName + (h.previousManagerCode ? ' (' + h.previousManagerCode + ')' : '')) : 'Chưa có quản lý';
+                    var next = h.newManagerName ? (h.newManagerName + (h.newManagerCode ? ' (' + h.newManagerCode + ')' : '')) : 'Không có quản lý';
+
+                    var item = document.createElement('div');
+                    item.className = 'history-item';
+                    item.innerHTML = 
+                        '<div class="history-date"><i class="fa-regular fa-calendar me-1"></i>' + escapeHtml(h.effectiveDate) + '</div>' +
+                        '<div class="history-change">' + escapeHtml(prev) + ' &rarr; <span class="text-primary">' + escapeHtml(next) + '</span></div>' +
+                        '<div class="history-reason"><i class="fa-regular fa-comment-dots me-1 text-muted"></i>' + escapeHtml(h.changeReason) + '</div>' +
+                        (h.changedByName ? '<div class="history-by"><i class="fa-solid fa-user-pen me-1 text-muted"></i>Người thực hiện: ' + escapeHtml(h.changedByName) + '</div>' : '');
+                    histList.appendChild(item);
+                });
+            } else {
+                histEmpty.style.display = 'block';
+                histList.style.display = 'none';
+            }
+        }
+
+        // Bottom Actions
+        var btnFullDetails = document.getElementById('btnDrawerFullDetails');
+        if (btnFullDetails) {
+            if (node.isCurrentUser) {
+                btnFullDetails.style.display = 'inline-block';
+                btnFullDetails.href = '/Employee/MyProfile';
+                btnFullDetails.innerHTML = '<i class="fa-regular fa-id-card me-1"></i>Hồ sơ của tôi';
+            } else if (node.canViewDetails) {
+                btnFullDetails.style.display = 'inline-block';
+                btnFullDetails.href = '/Employee/Details/' + node.id;
+                btnFullDetails.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Xem hồ sơ chi tiết';
+            } else {
+                btnFullDetails.style.display = 'none';
+            }
+        }
+
+        var btnReporting = document.getElementById('btnDrawerReportingHistory');
+        if (btnReporting) {
+            btnReporting.onclick = function() {
+                switchDrawerTab('history');
+            };
+        }
+    }
+
+    // Tab Switching in Drawer
+    function switchDrawerTab(tabName) {
+        document.querySelectorAll('.drawer-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.drawer-tab-pane').forEach(function(p) { p.classList.remove('active'); });
+
+        if (tabName === 'general') {
+            document.getElementById('tabBtnGeneral').classList.add('active');
+            document.getElementById('paneGeneral').classList.add('active');
+        } else if (tabName === 'subordinates') {
+            document.getElementById('tabBtnSubordinates').classList.add('active');
+            document.getElementById('paneSubordinates').classList.add('active');
+        } else if (tabName === 'history') {
+            document.getElementById('tabBtnHistory').classList.add('active');
+            document.getElementById('paneHistory').classList.add('active');
+        }
+    }
+
+    // Close Hierarchy Drawer
+    function closeHierarchyDrawer() {
+        document.querySelectorAll('.org-card, .unassigned-dashed-card').forEach(function(el) {
+            el.classList.remove('is-selected');
+        });
+        document.getElementById('drawerEmptyState').style.display = 'block';
+        document.getElementById('drawerContent').style.display = 'none';
+        CURRENT_SELECTED_NODE_ID = null;
+
+        var drawerCol = document.getElementById('drawerColumn');
+        if (drawerCol) {
+            drawerCol.classList.remove('mobile-open');
+        }
+    }
+
+    // Toggle Branch Children
+    function toggleBranch(btn, nodeId) {
+        var card = document.getElementById('card-emp-' + nodeId);
+        var parentLi = card ? card.closest('.tree-node-item') : null;
+        var childrenList = parentLi ? parentLi.querySelector(':scope > .tree-children-list') : null;
+        if (!childrenList) return;
+
+        var isHidden = childrenList.style.display === 'none';
+        childrenList.style.display = isHidden ? 'flex' : 'none';
+        btn.innerHTML = isHidden ? '<i class="fa-solid fa-minus"></i>' : '<i class="fa-solid fa-plus"></i>';
+    }
+
+    // Expand All Branches
+    function expandAllBranches() {
+        document.querySelectorAll('.tree-children-list').forEach(function(el) {
+            el.style.display = 'flex';
+        });
+        document.querySelectorAll('.org-node-toggle').forEach(function(btn) {
+            btn.innerHTML = '<i class="fa-solid fa-minus"></i>';
+        });
+    }
+
+    // Collapse All Branches
+    function collapseAllBranches() {
+        document.querySelectorAll('.tree-node-item > .tree-children-list').forEach(function(el) {
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('.org-node-toggle').forEach(function(btn) {
+            btn.innerHTML = '<i class="fa-solid fa-plus"></i>';
+        });
+    }
+
+    // Toggle Department View
+    function toggleDepartmentBadges(show) {
+        var canvas = document.getElementById('canvasColumn');
+        if (show) {
+            canvas.classList.remove('hide-departments');
+        } else {
+            canvas.classList.add('hide-departments');
+        }
+    }
+
+    // Real-Time Search Highlighting
+    document.getElementById('hierarchySearchInput')?.addEventListener('input', function(e) {
+        var q = (e.target.value || '').trim().toLowerCase();
+        var cards = document.querySelectorAll('.node-card');
+
+        cards.forEach(function(card) {
+            card.classList.remove('search-match');
+            if (q.length > 0) {
+                var name = card.querySelector('.org-card-name')?.textContent || '';
+                var code = card.querySelector('.org-card-code')?.textContent || '';
+                var title = card.querySelector('.org-card-title-row')?.textContent || '';
+                var dept = card.querySelector('.org-card-dept')?.textContent || '';
+                var combined = (name + ' ' + code + ' ' + title + ' ' + dept).toLowerCase();
+
+                if (combined.indexOf(q) !== -1) {
+                    card.classList.add('search-match');
+
+                    // Auto-expand ancestors to show matched node
+                    var current = card.parentElement;
+                    while (current && (current.classList.contains('tree-node-item') || current.classList.contains('tree-children-list'))) {
+                        if (current.classList.contains('tree-children-list')) {
+                            current.style.display = 'flex';
+                            var toggleBtn = current.parentElement?.querySelector(':scope > .org-card .org-node-toggle');
+                            if (toggleBtn) toggleBtn.innerHTML = '<i class="fa-solid fa-minus"></i>';
+                        }
+                        current = current.parentElement;
+                    }
+                }
+            }
+        });
+    });
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // =========================================================================
+    // HIERARCHY PAN & ZOOM ENGINE (DRAG-TO-PAN & MOUSE-WHEEL ZOOM)
+    // =========================================================================
+    window.HIERARCHY_WAS_DRAGGED = false;
+
+    var HIERARCHY_PAN_ZOOM = (function() {
+        var viewport = null;
+        var content = null;
+        var indicator = null;
+
+        var scale = 1.0;
+        var panX = 0;
+        var panY = 0;
+
+        var isPanning = false;
+        var startMouseX = 0;
+        var startMouseY = 0;
+        var startPanX = 0;
+        var startPanY = 0;
+        var hasMoved = false;
+
+        var MIN_SCALE = 0.25;
+        var MAX_SCALE = 2.5;
+
+        function init() {
+            viewport = document.getElementById("treeViewport");
+            content = document.getElementById("treeCanvasContent");
+            indicator = document.getElementById("zoomLevelIndicator");
+
+            if (!viewport || !content) return;
+
+            // Initial center alignment
+            centerTree(false);
+
+            // 1. Mouse Drag (Pan)
+            viewport.addEventListener("mousedown", onMouseDown);
+            window.addEventListener("mousemove", onMouseMove);
+            window.addEventListener("mouseup", onMouseUp);
+
+            // 2. Mouse Wheel (Zoom on mouse cursor focus)
+            viewport.addEventListener("wheel", onWheel, { passive: false });
+
+            // 3. Zoom Toolbar Buttons
+            document.getElementById("btnZoomIn")?.addEventListener("click", function(e) {
+                e.stopPropagation();
+                zoomBy(1.2);
+            });
+            document.getElementById("btnZoomOut")?.addEventListener("click", function(e) {
+                e.stopPropagation();
+                zoomBy(0.83);
+            });
+            document.getElementById("btnZoomReset")?.addEventListener("click", function(e) {
+                e.stopPropagation();
+                resetView();
+            });
+            document.getElementById("btnZoomFit")?.addEventListener("click", function(e) {
+                e.stopPropagation();
+                fitToScreen();
+            });
+
+            // 4. Touch support (Mobile / Tablet 1-finger drag, 2-finger pinch)
+            initTouch();
+        }
+
+        function applyTransform(withTransition) {
+            if (!content) return;
+            if (withTransition) {
+                content.style.transition = "transform 0.18s cubic-bezier(0.2, 0, 0, 1)";
+            } else {
+                content.style.transition = "none";
+            }
+            content.style.transform = "translate3d(" + panX + "px, " + panY + "px, 0px) scale(" + scale + ")";
+            if (indicator) {
+                indicator.textContent = Math.round(scale * 100) + "%";
+            }
+        }
+
+        function onMouseDown(e) {
+            if (e.button !== 0) return; // Only primary left click
+
+            // Prevent drag when clicking interactive controls
+            if (e.target.closest(".org-node-toggle") || 
+                e.target.closest(".tree-zoom-toolbar") || 
+                e.target.closest("button") || 
+                e.target.closest("a") || 
+                e.target.closest("input") || 
+                e.target.closest("select")) {
+                return;
+            }
+
+            isPanning = true;
+            hasMoved = false;
+            startMouseX = e.clientX;
+            startMouseY = e.clientY;
+            startPanX = panX;
+            startPanY = panY;
+
+            viewport.classList.add("is-panning");
+        }
+
+        function onMouseMove(e) {
+            if (!isPanning) return;
+            var dx = e.clientX - startMouseX;
+            var dy = e.clientY - startMouseY;
+
+            if (Math.hypot(dx, dy) > 4) {
+                hasMoved = true;
+                window.HIERARCHY_WAS_DRAGGED = true;
+            }
+
+            panX = startPanX + dx;
+            panY = startPanY + dy;
+            applyTransform(false);
+        }
+
+        function onMouseUp(e) {
+            if (isPanning) {
+                isPanning = false;
+                viewport.classList.remove("is-panning");
+                if (hasMoved) {
+                    setTimeout(function() {
+                        window.HIERARCHY_WAS_DRAGGED = false;
+                    }, 80);
+                } else {
+                    window.HIERARCHY_WAS_DRAGGED = false;
+                }
+            }
+        }
+
+        function onWheel(e) {
+            // Zoom centered on cursor position inside viewport
+            e.preventDefault();
+
+            var rect = viewport.getBoundingClientRect();
+            var mouseX = e.clientX - rect.left;
+            var mouseY = e.clientY - rect.top;
+
+            var zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+            var newScale = Math.min(Math.max(scale * zoomFactor, MIN_SCALE), MAX_SCALE);
+
+            // Calculate new pan to keep point under cursor fixed
+            panX = mouseX - (mouseX - panX) * (newScale / scale);
+            panY = mouseY - (mouseY - panY) * (newScale / scale);
+            scale = newScale;
+
+            applyTransform(false);
+        }
+
+        function zoomBy(factor) {
+            if (!viewport) return;
+            var rect = viewport.getBoundingClientRect();
+            var centerX = rect.width / 2;
+            var centerY = rect.height / 2;
+
+            var newScale = Math.min(Math.max(scale * factor, MIN_SCALE), MAX_SCALE);
+            panX = centerX - (centerX - panX) * (newScale / scale);
+            panY = centerY - (centerY - panY) * (newScale / scale);
+            scale = newScale;
+
+            applyTransform(true);
+        }
+
+        function resetView() {
+            scale = 1.0;
+            centerTree(true);
+        }
+
+        function centerTree(smooth) {
+            if (!viewport || !content) return;
+            var vpWidth = viewport.clientWidth;
+            var vpHeight = viewport.clientHeight;
+            var contentWidth = content.offsetWidth;
+
+            scale = 1.0;
+            // Center horizontally, position 30px from top
+            panX = Math.max(20, (vpWidth - contentWidth) / 2);
+            panY = 30;
+
+            applyTransform(smooth);
+        }
+
+        function fitToScreen() {
+            if (!viewport || !content) return;
+            var vpWidth = viewport.clientWidth - 80;
+            var vpHeight = viewport.clientHeight - 80;
+            var contentWidth = content.offsetWidth;
+            var contentHeight = content.offsetHeight;
+
+            if (contentWidth <= 0 || contentHeight <= 0) return;
+
+            var scaleX = vpWidth / contentWidth;
+            var scaleY = vpHeight / contentHeight;
+            var fitScale = Math.min(scaleX, scaleY, 1.0);
+            scale = Math.min(Math.max(fitScale, MIN_SCALE), 1.0);
+
+            panX = (viewport.clientWidth - contentWidth * scale) / 2;
+            panY = Math.max(20, (viewport.clientHeight - contentHeight * scale) / 2);
+
+            applyTransform(true);
+        }
+
+        function initTouch() {
+            var touchStartX = 0;
+            var touchStartY = 0;
+            var touchStartPanX = 0;
+            var touchStartPanY = 0;
+            var initialDistance = 0;
+            var initialScale = 1.0;
+
+            viewport.addEventListener("touchstart", function(e) {
+                if (e.touches.length === 1) {
+                    isPanning = true;
+                    hasMoved = false;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    touchStartPanX = panX;
+                    touchStartPanY = panY;
+                } else if (e.touches.length === 2) {
+                    isPanning = false;
+                    initialDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    initialScale = scale;
+                }
+            }, { passive: true });
+
+            viewport.addEventListener("touchmove", function(e) {
+                if (e.touches.length === 1 && isPanning) {
+                    var dx = e.touches[0].clientX - touchStartX;
+                    var dy = e.touches[0].clientY - touchStartY;
+                    if (Math.hypot(dx, dy) > 5) {
+                        hasMoved = true;
+                        window.HIERARCHY_WAS_DRAGGED = true;
+                    }
+                    panX = touchStartPanX + dx;
+                    panY = touchStartPanY + dy;
+                    applyTransform(false);
+                } else if (e.touches.length === 2 && initialDistance > 0) {
+                    var currentDistance = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    var pinchFactor = currentDistance / initialDistance;
+                    scale = Math.min(Math.max(initialScale * pinchFactor, MIN_SCALE), MAX_SCALE);
+                    applyTransform(false);
+                }
+            }, { passive: true });
+
+            viewport.addEventListener("touchend", function(e) {
+                isPanning = false;
+                if (hasMoved) {
+                    setTimeout(function() { window.HIERARCHY_WAS_DRAGGED = false; }, 80);
+                } else {
+                    window.HIERARCHY_WAS_DRAGGED = false;
+                }
+            }, { passive: true });
+        }
+
+        return {
+            init: init,
+            centerTree: centerTree,
+            fitToScreen: fitToScreen,
+            resetView: resetView,
+            zoomBy: zoomBy
+        };
+    })();
+
+</script>
+}

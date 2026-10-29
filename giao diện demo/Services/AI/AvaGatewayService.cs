@@ -51,6 +51,7 @@ public sealed class AvaGatewayService : IAvaGatewayService
     private readonly IHostEnvironment _environment;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IUserMemoryContextProvider _memoryContextProvider;
+    private readonly IAiPermissionService _permissions;
 
     public AvaGatewayService(
         IHttpClientFactory httpClientFactory,
@@ -61,7 +62,8 @@ public sealed class AvaGatewayService : IAvaGatewayService
         ILogger<AvaGatewayService> logger,
         IHttpContextAccessor httpContextAccessor,
         IUserMemoryContextProvider memoryContextProvider,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        IAiPermissionService permissions)
     {
         _httpClientFactory = httpClientFactory;
         _db = db;
@@ -72,6 +74,7 @@ public sealed class AvaGatewayService : IAvaGatewayService
         _httpContextAccessor = httpContextAccessor;
         _memoryContextProvider = memoryContextProvider;
         _environment = environment;
+        _permissions = permissions;
     }
 
     public async Task<AiChatResponse> ChatAsync(
@@ -90,19 +93,8 @@ public sealed class AvaGatewayService : IAvaGatewayService
         if (user == null)
             throw new UnauthorizedAccessException("Authenticated HRMS user could not be resolved.");
 
-        var role = user.Role ?? AppRoles.Employee;
-        var departmentNames = ResolveDepartmentNames(role, user.Employee?.Department);
-        var permissions = ResolvePermissions(role);
-        var context = new AvaUserContext
-        {
-            UserId = user.Id.ToString(),
-            EmployeeId = user.EmployeeId?.ToString(),
-            EmployeeCode = user.Employee?.EmployeeCode,
-            IsAuthenticated = true,
-            Roles = [role],
-            Permissions = permissions,
-            DepartmentNames = departmentNames
-        };
+        var context = await _permissions.GetContextAsync(user, cancellationToken);
+        if (!context.Permissions.Contains("ai.chat")) throw new UnauthorizedAccessException("AI_CHAT_PERMISSION_DENIED");
 
         // =====================================================
         // PHASE 06 - TRUSTED PERSONAL MEMORY

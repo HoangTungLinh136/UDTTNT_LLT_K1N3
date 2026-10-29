@@ -477,15 +477,24 @@ class MultimodalPreprocessor:
                 ocr_error = None
                 vision_error = None
                 try:
-                    if self.image_ocr is not None:
-                        extracted_text = self.normalize_text(self.image_ocr(raw))
-                except PreprocessingError as exc:
-                    ocr_error = str(exc)
-                try:
                     if self.image_vision is not None:
                         visual_observation = self.normalize_text(self.image_vision(raw))
+                        try:
+                            vis_data = json.loads(visual_observation)
+                            if isinstance(vis_data, dict):
+                                vt = vis_data.get("visibleText")
+                                if isinstance(vt, list) and vt:
+                                    extracted_text = self.normalize_text("\n".join(str(item) for item in vt if item))
+                        except (json.JSONDecodeError, ValueError):
+                            pass
                 except PreprocessingError as exc:
                     vision_error = str(exc)
+                if not extracted_text:
+                    try:
+                        if self.image_ocr is not None:
+                            extracted_text = self.normalize_text(self.image_ocr(raw))
+                    except PreprocessingError as exc:
+                        ocr_error = str(exc)
                 # FINAL IMAGE OCR/VISION GRACEFUL FALLBACK
                 # OCR and Vision are complementary local extractors.
                 # A failure of one extractor must not discard valid output

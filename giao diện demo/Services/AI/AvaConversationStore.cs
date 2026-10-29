@@ -94,7 +94,8 @@ public sealed class AvaConversationStore : IAvaConversationStore
                 Route = response.Route,
                 Intent = response.Intent,
                 WarningCode = response.Warning,
-                SourceMetadataJson = response.Sources.Count == 0 ? null : JsonSerializer.Serialize(response.Sources),
+                SourceMetadataJson = JsonSerializer.Serialize(new { attachmentContext = response.AttachmentContext,
+                    sources = response.Sources, verification = response.Verification }),
                 CreatedAt = now
             });
             conversation!.UpdatedAt = now;

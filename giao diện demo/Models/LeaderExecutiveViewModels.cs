@@ -13,6 +13,26 @@ namespace giao_dien_demo.Models
         public int PendingLeaderDecisions { get; init; }
         public IReadOnlyList<LeaderDepartmentSummary> Departments { get; init; } = Array.Empty<LeaderDepartmentSummary>();
         public IReadOnlyList<LeaderAttentionItem> AttentionItems { get; init; } = Array.Empty<LeaderAttentionItem>();
+
+        // Executive Dashboard V2 Properties
+        public string LeaderName { get; init; } = string.Empty;
+        public string LeaderRole { get; init; } = "Leader";
+        public string LeaderDepartment { get; init; } = string.Empty;
+        public string LeaderStatus { get; init; } = "Đang hoạt động";
+        public int NewHires { get; init; }
+        public decimal TotalCost { get; init; }
+        public string LatestSalaryMonth { get; init; } = "N/A";
+        public IReadOnlyList<LeaderEmployeeRow> ScopedEmployees { get; init; } = Array.Empty<LeaderEmployeeRow>();
+    }
+
+    public sealed class LeaderEmployeeRow
+    {
+        public int Id { get; init; }
+        public string EmployeeCode { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string Department { get; init; } = string.Empty;
+        public string JobTitle { get; init; } = string.Empty;
+        public string Status { get; init; } = "Active";
     }
 
     public sealed class LeaderDepartmentSummary

@@ -1,7 +1,16 @@
 @model giao_dien_demo.Models.Employee
+@using giao_dien_demo.Models
 
 @{
     ViewData["Title"] = "Hồ sơ chi tiết nhân viên";
+    var contracts = ViewBag.Contracts as IEnumerable<Contract> ?? Enumerable.Empty<Contract>();
+    var appointments = ViewBag.Appointments as IEnumerable<AppointmentRecord> ?? Enumerable.Empty<AppointmentRecord>();
+    var transfers = ViewBag.Transfers as IEnumerable<TransferRecord> ?? Enumerable.Empty<TransferRecord>();
+    var dismissals = ViewBag.Dismissals as IEnumerable<DismissalRecord> ?? Enumerable.Empty<DismissalRecord>();
+    var rewards = ViewBag.Rewards as IEnumerable<RewardRecord> ?? Enumerable.Empty<RewardRecord>();
+    var leaves = ViewBag.Leaves as IEnumerable<Leave> ?? Enumerable.Empty<Leave>();
+    var reportingHistories = ViewBag.ReportingHistories as IEnumerable<EmployeeReportingHistory> ?? Enumerable.Empty<EmployeeReportingHistory>();
+    var eligibleManagers = ViewBag.EligibleManagers as IEnumerable<Employee> ?? Enumerable.Empty<Employee>();
 }
 
 <style>
@@ -306,6 +315,20 @@
                             <div class="info-label">Lương cơ bản</div>
                             <div class="info-value" style="color: #2ecc71;">@Model.Salary.ToString("N0") ₫</div>
                         </div>
+                        <div class="info-item">
+                            <div class="info-label">Quản lý trực tiếp</div>
+                            <div class="info-value">
+                                @if (Model.Manager != null)
+                                {
+                                    <span class="text-primary fw-bold">@Model.Manager.Name</span>
+                                    <small class="text-muted">(@Model.Manager.EmployeeCode)</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Chưa phân công</span>
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -314,43 +337,46 @@
             <div class="mt-4 pt-3 border-top">
                 <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
                   <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="pills-contracts-tab" data-bs-toggle="pill" data-bs-target="#pills-contracts" type="button" role="tab" aria-controls="pills-contracts" aria-selected="true"><i class="fas fa-file-contract"></i> Hợp đồng (@(ViewBag.Contracts?.Count ?? 0))</button>
+                    <button class="nav-link active" id="pills-contracts-tab" data-bs-toggle="pill" data-bs-target="#pills-contracts" type="button" role="tab" aria-controls="pills-contracts" aria-selected="true"><i class="fas fa-file-contract"></i> Hợp đồng (@contracts.Count())</button>
                   </li>
                   <li class="nav-item" role="presentation">
                     <button class="nav-link" id="pills-history-tab" data-bs-toggle="pill" data-bs-target="#pills-history" type="button" role="tab" aria-controls="pills-history" aria-selected="false"><i class="fas fa-history"></i> Quá trình công tác</button>
                   </li>
                   <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pills-rewards-tab" data-bs-toggle="pill" data-bs-target="#pills-rewards" type="button" role="tab" aria-controls="pills-rewards" aria-selected="false"><i class="fas fa-award"></i> Khen thưởng (@(ViewBag.Rewards?.Count ?? 0))</button>
+                    <button class="nav-link" id="pills-rewards-tab" data-bs-toggle="pill" data-bs-target="#pills-rewards" type="button" role="tab" aria-controls="pills-rewards" aria-selected="false"><i class="fas fa-award"></i> Khen thưởng (@rewards.Count())</button>
                   </li>
                   <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pills-leaves-tab" data-bs-toggle="pill" data-bs-target="#pills-leaves" type="button" role="tab" aria-controls="pills-leaves" aria-selected="false"><i class="fas fa-umbrella-beach"></i> Nghỉ phép (@(ViewBag.Leaves?.Count ?? 0))</button>
+                    <button class="nav-link" id="pills-leaves-tab" data-bs-toggle="pill" data-bs-target="#pills-leaves" type="button" role="tab" aria-controls="pills-leaves" aria-selected="false"><i class="fas fa-umbrella-beach"></i> Nghỉ phép (@leaves.Count())</button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="pills-reporting-tab" data-bs-toggle="pill" data-bs-target="#pills-reporting" type="button" role="tab" aria-controls="pills-reporting" aria-selected="false"><i class="fas fa-sitemap"></i> Quản lý trực tiếp (@reportingHistories.Count())</button>
                   </li>
                 </ul>
                 <div class="tab-content" id="pills-tabContent">
                   
                   <!-- TAB HỢP ĐỒNG -->
                   <div class="tab-pane fade show active" id="pills-contracts" role="tabpanel" aria-labelledby="pills-contracts-tab">
-                      @if(ViewBag.Contracts != null && ViewBag.Contracts.Count > 0) {
+                      @if(contracts.Any()) {
                           <table class="table table-sm table-hover align-middle">
                               <thead class="table-light">
                                   <tr>
                                       <th>Số HĐ</th>
-                                      <th>Loại HĐ</th>
+                                      <th>Thời hạn</th>
                                       <th>Từ ngày</th>
                                       <th>Đến ngày</th>
                                       <th>Trạng thái</th>
                                   </tr>
                               </thead>
                               <tbody>
-                                  @foreach(var c in ViewBag.Contracts) {
+                                  @foreach(var c in contracts) {
                                       <tr>
-                                          <td><a href="/Contract/Details/@c.Id" class="text-decoration-none fw-bold">@c.ContractNumber</a></td>
-                                          <td>@c.ContractType</td>
+                                          <td><a href="/Contract/Details/@c.Id" class="text-decoration-none fw-bold">HĐ-@c.Id.ToString("D4")</a></td>
+                                          <td>@(string.IsNullOrEmpty(c.Duration) ? "Hợp đồng lao động" : c.Duration)</td>
                                           <td>@c.StartDate.ToString("dd/MM/yyyy")</td>
-                                          <td>@(c.EndDate?.ToString("dd/MM/yyyy") ?? "Vô thời hạn")</td>
+                                          <td>@c.EndDate.ToString("dd/MM/yyyy")</td>
                                           <td>
-                                              @if(c.Status == "Active") { <span class="badge bg-success">Có hiệu lực</span> }
-                                              else if(c.Status == "Expired") { <span class="badge bg-secondary">Hết hạn</span> }
+                                              @if(c.Status == "Active" || c.Status == "Có hiệu lực" || c.Status == "Đã duyệt") { <span class="badge bg-success">@c.Status</span> }
+                                              else if(c.Status == "Expired" || c.Status == "Hết hạn") { <span class="badge bg-secondary">@c.Status</span> }
                                               else { <span class="badge bg-warning text-dark">@c.Status</span> }
                                           </td>
                                       </tr>
@@ -365,40 +391,40 @@
                   <!-- TAB QUÁ TRÌNH CÔNG TÁC (Bổ nhiệm, Miễn nhiệm, Thuyên chuyển) -->
                   <div class="tab-pane fade" id="pills-history" role="tabpanel" aria-labelledby="pills-history-tab">
                       <ul class="list-group list-group-flush">
-                          @if(ViewBag.Appointments != null && ViewBag.Appointments.Count > 0) {
-                              @foreach(var a in ViewBag.Appointments) {
+                          @if(appointments.Any()) {
+                              @foreach(var a in appointments) {
                                   <li class="list-group-item d-flex justify-content-between align-items-center">
                                       <div>
                                           <span class="badge bg-primary me-2">Bổ nhiệm</span>
-                                          <strong>@a.NewTitleSnapshot</strong> <span class="text-muted">(@a.NewDepartmentSnapshot)</span>
+                                          <strong>@(a.NewJobTitle ?? a.NewPosition ?? "Bổ nhiệm chức vụ")</strong> <span class="text-muted">(@(a.NewDepartment ?? a.PreviousDepartment ?? "Chưa phân bổ"))</span>
                                       </div>
                                       <span class="text-muted small">@a.EffectiveDate.ToString("dd/MM/yyyy")</span>
                                   </li>
                               }
                           }
-                          @if(ViewBag.Transfers != null && ViewBag.Transfers.Count > 0) {
-                              @foreach(var t in ViewBag.Transfers) {
+                          @if(transfers.Any()) {
+                              @foreach(var t in transfers) {
                                   <li class="list-group-item d-flex justify-content-between align-items-center">
                                       <div>
                                           <span class="badge bg-info me-2">Thuyên chuyển</span>
-                                          <span class="text-muted">Từ</span> @t.OldDepartmentSnapshot <i class="fas fa-arrow-right mx-1 text-muted"></i> <strong>@t.NewDepartmentSnapshot</strong>
+                                          <span class="text-muted">Từ</span> @(t.CurrentDepartmentSnapshot ?? "Chưa phân phòng") <i class="fas fa-arrow-right mx-1 text-muted"></i> <strong>@(t.TargetDepartment ?? "Chưa phân phòng")</strong>
                                       </div>
                                       <span class="text-muted small">@t.EffectiveDate.ToString("dd/MM/yyyy")</span>
                                   </li>
                               }
                           }
-                          @if(ViewBag.Dismissals != null && ViewBag.Dismissals.Count > 0) {
-                              @foreach(var d in ViewBag.Dismissals) {
+                          @if(dismissals.Any()) {
+                              @foreach(var d in dismissals) {
                                   <li class="list-group-item d-flex justify-content-between align-items-center">
                                       <div>
                                           <span class="badge bg-danger me-2">Miễn nhiệm</span>
-                                          Thôi giữ chức <strong>@d.OldTitleSnapshot</strong>
+                                          Thôi giữ chức <strong>@(d.CurrentJobTitleSnapshot ?? d.CurrentPositionSnapshot ?? "Chức vụ cũ")</strong>
                                       </div>
                                       <span class="text-muted small">@d.EffectiveDate.ToString("dd/MM/yyyy")</span>
                                   </li>
                               }
                           }
-                          @if((ViewBag.Appointments == null || ViewBag.Appointments.Count == 0) && (ViewBag.Transfers == null || ViewBag.Transfers.Count == 0) && (ViewBag.Dismissals == null || ViewBag.Dismissals.Count == 0)) {
+                          @if(!appointments.Any() && !transfers.Any() && !dismissals.Any()) {
                               <li class="list-group-item text-muted fst-italic">Không có lịch sử công tác.</li>
                           }
                       </ul>
@@ -406,23 +432,23 @@
 
                   <!-- TAB KHEN THƯỞNG -->
                   <div class="tab-pane fade" id="pills-rewards" role="tabpanel" aria-labelledby="pills-rewards-tab">
-                      @if(ViewBag.Rewards != null && ViewBag.Rewards.Count > 0) {
+                      @if(rewards.Any()) {
                           <table class="table table-sm table-hover">
                               <thead class="table-light">
                                   <tr>
                                       <th>Số QĐ</th>
                                       <th>Hình thức</th>
-                                      <th>Lý do</th>
+                                      <th>Nội dung / Lý do</th>
                                       <th>Ngày hiệu lực</th>
                                   </tr>
                               </thead>
                               <tbody>
-                                  @foreach(var r in ViewBag.Rewards) {
+                                  @foreach(var r in rewards) {
                                       <tr>
-                                          <td>@r.DecisionNumber</td>
-                                          <td>@r.RewardType</td>
-                                          <td>@r.Reason</td>
-                                          <td>@r.EffectiveDate.ToString("dd/MM/yyyy")</td>
+                                          <td>@(r.DecisionNumber ?? "—")</td>
+                                          <td>@(r.RewardType ?? "Khen thưởng")</td>
+                                          <td>@(r.Achievement ?? r.Title ?? r.Description ?? "Khen thưởng")</td>
+                                          <td>@(r.EffectiveDate?.ToString("dd/MM/yyyy") ?? r.ProposedDate.ToString("dd/MM/yyyy"))</td>
                                       </tr>
                                   }
                               </tbody>
@@ -434,7 +460,7 @@
 
                   <!-- TAB NGHỈ PHÉP -->
                   <div class="tab-pane fade" id="pills-leaves" role="tabpanel" aria-labelledby="pills-leaves-tab">
-                      @if(ViewBag.Leaves != null && ViewBag.Leaves.Count > 0) {
+                      @if(leaves.Any()) {
                           <table class="table table-sm table-hover">
                               <thead class="table-light">
                                   <tr>
@@ -445,11 +471,11 @@
                                   </tr>
                               </thead>
                               <tbody>
-                                  @foreach(var l in ViewBag.Leaves) {
+                                  @foreach(var l in leaves) {
                                       <tr>
                                           <td>@l.FromDate.ToString("dd/MM/yyyy")</td>
                                           <td>@l.ToDate.ToString("dd/MM/yyyy")</td>
-                                          <td>@l.Reason</td>
+                                          <td>@(l.Reason ?? l.LeaveType ?? "Nghỉ phép")</td>
                                           <td>@l.Status</td>
                                       </tr>
                                   }
@@ -459,9 +485,123 @@
                           <p class="text-muted fst-italic">Chưa có thông tin nghỉ phép.</p>
                       }
                   </div>
+
+                  <!-- TAB QUẢN LÝ TRỰC TIẾP & LỊCH SỬ BÁO CÁO (OD-07, OD-08, OD-09, OD-11, BD-06) -->
+                  <div class="tab-pane fade" id="pills-reporting" role="tabpanel" aria-labelledby="pills-reporting-tab">
+                      @if (User.IsInRole("HR") || User.IsInRole("Admin"))
+                      {
+                          <div class="card mb-4 border-0 shadow-sm" style="background: #f8fafc; border-radius: 12px;">
+                              <div class="card-body p-4">
+                                  <h6 class="fw-bold mb-3 text-dark"><i class="fas fa-user-edit text-primary me-2"></i>Thay đổi Người quản lý trực tiếp</h6>
+                                  <form asp-action="ChangeDirectManager" method="post">
+                                      @Html.AntiForgeryToken()
+                                      <input type="hidden" name="EmployeeId" value="@Model.Id" />
+                                      <input type="hidden" name="RowVersionString" value="@(Model.RowVersion != null ? Convert.ToBase64String(Model.RowVersion) : "")" />
+
+                                      <div class="row g-3">
+                                          <div class="col-md-6">
+                                              <label class="form-label fw-semibold text-secondary">Người quản lý trực tiếp mới</label>
+                                              <select name="NewManagerId" id="newManagerSelect" class="form-select">
+                                                  <option value="">-- Chọn người quản lý --</option>
+                                                  @if (eligibleManagers.Any())
+                                                  {
+                                                      foreach (var m in eligibleManagers)
+                                                      {
+                                                          <!option value="@m.Id" @(Model.ManagerId == m.Id ? "selected" : "")>@m.Name (@m.EmployeeCode) - @(m.Department ?? "Chưa xếp phòng")</!option>
+                                                      }
+                                                  }
+                                              </select>
+                                          </div>
+                                          <div class="col-md-6">
+                                              <label class="form-label fw-semibold text-secondary">Lý do thay đổi</label>
+                                              <input type="text" name="Reason" class="form-control" placeholder="Nhập lý do thay đổi quan hệ quản lý..." required />
+                                          </div>
+                                          <div class="col-12">
+                                              <div class="form-check">
+                                                  <input class="form-check-input" type="checkbox" name="AllowNullManagerException" value="true" id="allowNullExceptionCheck" onchange="toggleNullReason(this)">
+                                                  <label class="form-check-label text-secondary fw-semibold" for="allowNullExceptionCheck">
+                                                      Phê duyệt ngoại lệ không có người quản lý trực tiếp (OD-11)
+                                                  </label>
+                                              </div>
+                                          </div>
+                                          <div class="col-md-12 d-none" id="nullReasonGroup">
+                                              <label class="form-label fw-semibold text-danger">Lý do phê duyệt ngoại lệ NULL *</label>
+                                              <input type="text" name="NullManagerReason" id="nullReasonInput" class="form-control" placeholder="Ví dụ: Lãnh đạo cao nhất hoặc quyết định phê duyệt đặc biệt của CEO..." />
+                                          </div>
+                                          <div class="col-12 text-end">
+                                              <button type="submit" class="btn btn-primary px-4" style="border-radius: 8px;">
+                                                  <i class="fas fa-save me-1"></i> Lưu thay đổi
+                                              </button>
+                                          </div>
+                                      </div>
+                                  </form>
+                              </div>
+                          </div>
+                      }
+
+                      <h6 class="fw-bold mb-3 text-secondary"><i class="fas fa-history me-2"></i>Lịch sử quan hệ quản lý trực tiếp (Append-Only)</h6>
+                      @if (reportingHistories.Any())
+                      {
+                          <table class="table table-sm table-hover align-middle">
+                              <thead class="table-light">
+                                  <tr>
+                                      <th>Ngày hiệu lực</th>
+                                      <th>Quản lý trước</th>
+                                      <th>Quản lý mới</th>
+                                      <th>Lý do</th>
+                                      <th>Người thực hiện</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  @foreach (var h in reportingHistories)
+                                  {
+                                      <tr>
+                                          <td>@h.EffectiveDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                          <td>@(h.PreviousManager != null ? $"{h.PreviousManager.Name} ({h.PreviousManager.EmployeeCode})" : "---")</td>
+                                          <td>@(h.NewManager != null ? $"{h.NewManager.Name} ({h.NewManager.EmployeeCode})" : "<span class='text-muted fst-italic'>Không có (NULL)</span>")</td>
+                                          <td>@h.ChangeReason</td>
+                                          <td>@(h.ChangedByUser?.FullName ?? h.ChangedByUser?.Username ?? "Hệ thống")</td>
+                                      </tr>
+                                  }
+                              </tbody>
+                          </table>
+                      }
+                      else
+                      {
+                          <p class="text-muted fst-italic">Chưa có bản ghi lịch sử quản lý trực tiếp nào.</p>
+                      }
+                  </div>
                 </div>
             </div>
         </div>
+
+<script>
+    function toggleNullReason(checkbox) {
+        var group = document.getElementById('nullReasonGroup');
+        var select = document.getElementById('newManagerSelect');
+        if (checkbox.checked) {
+            group.classList.remove('d-none');
+            select.value = '';
+        } else {
+            group.classList.add('d-none');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var tab = urlParams.get('tab');
+        if (tab === 'reporting' || window.location.hash === '#pills-reporting') {
+            var tabBtn = document.getElementById('pills-reporting-tab');
+            if (tabBtn) {
+                if (window.bootstrap && window.bootstrap.Tab) {
+                    new bootstrap.Tab(tabBtn).show();
+                } else {
+                    tabBtn.click();
+                }
+            }
+        }
+    });
+</script>
 
         @{ var managerScope = ViewBag.ManagerScope as giao_dien_demo.Models.ManagerAssignmentDetailsViewModel; }
         @if (managerScope?.IsManager == true)

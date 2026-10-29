@@ -1,181 +1,1221 @@
+@model giao_dien_demo.Models.LeaderExecutiveViewModel
 @{
-    ViewData["Title"] = "Bảng điều khiển Lãnh đạo";
-    
-    int totalHeadcount = ViewBag.TotalHeadcount ?? 0;
-    int newHires = ViewBag.NewHires ?? 0;
-    decimal totalCost = ViewBag.TotalCost ?? 0m;
-    int activeLeaves = ViewBag.ActiveLeaves ?? 0;
-    int expiringContracts = ViewBag.ExpiringContracts ?? 0;
-    string latestSalaryMonth = ViewBag.LatestSalaryMonth ?? "N/A";
-    var deptStats = ViewBag.DeptStats as IEnumerable<dynamic>;
+    ViewData["Title"] = "Executive Dashboard";
+
+    var leaderName = !string.IsNullOrWhiteSpace(Model?.LeaderName) ? Model.LeaderName : (ViewBag.LeaderName as string ?? User?.Identity?.Name ?? "Lãnh đạo");
+    var leaderRole = !string.IsNullOrWhiteSpace(Model?.LeaderRole) ? Model.LeaderRole : (ViewBag.LeaderRole as string ?? "Leader");
+    var leaderDept = !string.IsNullOrWhiteSpace(Model?.LeaderDepartment) ? Model.LeaderDepartment : (ViewBag.LeaderDepartment as string ?? "Phòng Nhân sự");
+    var leaderStatus = !string.IsNullOrWhiteSpace(Model?.LeaderStatus) ? Model.LeaderStatus : (ViewBag.LeaderStatus as string ?? "Đang hoạt động");
+
+    int totalHeadcount = Model?.TotalScopedEmployees ?? (ViewBag.TotalHeadcount ?? 0);
+    int newHires = Model?.NewHires ?? (ViewBag.NewHires ?? 0);
+    decimal totalCost = Model?.TotalCost ?? (ViewBag.TotalCost ?? 0m);
+    int activeLeaves = Model?.ApprovedLeaveToday ?? (ViewBag.ActiveLeaves ?? 0);
+    int expiringContracts = Model?.ExpiringContracts ?? (ViewBag.ExpiringContracts ?? 0);
+    int pendingLeaderDecisions = Model?.PendingLeaderDecisions ?? 0;
+    string latestSalaryMonth = !string.IsNullOrWhiteSpace(Model?.LatestSalaryMonth) ? Model.LatestSalaryMonth : (ViewBag.LatestSalaryMonth as string ?? "N/A");
+
+    var now = DateTime.Now;
+    var hour = now.Hour;
+    string greetingPrefix;
+    string greetingIcon;
+    if (hour >= 5 && hour < 12)
+    {
+        greetingPrefix = "Chào buổi sáng";
+        greetingIcon = "☀️";
+    }
+    else if (hour >= 12 && hour < 18)
+    {
+        greetingPrefix = "Chào buổi chiều";
+        greetingIcon = "🌤️";
+    }
+    else
+    {
+        greetingPrefix = "Chào buổi tối";
+        greetingIcon = "🌙";
+    }
+    var avatarChar = !string.IsNullOrWhiteSpace(leaderName) ? leaderName.Substring(0, 1).ToUpper() : "L";
+
+    var colors = new[] { "#3b82f6", "#f97316", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#06b6d4" };
+    var deptStatsList = new List<dynamic>();
+    int colorIdx = 0;
+    if (Model?.Departments != null && Model.Departments.Count > 0)
+    {
+        foreach (var d in Model.Departments)
+        {
+            var pct = totalHeadcount > 0 ? (d.EmployeeCount * 100.0 / totalHeadcount) : 0.0;
+            deptStatsList.Add(new
+            {
+                Department = d.Department,
+                Headcount = d.EmployeeCount,
+                Percent = pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                Color = colors[colorIdx % colors.Length]
+            });
+            colorIdx++;
+        }
+    }
+    else if (ViewBag.DeptStats != null)
+    {
+        foreach (var d in (IEnumerable<dynamic>)ViewBag.DeptStats)
+        {
+            int count = d.Headcount;
+            var pct = totalHeadcount > 0 ? (count * 100.0 / totalHeadcount) : 0.0;
+            deptStatsList.Add(new
+            {
+                Department = (string)d.Department,
+                Headcount = count,
+                Percent = pct.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                Color = colors[colorIdx % colors.Length]
+            });
+            colorIdx++;
+        }
+    }
+
+    var scopedEmployees = Model?.ScopedEmployees ?? (IReadOnlyList<giao_dien_demo.Models.LeaderEmployeeRow>)Array.Empty<giao_dien_demo.Models.LeaderEmployeeRow>();
 }
 
-<div class="hrms-page-header mb-4">
-    <div class="hrms-page-header-main">
-        <h1 class="hrms-page-title">
-            <span class="hrms-page-icon"><i class="fa-solid fa-chart-pie"></i></span>
-            Executive Dashboard
-        </h1>
-        <div class="hrms-page-subtitle">Tổng quan điều hành, nhân sự và các chỉ số hoạt động then chốt.</div>
-    </div>
-    <div class="hrms-page-header-actions">
-        <button class="hrms-btn hrms-btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> In Báo cáo</button>
-        <button class="hrms-btn hrms-btn-secondary"><i class="fa-regular fa-calendar"></i> Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy")</button>
-    </div>
-</div>
+<style>
+    /* ==========================================================================
+       LEADER EXECUTIVE DASHBOARD — SAAS V2.0 (CLEAN MODERN ENTERPRISE UI)
+       ========================================================================== */
+    .leader-dash-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding-bottom: 30px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
 
-<div class="hrms-nav-grid mb-4">
-    <a href="@Url.Action("Index", "Leader")" class="hrms-nav-card active">
-        <i class="fa-solid fa-chart-pie nav-icon"></i>
-        <span class="nav-title">Tổng quan</span>
-    </a>
-    <a href="@Url.Action("Index", "LeaderPersonnel")" class="hrms-nav-card">
-        <i class="fa-solid fa-users nav-icon"></i>
-        <span class="nav-title">Nhân sự</span>
-    </a>
-    <a href="@Url.Action("Index", "LeaderCost")" class="hrms-nav-card">
-        <i class="fa-solid fa-money-bill-wave nav-icon"></i>
-        <span class="nav-title">Chi phí</span>
-    </a>
-</div>
+    /* --- 1. PAGE TITLE & HEADER --- */
+    .leader-page-title-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 4px;
+    }
 
-<div class="hrms-kpi-grid hrms-kpi-grid-4 mb-4">
-    <div class="hrms-kpi-card kpi-blue">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon"><i class="fa-solid fa-users"></i></div>
-            <div class="hrms-kpi-value">@totalHeadcount</div>
+    .leader-title-icon-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
+    }
+
+    .leader-dash-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.25;
+    }
+
+    .leader-dash-subtitle {
+        font-size: 13.5px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    /* --- 2. WELCOME CARD --- */
+    .leader-welcome-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px 28px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        position: relative;
+    }
+
+    .leader-welcome-date {
+        position: absolute;
+        top: 24px;
+        right: 28px;
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .leader-profile-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 22px;
+    }
+
+    .leader-avatar-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #4f46e5;
+        color: #ffffff;
+        font-size: 26px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    .leader-profile-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .leader-greeting-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 4px 0;
+        line-height: 1.3;
+    }
+
+    .leader-subgreeting {
+        font-size: 13.5px;
+        color: #64748b;
+        margin: 0 0 18px 0;
+    }
+
+    .leader-pills-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .leader-meta-pill {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    .leader-pill-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .leader-pill-content {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .leader-pill-val {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .leader-pill-lbl {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    /* Meta pill theme colors */
+    .pill-blue-bg { background: #eff6ff; color: #2563eb; }
+    .pill-purple-bg { background: #f5f3ff; color: #7c3aed; }
+    .pill-green-bg { background: #ecfdf5; color: #16a34a; }
+
+    /* --- 3. KPI CARDS --- */
+    .leader-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+    }
+
+    .leader-kpi-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 20px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .leader-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .leader-kpi-blue { border-top: 3px solid #3b82f6; }
+    .leader-kpi-purple { border-top: 3px solid #8b5cf6; }
+    .leader-kpi-orange { border-top: 3px solid #f97316; }
+    .leader-kpi-red { border-top: 3px solid #ef4444; }
+
+    .leader-kpi-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .icon-box-blue { background: #eff6ff; color: #3b82f6; }
+    .icon-box-purple { background: #f5f3ff; color: #8b5cf6; }
+    .icon-box-orange { background: #fff7ed; color: #f97316; }
+    .icon-box-red { background: #fef2f2; color: #ef4444; }
+
+    .leader-kpi-body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .leader-kpi-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .leader-kpi-value {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.15;
+        margin-bottom: 4px;
+    }
+
+    .leader-kpi-sub {
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .trend-good { color: #16a34a; font-weight: 600; }
+    .trend-warn { color: #d97706; font-weight: 600; }
+    .trend-neutral { color: #64748b; font-weight: 500; }
+
+    /* --- 4. MAIN CONTENT 2-COLUMN GRID --- */
+    .leader-dash-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+        gap: 20px;
+    }
+
+    .leader-col-left, .leader-col-right {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .leader-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .leader-card-header {
+        padding: 18px 24px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .leader-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
+
+    .leader-card-title-icon {
+        color: #2563eb;
+        font-size: 15px;
+    }
+
+    .leader-badge-dropdown {
+        font-size: 12px;
+        color: #475569;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+    }
+
+    .leader-pill-btn {
+        font-size: 12px;
+        color: #2563eb;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.15s;
+    }
+
+    .leader-pill-btn:hover {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .leader-card-body {
+        padding: 20px 24px;
+        flex: 1;
+    }
+
+    /* Chart Layout */
+    .leader-dept-chart-box {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .leader-chart-container {
+        position: relative;
+        width: 190px;
+        height: 190px;
+        flex-shrink: 0;
+    }
+
+    .leader-dept-legend {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .leader-dept-legend-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        color: #334155;
+    }
+
+    .leader-dept-legend-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .leader-dept-legend-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .leader-dept-legend-name {
+        font-weight: 500;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .leader-dept-legend-right {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-weight: 600;
+        flex-shrink: 0;
+    }
+
+    .leader-dept-legend-count {
+        color: #0f172a;
+        width: 20px;
+        text-align: right;
+    }
+
+    .leader-dept-legend-pct {
+        color: #64748b;
+        width: 44px;
+        text-align: right;
+    }
+
+    /* Scoped Employees Table */
+    .leader-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .leader-emp-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .leader-emp-table th {
+        text-align: left;
+        padding: 10px 12px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .leader-emp-table td {
+        padding: 12px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        vertical-align: middle;
+    }
+
+    .leader-emp-table tr:hover td {
+        background: #f8fafc;
+    }
+
+    .emp-table-name {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .emp-badge-status {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: 600;
+    }
+
+    .status-active-badge { background: #ecfdf5; color: #059669; }
+    .status-probation-badge { background: #fef3c7; color: #d97706; }
+    .status-other-badge { background: #f1f5f9; color: #64748b; }
+
+    .leader-action-btn {
+        color: #475569;
+        font-size: 12px;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        transition: all 0.15s;
+    }
+
+    .leader-action-btn:hover {
+        background: #f1f5f9;
+        color: #2563eb;
+    }
+
+    /* Work Schedule Timeline */
+    .leader-schedule-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        position: relative;
+    }
+
+    .leader-schedule-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        position: relative;
+    }
+
+    .schedule-item-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .schedule-dot-green {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .schedule-dot-gray {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #cbd5e1;
+    }
+
+    .schedule-time {
+        font-weight: 600;
+        color: #1e293b;
+        min-width: 90px;
+    }
+
+    .schedule-desc {
+        color: #475569;
+    }
+
+    .schedule-badge-ongoing {
+        background: #ecfdf5;
+        color: #059669;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .schedule-badge-upcoming {
+        background: #f1f5f9;
+        color: #64748b;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    /* Activity Items */
+    .leader-activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .leader-activity-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        border-radius: 10px;
+    }
+
+    .leader-activity-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .leader-activity-icon-box {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .activity-text {
+        font-size: 13px;
+        font-weight: 500;
+        color: #1e293b;
+    }
+
+    .activity-action-btn {
+        font-size: 12px;
+        color: #475569;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.15s;
+    }
+
+    .activity-action-btn:hover {
+        background: #f8fafc;
+        color: #2563eb;
+        border-color: #cbd5e1;
+    }
+
+    /* Responsive adjustments */
+    @@media (max-width: 1200px) {
+        .leader-kpi-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .leader-dash-main-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .leader-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+        .leader-pills-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .leader-welcome-card {
+            padding: 20px;
+        }
+        .leader-welcome-date {
+            position: static;
+            margin-bottom: 14px;
+        }
+        .leader-profile-inner {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .leader-dept-chart-box {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .leader-pills-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="leader-dash-wrapper">
+
+    <!-- PAGE TITLE ROW -->
+    <div class="leader-page-title-row">
+        <div class="leader-title-icon-box">
+            <i class="fa-solid fa-chart-line"></i>
         </div>
-        <div class="hrms-kpi-body mt-2">
-            <div class="hrms-kpi-label">Tổng nhân sự (Active)</div>
-            <div class="hrms-kpi-sub"><span class="sub-good"><i class="fa-solid fa-arrow-trend-up"></i> @newHires nhân sự mới</span></div>
+        <div>
+            <h1 class="leader-dash-title">Executive Dashboard</h1>
+            <div class="leader-dash-subtitle">Tổng quan điều hành, nhân sự và các chỉ số hoạt động then chốt.</div>
         </div>
     </div>
 
-    <div class="hrms-kpi-card kpi-purple">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon"><i class="fa-solid fa-money-check-dollar"></i></div>
-            <div class="hrms-kpi-value">@(totalCost > 0 ? (totalCost / 1000000).ToString("N0") + "M" : "0")</div>
+    <!-- WELCOME CARD -->
+    <div class="leader-welcome-card">
+        <div class="leader-welcome-date">
+            <i class="fa-regular fa-calendar"></i> Hôm nay: <span id="currentDateDisplay">@now.ToString("dd/MM/yyyy")</span>
         </div>
-        <div class="hrms-kpi-body mt-2">
-            <div class="hrms-kpi-label">Chi phí lương (@latestSalaryMonth)</div>
-            <div class="hrms-kpi-sub">
-                @if(totalCost > 0) {
-                    <span class="sub-good"><i class="fa-solid fa-circle-check"></i> Đã tính</span>
-                } else {
-                    <span class="sub-warn"><i class="fa-solid fa-clock"></i> Chưa có dữ liệu</span>
-                }
+
+        <div class="leader-profile-inner">
+            <div class="leader-avatar-circle">
+                @avatarChar
             </div>
-        </div>
-    </div>
 
-    <div class="hrms-kpi-card kpi-orange">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon"><i class="fa-solid fa-plane-departure"></i></div>
-            <div class="hrms-kpi-value">@activeLeaves</div>
-        </div>
-        <div class="hrms-kpi-body mt-2">
-            <div class="hrms-kpi-label">Nhân sự đang nghỉ phép</div>
-            <div class="hrms-kpi-sub"><span class="sub-neutral">Hôm nay</span></div>
-        </div>
-    </div>
+            <div class="leader-profile-info">
+                <h2 class="leader-greeting-title" id="leaderGreetingText">
+                    @greetingPrefix, @leaderName! @greetingIcon
+                </h2>
+                <div class="leader-subgreeting">
+                    Cùng xem nhanh tình hình nhân sự và các hoạt động quan trọng hôm nay.
+                </div>
 
-    <div class="hrms-kpi-card kpi-red">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon"><i class="fa-solid fa-file-signature"></i></div>
-            <div class="hrms-kpi-value">@expiringContracts</div>
-        </div>
-        <div class="hrms-kpi-body mt-2">
-            <div class="hrms-kpi-label">Hợp đồng sắp hết hạn</div>
-            <div class="hrms-kpi-sub">
-                @if(expiringContracts > 0) {
-                    <span class="sub-warn"><i class="fa-solid fa-triangle-exclamation"></i> Cần chú ý</span>
-                } else {
-                    <span class="sub-good"><i class="fa-solid fa-check"></i> Đang ổn định</span>
-                }
-            </div>
-        </div>
-    </div>
-</div>
+                <div class="leader-pills-grid">
+                    <div class="leader-meta-pill">
+                        <div class="leader-pill-icon pill-blue-bg">
+                            <i class="fa-regular fa-user"></i>
+                        </div>
+                        <div class="leader-pill-content">
+                            <span class="leader-pill-val">@leaderRole</span>
+                            <span class="leader-pill-lbl">Vai trò hiện tại</span>
+                        </div>
+                    </div>
 
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="hrms-card h-100">
-            <div class="hrms-card-header">
-                <h3 class="hrms-card-title"><i class="fa-solid fa-sitemap card-title-icon"></i> Phân bổ nhân sự theo phòng ban</h3>
-            </div>
-            <div class="hrms-card-body">
-                <canvas id="deptChart" height="200"></canvas>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="hrms-card h-100">
-            <div class="hrms-card-header">
-                <h3 class="hrms-card-title"><i class="fa-solid fa-star card-title-icon"></i> Các hoạt động nổi bật</h3>
-            </div>
-            <div class="hrms-card-body p-0">
-                <div class="hrms-table-wrap">
-                    <table class="hrms-table">
-                        <thead>
-                            <tr>
-                                <th>Chỉ số</th>
-                                <th>Chi tiết</th>
-                                <th class="col-actions">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><span class="hrms-badge hrms-badge-info">Nhân sự</span></td>
-                                <td>Có <strong>@newHires</strong> nhân sự mới trong thời gian này</td>
-                                <td class="col-actions"><a href="@Url.Action("Index", "LeaderPersonnel")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Xem chi tiết</a></td>
-                            </tr>
-                            <tr>
-                                <td><span class="hrms-badge hrms-badge-danger">Hợp đồng</span></td>
-                                <td><strong>@expiringContracts</strong> hợp đồng cần gia hạn (30 ngày)</td>
-                                <td class="col-actions"><a href="@Url.Action("Index", "LeaderContract")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Kiểm tra</a></td>
-                            </tr>
-                            <tr>
-                                <td><span class="hrms-badge hrms-badge-warning">Nghỉ phép</span></td>
-                                <td><strong>@activeLeaves</strong> nhân viên đang vắng mặt hôm nay</td>
-                                <td class="col-actions"><a href="@Url.Action("Index", "LeaderLeave")" class="hrms-btn hrms-btn-xs hrms-btn-secondary">Chi tiết</a></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="leader-meta-pill">
+                        <div class="leader-pill-icon pill-blue-bg">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div class="leader-pill-content">
+                            <span class="leader-pill-val" title="@leaderDept">@leaderDept</span>
+                            <span class="leader-pill-lbl">Đơn vị quản lý</span>
+                        </div>
+                    </div>
+
+                    <div class="leader-meta-pill">
+                        <div class="leader-pill-icon pill-purple-bg">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div class="leader-pill-content">
+                            <span class="leader-pill-val">@totalHeadcount</span>
+                            <span class="leader-pill-lbl">Nhân sự trực thuộc</span>
+                        </div>
+                    </div>
+
+                    <div class="leader-meta-pill">
+                        <div class="leader-pill-icon pill-green-bg">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <div class="leader-pill-content">
+                            <span class="leader-pill-val">@leaderStatus</span>
+                            <span class="leader-pill-lbl">Trạng thái</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- KPI CARDS ROW -->
+    <div class="leader-kpi-grid">
+        <!-- KPI 1: Active Headcount -->
+        <div class="leader-kpi-card leader-kpi-blue">
+            <div class="leader-kpi-icon-box icon-box-blue">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="leader-kpi-body">
+                <div class="leader-kpi-label">Tổng nhân sự (Active)</div>
+                <div class="leader-kpi-value">@totalHeadcount</div>
+                <div class="leader-kpi-sub">
+                    <span class="trend-good"><i class="fa-solid fa-arrow-up"></i> @newHires nhân sự mới</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Payroll Cost -->
+        <div class="leader-kpi-card leader-kpi-purple">
+            <div class="leader-kpi-icon-box icon-box-purple">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div class="leader-kpi-body">
+                <div class="leader-kpi-label">Chi phí lương (@latestSalaryMonth)</div>
+                <div class="leader-kpi-value">@(totalCost > 0 ? (totalCost / 1000000).ToString("N0") + "M" : "0")</div>
+                <div class="leader-kpi-sub">
+                    @if (totalCost > 0)
+                    {
+                        <span class="trend-good"><i class="fa-solid fa-circle-check"></i> Đã tính</span>
+                    }
+                    else
+                    {
+                        <span class="trend-warn"><i class="fa-solid fa-triangle-exclamation"></i> Chưa có dữ liệu</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: On Leave -->
+        <div class="leader-kpi-card leader-kpi-orange">
+            <div class="leader-kpi-icon-box icon-box-orange">
+                <i class="fa-solid fa-plane-departure"></i>
+            </div>
+            <div class="leader-kpi-body">
+                <div class="leader-kpi-label">Nhân sự đang nghỉ phép</div>
+                <div class="leader-kpi-value">@activeLeaves</div>
+                <div class="leader-kpi-sub">
+                    <span class="trend-neutral">Hôm nay</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Expiring Contracts -->
+        <div class="leader-kpi-card leader-kpi-red">
+            <div class="leader-kpi-icon-box icon-box-red">
+                <i class="fa-solid fa-file-lines"></i>
+            </div>
+            <div class="leader-kpi-body">
+                <div class="leader-kpi-label">Hợp đồng sắp hết hạn</div>
+                <div class="leader-kpi-value">@expiringContracts</div>
+                <div class="leader-kpi-sub">
+                    @if (expiringContracts > 0)
+                    {
+                        <span class="trend-warn"><i class="fa-solid fa-triangle-exclamation"></i> Cần chú ý</span>
+                    }
+                    else
+                    {
+                        <span class="trend-good"><i class="fa-solid fa-check"></i> Đang ổn định</span>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN 2-COLUMN GRID -->
+    <div class="leader-dash-main-grid">
+
+        <!-- LEFT COLUMN -->
+        <div class="leader-col-left">
+
+            <!-- CARD A: Department Breakdown -->
+            <div class="leader-card">
+                <div class="leader-card-header">
+                    <h3 class="leader-card-title">
+                        <i class="fa-solid fa-sitemap leader-card-title-icon"></i>
+                        Phân bổ nhân sự theo phòng ban
+                    </h3>
+                    <div class="leader-badge-dropdown">
+                        Theo phòng ban <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i>
+                    </div>
+                </div>
+                <div class="leader-card-body">
+                    @if (deptStatsList.Count > 0)
+                    {
+                        <div class="leader-dept-chart-box">
+                            <div class="leader-chart-container">
+                                <canvas id="deptChartCanvas"></canvas>
+                            </div>
+                            <div class="leader-dept-legend">
+                                @foreach (var item in deptStatsList)
+                                {
+                                    <div class="leader-dept-legend-row">
+                                        <div class="leader-dept-legend-left">
+                                            <span class="leader-dept-legend-dot" style="background: @item.Color;"></span>
+                                            <span class="leader-dept-legend-name" title="@item.Department">@item.Department</span>
+                                        </div>
+                                        <div class="leader-dept-legend-right">
+                                            <span class="leader-dept-legend-count">@item.Headcount</span>
+                                            <span class="leader-dept-legend-pct">@item.Percent%</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="text-align: center; color: #94a3b8; padding: 36px 0; font-size: 13.5px;">
+                            <i class="fa-solid fa-chart-pie" style="font-size: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+                            <div>Chưa có dữ liệu phân bổ phòng ban trong phạm vi quản lý.</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- CARD B: Scoped Employees Table -->
+            <div class="leader-card">
+                <div class="leader-card-header">
+                    <h3 class="leader-card-title">
+                        <i class="fa-solid fa-users leader-card-title-icon"></i>
+                        Danh sách nhân sự trực thuộc (@totalHeadcount)
+                    </h3>
+                    <a href="@Url.Action("Index", "LeaderPersonnel")" class="leader-pill-btn">Xem tất cả</a>
+                </div>
+                <div class="leader-card-body p-0">
+                    <div class="leader-table-wrap">
+                        <table class="leader-emp-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 44px; text-align: center;">#</th>
+                                    <th>Họ và tên</th>
+                                    <th>Chức danh</th>
+                                    <th>Phòng ban</th>
+                                    <th>Trạng thái</th>
+                                    <th style="text-align: center; width: 90px;">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (scopedEmployees.Count > 0)
+                                {
+                                    int stt = 1;
+                                    foreach (var emp in scopedEmployees)
+                                    {
+                                        var isProbation = emp.Status == "Probation";
+                                        var isActive = emp.Status == "Active";
+                                        var badgeClass = isActive ? "status-active-badge" : (isProbation ? "status-probation-badge" : "status-other-badge");
+                                        var statusLabel = isActive ? "Đang làm việc" : (isProbation ? "Thử việc" : emp.Status);
+
+                                        <tr>
+                                            <td style="text-align: center; color: #64748b; font-weight: 500;">@stt</td>
+                                            <td class="emp-table-name">@emp.Name</td>
+                                            <td style="color: #64748b;">@emp.JobTitle</td>
+                                            <td style="color: #64748b;">@emp.Department</td>
+                                            <td>
+                                                <span class="emp-badge-status @badgeClass">@statusLabel</span>
+                                            </td>
+                                            <td style="text-align: center;">
+                                                <a href="@Url.Action("Index", "LeaderPersonnel", new { search = emp.Name })" class="leader-action-btn" title="Xem chi tiết">
+                                                    <i class="fa-regular fa-eye"></i> Xem
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        stt++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" style="text-align: center; color: #94a3b8; padding: 30px;">
+                                            Chưa có nhân sự trực thuộc trong phạm vi quản lý.
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="leader-col-right">
+
+            <!-- CARD C: Today's Work Schedule -->
+            <div class="leader-card">
+                <div class="leader-card-header">
+                    <h3 class="leader-card-title">
+                        <i class="fa-regular fa-calendar-days leader-card-title-icon"></i>
+                        Lịch làm việc hôm nay
+                    </h3>
+                    <a href="@Url.Action("Index", "LeaderAttendance")" class="leader-pill-btn">Xem lịch tuần</a>
+                </div>
+                <div class="leader-card-body">
+                    <div class="leader-schedule-list">
+                        @{
+                            // Dynamic timeline badges based on current local hour
+                            var morningBadge = (hour >= 8 && hour < 12) ? "Đang diễn ra" : (hour >= 12 ? "Đã xong" : "Sắp tới");
+                            var morningClass = (hour >= 8 && hour < 12) ? "schedule-badge-ongoing" : "schedule-badge-upcoming";
+                            var morningDot = (hour >= 8 && hour < 12) ? "schedule-dot-green" : "schedule-dot-gray";
+
+                            var afternoonBadge = (hour >= 13 && hour < 17) ? "Đang diễn ra" : (hour >= 17 ? "Đã xong" : "Sắp tới");
+                            var afternoonClass = (hour >= 13 && hour < 17) ? "schedule-badge-ongoing" : "schedule-badge-upcoming";
+                            var afternoonDot = (hour >= 13 && hour < 17) ? "schedule-dot-green" : "schedule-dot-gray";
+                        }
+                        <div class="leader-schedule-item">
+                            <div class="schedule-item-left">
+                                <span class="@morningDot"></span>
+                                <span class="schedule-time">08:00 - 12:00</span>
+                                <span class="schedule-desc">Làm việc buổi sáng</span>
+                            </div>
+                            <span class="@morningClass">@morningBadge</span>
+                        </div>
+
+                        <div class="leader-schedule-item">
+                            <div class="schedule-item-left">
+                                <span class="@afternoonDot"></span>
+                                <span class="schedule-time">13:00 - 17:00</span>
+                                <span class="schedule-desc">Làm việc buổi chiều</span>
+                            </div>
+                            <span class="@afternoonClass">@afternoonBadge</span>
+                        </div>
+
+                        <div class="leader-schedule-item">
+                            <div class="schedule-item-left">
+                                <span class="schedule-dot-gray"></span>
+                                <span class="schedule-time">17:00</span>
+                                <span class="schedule-desc">Kết thúc ngày làm việc</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD D: Key Activities -->
+            <div class="leader-card">
+                <div class="leader-card-header">
+                    <h3 class="leader-card-title">
+                        <i class="fa-solid fa-star leader-card-title-icon"></i>
+                        Các hoạt động nổi bật
+                    </h3>
+                    <a href="@Url.Action("Index", "LeaderApproval")" class="leader-pill-btn">Xem tất cả</a>
+                </div>
+                <div class="leader-card-body">
+                    <div class="leader-activity-list">
+                        <!-- Activity 1: New Hires -->
+                        <div class="leader-activity-item">
+                            <div class="leader-activity-left">
+                                <div class="leader-activity-icon-box icon-box-blue">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                                <div class="activity-text">
+                                    Có <strong>@newHires</strong> nhân sự mới trong thời gian này
+                                </div>
+                            </div>
+                            <a href="@Url.Action("Index", "LeaderPersonnel")" class="activity-action-btn">Xem chi tiết</a>
+                        </div>
+
+                        <!-- Activity 2: Expiring Contracts -->
+                        <div class="leader-activity-item">
+                            <div class="leader-activity-left">
+                                <div class="leader-activity-icon-box icon-box-red">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                </div>
+                                <div class="activity-text">
+                                    <strong>@expiringContracts</strong> hợp đồng cần gia hạn (30 ngày)
+                                </div>
+                            </div>
+                            <a href="@Url.Action("Index", "LeaderContract")" class="activity-action-btn">Kiểm tra</a>
+                        </div>
+
+                        @if (activeLeaves > 0)
+                        {
+                            <!-- Activity 3: Active Leaves -->
+                            <div class="leader-activity-item">
+                                <div class="leader-activity-left">
+                                    <div class="leader-activity-icon-box icon-box-orange">
+                                        <i class="fa-solid fa-plane-departure"></i>
+                                    </div>
+                                    <div class="activity-text">
+                                        <strong>@activeLeaves</strong> nhân sự đang nghỉ phép hôm nay
+                                    </div>
+                                </div>
+                                <a href="@Url.Action("Index", "LeaderLeave")" class="activity-action-btn">Chi tiết</a>
+                            </div>
+                        }
+
+                        @if (pendingLeaderDecisions > 0)
+                        {
+                            <!-- Activity 4: Pending Approvals -->
+                            <div class="leader-activity-item">
+                                <div class="leader-activity-left">
+                                    <div class="leader-activity-icon-box icon-box-purple">
+                                        <i class="fa-solid fa-signature"></i>
+                                    </div>
+                                    <div class="activity-text">
+                                        <strong>@pendingLeaderDecisions</strong> quyết định chờ lãnh đạo phê duyệt
+                                    </div>
+                                </div>
+                                <a href="@Url.Action("Index", "LeaderApproval")" class="activity-action-btn">Phê duyệt</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var ctx = document.getElementById('deptChart').getContext('2d');
-            
-            var rawStats = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(deptStats));
-            
-            var labels = rawStats.map(item => item.Department);
-            var data = rawStats.map(item => item.Headcount);
+        (function() {
+            // Dynamic Time-Based Greeting & Date Timer
+            var leaderName = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(leaderName));
+            function escapeHtml(str) {
+                if (!str) return '';
+                return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            }
 
-            var chart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        data: data,
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right' }
-                    }
+            function updateLeaderGreeting() {
+                var d = new Date();
+                var h = d.getHours();
+                var prefix = "Chào buổi sáng";
+                var icon = "☀️";
+                if (h >= 5 && h < 12) {
+                    prefix = "Chào buổi sáng";
+                    icon = "☀️";
+                } else if (h >= 12 && h < 18) {
+                    prefix = "Chào buổi chiều";
+                    icon = "🌤️";
+                } else {
+                    prefix = "Chào buổi tối";
+                    icon = "🌙";
                 }
+                var headingElem = document.getElementById("leaderGreetingText");
+                if (headingElem) {
+                    headingElem.innerHTML = prefix + ", " + escapeHtml(leaderName) + "! " + icon;
+                }
+
+                var dateElem = document.getElementById("currentDateDisplay");
+                if (dateElem) {
+                    var day = String(d.getDate()).padStart(2, '0');
+                    var month = String(d.getMonth() + 1).padStart(2, '0');
+                    var year = d.getFullYear();
+                    dateElem.textContent = day + "/" + month + "/" + year;
+                }
+            }
+
+            updateLeaderGreeting();
+            var greetingInterval = setInterval(updateLeaderGreeting, 30000);
+            window.addEventListener("beforeunload", function() {
+                clearInterval(greetingInterval);
             });
-        });
+
+            // Doughnut Chart Setup
+            var rawStats = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(deptStatsList));
+            var canvas = document.getElementById('deptChartCanvas');
+            if (canvas && rawStats && rawStats.length > 0) {
+                var labels = rawStats.map(function(item) { return item.Department; });
+                var data = rawStats.map(function(item) { return item.Headcount; });
+                var bgColors = rawStats.map(function(item) { return item.Color; });
+                var totalCount = @totalHeadcount;
+
+                var centerTextPlugin = {
+                    id: 'leaderCenterText',
+                    beforeDraw: function(chart) {
+                        var width = chart.width;
+                        var height = chart.height;
+                        var ctx = chart.ctx;
+                        ctx.restore();
+
+                        ctx.font = "bold 20px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                        ctx.textBaseline = "middle";
+                        ctx.fillStyle = "#0f172a";
+                        var text1 = String(totalCount);
+                        var textX1 = Math.round((width - ctx.measureText(text1).width) / 2);
+                        var textY1 = height / 2 - 8;
+                        ctx.fillText(text1, textX1, textY1);
+
+                        ctx.font = "500 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                        ctx.fillStyle = "#64748b";
+                        var text2 = "Nhân sự";
+                        var textX2 = Math.round((width - ctx.measureText(text2).width) / 2);
+                        var textY2 = height / 2 + 12;
+                        ctx.fillText(text2, textX2, textY2);
+
+                        ctx.save();
+                    }
+                };
+
+                new Chart(canvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: bgColors,
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '72%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var val = context.raw || 0;
+                                        var pct = totalCount > 0 ? (val * 100 / totalCount).toFixed(1) : 0;
+                                        return ' ' + context.label + ': ' + val + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    plugins: [centerTextPlugin]
+                });
+            }
+        })();
     </script>
 }

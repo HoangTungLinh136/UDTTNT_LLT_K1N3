@@ -1,253 +1,1139 @@
+@model giao_dien_demo.Models.EmployeeDashboardViewModel
 @{
-    ViewData["Title"] = "Tổng quan Nhân viên";
+    ViewData["Title"] = "Tổng quan";
     var currentUser = ViewBag.CurrentUsername as string ?? User?.Identity?.Name ?? "";
-    var myRealName = ViewBag.MyRealName as string ?? currentUser;
+    var myRealName = !string.IsNullOrWhiteSpace(Model.EmployeeName) ? Model.EmployeeName : (ViewBag.MyRealName as string ?? currentUser);
     var myRole = ViewBag.CurrentRole as string ?? "Employee";
 
-    var myAtts = ViewBag.MyAttendances as List<giao_dien_demo.Models.Attendance> ?? new List<giao_dien_demo.Models.Attendance>();
-    var latestAtt = myAtts.OrderByDescending(x => x.CheckIn).FirstOrDefault();
+    var now = DateTime.Now;
+    var greeting = now.Hour < 12 ? "Chào buổi sáng" : now.Hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var sunIcon = now.Hour < 18 ? "☀️" : "🌙";
+    var avatarChar = !string.IsNullOrWhiteSpace(myRealName) ? myRealName.Substring(0, 1).ToUpper() : "E";
 
-    int contractCount = ViewBag.MyContractCount ?? 0;
-    int leaveCount = ViewBag.MyLeaveCount ?? 0;
-    int notiCount = ViewBag.NotificationCount ?? 0;
-    int attCount = ViewBag.MyAttendanceCount ?? 0;
+    var todayAtt = Model.TodayAttendance;
+    var standardDays = Model.StandardWorkDaysThisMonth > 0 ? Model.StandardWorkDaysThisMonth : 26;
+    var progressPercent = Math.Min(100, (int)Math.Round((double)Model.AttendanceCountThisMonth / standardDays * 100));
 
-    // Trạng thái hôm nay
-    var todayAtt = myAtts.FirstOrDefault(x => x.CheckIn.Date == DateTime.Today);
-    string todayStatus = "Chưa check-in";
-    string todayStatusClass = "status-absent";
-    if (todayAtt != null) {
-        if (todayAtt.CheckOut == null) { todayStatus = "Đang làm việc"; todayStatusClass = "status-working"; }
-        else { todayStatus = "Hoàn thành"; todayStatusClass = "status-done"; }
-    }
-
-    var nowMonth = DateTime.Now.ToString("MM/yyyy");
-    var greeting = DateTime.Now.Hour < 12 ? "Chào buổi sáng" : DateTime.Now.Hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+    var positionOrJob = !string.IsNullOrWhiteSpace(Model.JobTitle) ? Model.JobTitle : (!string.IsNullOrWhiteSpace(Model.Position) ? Model.Position : "Nhân viên");
+    var departmentName = !string.IsNullOrWhiteSpace(Model.Department) ? Model.Department : "Chưa phân bổ";
+    var statusText = !string.IsNullOrWhiteSpace(Model.EmploymentStatus) ? Model.EmploymentStatus : "Đang làm việc";
 }
 
 <style>
-    /* Specific quick buttons for employee portal */
-    .emp-quick-btn {
+    /* ==========================================================================
+       EMPLOYEE DASHBOARD — DESIGN V2.0 (MODERN CLEAN SAAS HRMS)
+       ========================================================================== */
+    .emp-dash-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding-bottom: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* --- 1. WELCOME CARD (MATCHING LEADER EXECUTIVE DASHBOARD) --- */
+    .emp-welcome-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px 28px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        position: relative;
+    }
+
+    .emp-welcome-date {
+        position: absolute;
+        top: 24px;
+        right: 28px;
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .emp-profile-inner {
+        display: flex;
+        align-items: flex-start;
+        gap: 22px;
+    }
+
+    .emp-avatar-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #4f46e5;
+        color: #ffffff;
+        font-size: 26px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+        overflow: hidden;
+    }
+
+    .emp-avatar-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .emp-avatar-text {
+        color: #ffffff;
+        font-size: 26px;
+        font-weight: 700;
+    }
+
+    .emp-profile-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .emp-greeting-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 4px 0;
+        line-height: 1.3;
+    }
+
+    .emp-subgreeting {
+        font-size: 13.5px;
+        color: #64748b;
+        margin: 0 0 18px 0;
+    }
+
+    .emp-pills-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .emp-meta-pill {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    .emp-pill-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .emp-pill-content {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .emp-pill-val {
+        font-size: 13.5px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .emp-pill-lbl {
+        font-size: 11px;
+        color: #64748b;
+        margin-top: 2px;
+    }
+
+    /* Colors for pills */
+    .bg-blue-subtle { background: #eff6ff; }
+    .text-blue { color: #2563eb; }
+    .bg-indigo-subtle { background: #eef2ff; }
+    .text-indigo { color: #4f46e5; }
+    .bg-purple-subtle { background: #f5f3ff; }
+    .text-purple { color: #7c3aed; }
+    .bg-green-subtle { background: #ecfdf5; }
+    .text-green { color: #16a34a; }
+    .bg-amber-subtle { background: #fffbeb; }
+    .text-amber { color: #d97706; }
+    .bg-cyan-subtle { background: #ecfeff; }
+    .text-cyan { color: #0891b2; }
+    .bg-red-subtle { background: #fef2f2; }
+    .text-red { color: #dc2626; }
+
+    /* --- 2. 6 KPI CARDS GRID --- */
+    .emp-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .emp-kpi-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 18px 20px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 140px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .emp-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .emp-kpi-icon-wrap {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .emp-kpi-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748B;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-top: 14px;
+        margin-bottom: 4px;
+    }
+
+    .emp-kpi-value {
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 8px;
+        color: #0F172A;
+        letter-spacing: -0.3px;
+    }
+
+    .emp-kpi-subval {
+        font-size: 15px;
+        font-weight: 600;
+        color: #64748B;
+    }
+
+    .emp-kpi-footer {
+        display: flex;
+        align-items: center;
+        margin-top: auto;
+    }
+
+    .emp-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    .emp-badge-success {
+        background: #DCFCE7;
+        color: #166534;
+    }
+
+    .emp-badge-neutral {
+        background: #F1F5F9;
+        color: #64748B;
+    }
+
+    .emp-badge-teal {
+        background: #E0F2FE;
+        color: #0369A1;
+    }
+
+    .emp-kpi-link {
+        font-size: 12px;
+        font-weight: 600;
+        color: #2563EB;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        transition: color 0.15s;
+    }
+
+    .emp-kpi-link:hover {
+        color: #1D4ED8;
+        text-decoration: underline;
+    }
+
+    .emp-kpi-link.text-danger {
+        color: #DC2626;
+    }
+    .emp-kpi-link.text-danger:hover {
+        color: #B91C1C;
+    }
+
+    .emp-kpi-progress-footer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .emp-progress-bar {
+        flex: 1;
+        height: 6px;
+        background: #F1F5F9;
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .emp-progress-fill {
+        height: 100%;
+        background: #3B82F6;
+        border-radius: 6px;
+        transition: width 0.4s ease;
+    }
+
+    .emp-progress-pct {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748B;
+    }
+
+    /* --- 3. TWO COLUMNS LAYOUT --- */
+    .emp-dash-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.9fr) minmax(0, 1.1fr);
+        gap: 20px;
+    }
+
+    .emp-dash-col {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    /* Card Containers */
+    .emp-box-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
+    }
+
+    .emp-box-header {
+        padding: 16px 22px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #F1F5F9;
+    }
+
+    .emp-box-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #0F172A;
+        margin: 0;
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 10px 16px;
-        background: var(--surface-card);
-        border: 1px solid var(--border-default);
-        border-radius: var(--radius-md, 8px);
-        color: var(--text-primary);
-        font-size: 14px;
-        font-weight: 500;
-        text-decoration: none;
-        transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
-    .emp-quick-btn:hover {
-        background: var(--surface-page);
-        border-color: var(--color-primary);
-        color: var(--color-primary);
-        box-shadow: var(--shadow-xs);
+
+    .emp-box-action-btn {
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #2563EB;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.15s;
+    }
+
+    .emp-box-action-btn:hover {
+        background: #EFF6FF;
+        border-color: #BFDBFE;
+        color: #1D4ED8;
+    }
+
+    .emp-box-body {
+        padding: 20px 22px;
+    }
+
+    /* Quick Access Shortcuts */
+    .emp-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .emp-quick-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        color: #1E293B;
+        font-size: 13.5px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+
+    .emp-quick-item:hover {
+        background: #F8FAFC;
+        border-color: #3B82F6;
+        color: #2563EB;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 6px rgba(37, 99, 235, 0.08);
+    }
+
+    .emp-quick-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    /* Table Recent Attendances */
+    .emp-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .emp-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .emp-table th {
+        background: #F8FAFC;
+        color: #64748B;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 12px 18px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .emp-table td {
+        padding: 14px 18px;
+        font-size: 13.5px;
+        border-bottom: 1px solid #F1F5F9;
+        color: #475569;
+        vertical-align: middle;
+    }
+
+    .emp-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .emp-table tbody tr:hover td {
+        background: #F8FAFD;
+    }
+
+    .emp-table .td-date {
+        font-weight: 700;
+        color: #0F172A;
+    }
+
+    .emp-table .td-time-bold {
+        font-weight: 700;
+        color: #2563EB;
+    }
+
+    /* Timeline Work Schedule */
+    .emp-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+    }
+
+    .emp-timeline-item {
+        display: flex;
+        gap: 16px;
+        position: relative;
+        padding-bottom: 22px;
+    }
+
+    .emp-timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .emp-timeline-marker {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 16px;
+        position: relative;
+    }
+
+    .emp-timeline-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #CBD5E1;
+        border: 2px solid #FFFFFF;
+        box-shadow: 0 0 0 2px #E2E8F0;
+        z-index: 2;
+        margin-top: 5px;
+    }
+
+    .emp-timeline-dot.active {
+        background: #10B981;
+        box-shadow: 0 0 0 2px #A7F3D0;
+    }
+
+    .emp-timeline-line {
+        position: absolute;
+        top: 15px;
+        bottom: -5px;
+        width: 2px;
+        background: #E2E8F0;
+        z-index: 1;
+    }
+
+    .emp-timeline-item:last-child .emp-timeline-line {
+        display: none;
+    }
+
+    .emp-timeline-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    .emp-timeline-time {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0F172A;
+        min-width: 90px;
+    }
+
+    .emp-timeline-label {
+        font-size: 13px;
+        color: #475569;
+        flex: 1;
+    }
+
+    /* Notifications List */
+    .emp-notif-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .emp-notif-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 10px 0;
+        border-bottom: 1px solid #F1F5F9;
+        text-decoration: none;
+        transition: background-color 0.15s;
+    }
+
+    .emp-notif-item:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .emp-notif-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        flex-shrink: 0;
+    }
+
+    .emp-notif-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .emp-notif-title {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #0F172A;
+        margin-bottom: 2px;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .emp-notif-sub {
+        font-size: 12px;
+        color: #64748B;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .emp-notif-time {
+        font-size: 11px;
+        color: #94A3B8;
+        white-space: nowrap;
+        margin-left: 8px;
+    }
+
+    /* Empty states */
+    .emp-empty-box {
+        text-align: center;
+        padding: 30px 20px;
+        color: #94A3B8;
+    }
+
+    .emp-empty-icon {
+        font-size: 32px;
+        color: #CBD5E1;
+        margin-bottom: 10px;
+    }
+
+    .emp-empty-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 4px;
+    }
+
+    .emp-empty-desc {
+        font-size: 12px;
+        color: #94A3B8;
+    }
+
+    /* --- RESPONSIVE BREAKPOINTS --- */
+    @@media (max-width: 1400px) {
+        .emp-kpi-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 1024px) {
+        .emp-dash-welcome-row {
+            grid-template-columns: 1fr;
+        }
+        .emp-dash-main-grid {
+            grid-template-columns: 1fr;
+        }
+        .emp-quick-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .emp-kpi-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .emp-pills-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        .emp-welcome-card {
+            padding: 20px;
+        }
+        .emp-welcome-date {
+            position: static;
+            margin-bottom: 14px;
+        }
+        .emp-profile-inner {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .emp-kpi-grid {
+            grid-template-columns: 1fr;
+        }
+        .emp-quick-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
-<div class="hrms-page-header mb-4">
-    <div class="hrms-page-header-main">
-        <h1 class="hrms-page-title">
-            <span class="hrms-page-icon"><i class="fa-solid fa-house-user"></i></span>
-            @greeting, @(string.IsNullOrEmpty(myRealName) ? currentUser : myRealName)!
-        </h1>
-        <div class="hrms-page-subtitle">
-            <i class="fa-regular fa-calendar me-1"></i> Hôm nay: @DateTime.Now.ToString("dd/MM/yyyy") 
-            <span class="mx-2 text-muted">|</span> Kỳ lương: Tháng @nowMonth
+<div class="emp-dash-wrapper">
+    <!-- 1. WELCOME CARD (MATCHING LEADER EXECUTIVE DASHBOARD) -->
+    <div class="emp-welcome-card">
+        <div class="emp-welcome-date">
+            <i class="fa-regular fa-calendar"></i> Hôm nay: <span id="empCurrentDateDisplay">@now.ToString("dd/MM/yyyy")</span>
         </div>
-    </div>
-</div>
 
-<div class="hrms-card mb-4" style="display: flex; justify-content: space-between; align-items: center;">
-    <div style="display: flex; align-items: center; gap: 16px;">
-        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--color-primary-subtle); color: var(--color-primary); display: flex; justify-content: center; align-items: center; font-size: 20px;">
-            <i class="fa-solid fa-fingerprint"></i>
-        </div>
-        <div>
-            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Trạng thái chấm công</div>
-            <div style="display: flex; align-items: center; gap: 6px;">
-                <span class="hrms-badge @(todayStatusClass == "status-working" ? "hrms-badge-success" : todayStatusClass == "status-done" ? "hrms-badge-info" : "hrms-badge-warning")">
-                    @todayStatus
-                </span>
+        <div class="emp-profile-inner">
+            <div class="emp-avatar-circle">
+                @if (!string.IsNullOrEmpty(Model.AvatarPath))
+                {
+                    <img src="@Model.AvatarPath" alt="@myRealName" class="emp-avatar-img" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+                    <span class="emp-avatar-text" style="display:none;">@avatarChar</span>
+                }
+                else
+                {
+                    <span class="emp-avatar-text">@avatarChar</span>
+                }
+            </div>
+
+            <div class="emp-profile-info">
+                <h2 class="emp-greeting-title" id="empGreetingText">
+                    @greeting, @myRealName! <span class="emp-sun-icon">@sunIcon</span>
+                </h2>
+                <div class="emp-subgreeting">
+                    Chúc bạn một ngày làm việc hiệu quả!
+                </div>
+
+                <div class="emp-pills-grid">
+                    <div class="emp-meta-pill">
+                        <div class="emp-pill-icon bg-blue-subtle text-blue">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </div>
+                        <div class="emp-pill-content">
+                            <span class="emp-pill-val">@Model.EmployeeCode</span>
+                            <span class="emp-pill-lbl">Mã nhân viên</span>
+                        </div>
+                    </div>
+
+                    <div class="emp-meta-pill">
+                        <div class="emp-pill-icon bg-indigo-subtle text-indigo">
+                            <i class="fa-solid fa-user-tie"></i>
+                        </div>
+                        <div class="emp-pill-content">
+                            <span class="emp-pill-val" title="@positionOrJob">@positionOrJob</span>
+                            <span class="emp-pill-lbl">Chức danh</span>
+                        </div>
+                    </div>
+
+                    <div class="emp-meta-pill">
+                        <div class="emp-pill-icon bg-purple-subtle text-purple">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div class="emp-pill-content">
+                            <span class="emp-pill-val" title="@departmentName">@departmentName</span>
+                            <span class="emp-pill-lbl">Phòng ban</span>
+                        </div>
+                    </div>
+
+                    <div class="emp-meta-pill">
+                        <div class="emp-pill-icon bg-green-subtle text-green">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <div class="emp-pill-content">
+                            <span class="emp-pill-val text-green">@statusText</span>
+                            <span class="emp-pill-lbl">Trạng thái</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <a href="/Attendance/Index" class="hrms-btn hrms-btn-sm hrms-btn-secondary">
-        <i class="fa-solid fa-arrow-right me-1"></i> Xem chi tiết
-    </a>
-</div>
 
-<!-- KPI Grid -->
-<div class="hrms-kpi-grid hrms-kpi-grid-6 mb-4">
-    <div class="hrms-kpi-card">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon text-primary"><i class="fa-solid fa-right-to-bracket"></i></div>
-            <div class="hrms-kpi-value" id="checkInTime">@(todayAtt != null ? todayAtt.CheckIn.ToString("HH:mm") : "--:--")</div>
-        </div>
-        <div class="hrms-kpi-label">Check-in hôm nay</div>
-    </div>
-    
-    <div class="hrms-kpi-card">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon text-success"><i class="fa-solid fa-right-from-bracket"></i></div>
-            <div class="hrms-kpi-value" id="checkOutTime">@(todayAtt?.CheckOut != null ? todayAtt.CheckOut.Value.ToString("HH:mm") : "--:--")</div>
-        </div>
-        <div class="hrms-kpi-label">Check-out hôm nay</div>
-    </div>
-    
-    <a href="/Attendance/Index" class="hrms-kpi-card text-decoration-none">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon text-warning"><i class="fa-solid fa-calendar-check"></i></div>
-            <div class="hrms-kpi-value" id="attendanceCount">@attCount</div>
-        </div>
-        <div class="hrms-kpi-label">Ngày công tháng @DateTime.Now.Month</div>
-    </a>
-    
-    <a href="/Leave/Index" class="hrms-kpi-card text-decoration-none">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon text-purple"><i class="fa-solid fa-umbrella-beach"></i></div>
-            <div class="hrms-kpi-value" id="myLeaveCount">@leaveCount</div>
-        </div>
-        <div class="hrms-kpi-label">Đơn nghỉ phép</div>
-    </a>
-    
-    <a href="/Contract/Index" class="hrms-kpi-card text-decoration-none">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon text-info"><i class="fa-solid fa-file-signature"></i></div>
-            <div class="hrms-kpi-value" id="myContractCount">@contractCount</div>
-        </div>
-        <div class="hrms-kpi-label">Hợp đồng lao động</div>
-    </a>
-    
-    <a href="/Notification/Index" class="hrms-kpi-card text-decoration-none">
-        <div class="hrms-kpi-top">
-            <div class="hrms-kpi-icon text-danger"><i class="fa-regular fa-bell"></i></div>
-            <div class="hrms-kpi-value" id="myNotificationCount">@notiCount</div>
-        </div>
-        <div class="hrms-kpi-label">Thông báo mới</div>
-    </a>
-</div>
 
-<!-- Quick Access -->
-<div class="hrms-card mb-4">
-    <div class="hrms-card-header">
-        <h3 class="hrms-card-title">Truy cập nhanh</h3>
-    </div>
-    <div class="hrms-card-body">
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <a href="/Employee/MyProfile" class="emp-quick-btn">
-                <i class="fa-solid fa-user-circle text-primary"></i> Hồ sơ cá nhân
-            </a>
-            <a href="/Attendance/Index" class="emp-quick-btn">
-                <i class="fa-solid fa-clock-rotate-left text-warning"></i> Lịch sử chấm công
-            </a>
-            <a href="/Salary/Index" class="emp-quick-btn">
-                <i class="fa-solid fa-money-check-dollar text-success"></i> Thông tin lương
-            </a>
-            <a href="/Leave/Create" class="emp-quick-btn">
-                <i class="fa-solid fa-file-circle-plus text-purple"></i> Tạo đơn nghỉ phép
-            </a>
+    <!-- 2. 6 KPI CARDS -->
+    <div class="emp-kpi-grid">
+        <!-- Card 1: Check-in -->
+        <div class="emp-kpi-card">
+            <div class="emp-kpi-icon-wrap bg-blue-subtle text-blue">
+                <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </div>
+            <div class="emp-kpi-label">CHECK-IN HÔM NAY</div>
+            <div class="emp-kpi-value text-blue" id="checkInTime">
+                @(todayAtt != null ? todayAtt.CheckIn.ToString("HH:mm:ss") : "--:--:--")
+            </div>
+            <div class="emp-kpi-footer">
+                <span class="emp-badge @(todayAtt != null ? "emp-badge-success" : "emp-badge-neutral")">
+                    @(todayAtt != null ? "Đã check-in" : "Chưa check-in")
+                </span>
+            </div>
+        </div>
+
+        <!-- Card 2: Check-out -->
+        <div class="emp-kpi-card">
+            <div class="emp-kpi-icon-wrap bg-green-subtle text-green">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </div>
+            <div class="emp-kpi-label">CHECK-OUT HÔM NAY</div>
+            <div class="emp-kpi-value @(todayAtt?.CheckOut != null ? "" : "text-muted")" id="checkOutTime">
+                @(todayAtt?.CheckOut != null ? todayAtt.CheckOut.Value.ToString("HH:mm:ss") : "--:--:--")
+            </div>
+            <div class="emp-kpi-footer">
+                <span class="emp-badge @(todayAtt?.CheckOut != null ? "emp-badge-success" : "emp-badge-neutral")">
+                    @(todayAtt?.CheckOut != null ? "Đã check-out" : "Chưa check-out")
+                </span>
+            </div>
+        </div>
+
+        <!-- Card 3: Ngày công -->
+        <div class="emp-kpi-card">
+            <div class="emp-kpi-icon-wrap bg-amber-subtle text-amber">
+                <i class="fa-solid fa-calendar-day"></i>
+            </div>
+            <div class="emp-kpi-label">NGÀY CÔNG THÁNG @DateTime.Now.Month</div>
+            <div class="emp-kpi-value" id="attendanceCount">
+                @Model.AttendanceCountThisMonth <span class="emp-kpi-subval">/ @standardDays</span>
+            </div>
+            <div class="emp-kpi-footer emp-kpi-progress-footer">
+                <div class="emp-progress-bar">
+                    <div class="emp-progress-fill" style="width: @(progressPercent)%;"></div>
+                </div>
+                <span class="emp-progress-pct">@(progressPercent)%</span>
+            </div>
+        </div>
+
+        <!-- Card 4: Đơn nghỉ phép -->
+        <div class="emp-kpi-card">
+            <div class="emp-kpi-icon-wrap bg-purple-subtle text-purple">
+                <i class="fa-solid fa-umbrella-beach"></i>
+            </div>
+            <div class="emp-kpi-label">ĐƠN NGHỈ PHÉP</div>
+            <div class="emp-kpi-value text-purple" id="myLeaveCount">
+                @Model.PendingLeaveCount
+            </div>
+            <div class="emp-kpi-footer">
+                <a href="@Url.Action("Index", "Leave")" class="emp-kpi-link">Xem chi tiết <i class="fa-solid fa-arrow-right ms-1"></i></a>
+            </div>
+        </div>
+
+        <!-- Card 5: Hợp đồng lao động -->
+        <div class="emp-kpi-card">
+            <div class="emp-kpi-icon-wrap bg-cyan-subtle text-cyan">
+                <i class="fa-solid fa-file-signature"></i>
+            </div>
+            <div class="emp-kpi-label">HỢP ĐỒNG LAO ĐỘNG</div>
+            <div class="emp-kpi-value text-cyan" id="myContractCount">
+                @Model.ContractCount
+            </div>
+            <div class="emp-kpi-footer">
+                <a href="@Url.Action("Index", "Contract")" class="emp-kpi-link">Xem chi tiết <i class="fa-solid fa-arrow-right ms-1"></i></a>
+            </div>
+        </div>
+
+        <!-- Card 6: Thông báo mới -->
+        <div class="emp-kpi-card">
+            <div class="emp-kpi-icon-wrap bg-red-subtle text-red">
+                <i class="fa-solid fa-bell"></i>
+            </div>
+            <div class="emp-kpi-label">THÔNG BÁO MỚI</div>
+            <div class="emp-kpi-value text-red" id="myNotificationCount">
+                @Model.UnreadNotificationCount
+            </div>
+            <div class="emp-kpi-footer">
+                <a href="@Url.Action("Index", "Notification")" class="emp-kpi-link text-danger">Xem ngay <i class="fa-solid fa-arrow-right ms-1"></i></a>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Attendance Table -->
-<div class="hrms-card mb-4 p-0">
-    <div class="hrms-card-header d-flex justify-content-between align-items-center">
-        <h3 class="hrms-card-title mb-0">Nhật ký chấm công gần đây</h3>
-        <a href="/AttendanceAdjustment/Manage" class="hrms-btn hrms-btn-sm hrms-btn-secondary">
-            <i class="fa-solid fa-pen-to-square me-1"></i> Yêu cầu điều chỉnh
-        </a>
-    </div>
-    <div class="hrms-card-body p-0">
-        <div class="hrms-table-wrap">
-            <table class="hrms-table">
-                <thead>
-                    <tr>
-                        <th>Ngày</th>
-                        <th>Thứ</th>
-                        <th style="text-align:center;">Check-in</th>
-                        <th style="text-align:center;">Check-out</th>
-                        <th style="text-align:center;">Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody id="attendanceTableBody">
-                    @if (myAtts.Any()) {
-                        int rowCount = 0;
-                        foreach (var item in myAtts.OrderByDescending(x => x.CheckIn)) {
-                            if (rowCount >= 8) break; rowCount++;
-                            var dowVi = item.CheckIn.DayOfWeek switch {
-                                DayOfWeek.Monday    => "Thứ 2",
-                                DayOfWeek.Tuesday   => "Thứ 3",
-                                DayOfWeek.Wednesday => "Thứ 4",
-                                DayOfWeek.Thursday  => "Thứ 5",
-                                DayOfWeek.Friday    => "Thứ 6",
-                                DayOfWeek.Saturday  => "Thứ 7",
-                                DayOfWeek.Sunday    => "Chủ nhật",
-                                _ => ""
-                            };
+    <!-- 3. TWO COLUMNS LAYOUT -->
+    <div class="emp-dash-main-grid">
+        <!-- LEFT COLUMN: Quick Access & Recent Attendance Table -->
+        <div class="emp-dash-col">
+            <!-- Quick Access Card -->
+            <div class="emp-box-card">
+                <div class="emp-box-header">
+                    <h3 class="emp-box-title">
+                        <i class="fa-solid fa-plus text-blue"></i> Truy cập nhanh
+                    </h3>
+                </div>
+                <div class="emp-box-body">
+                    <div class="emp-quick-grid">
+                        <a href="@Url.Action("MyProfile", "Employee")" class="emp-quick-item">
+                            <i class="fa-solid fa-circle-user emp-quick-icon text-blue"></i>
+                            <span>Hồ sơ cá nhân</span>
+                        </a>
+                        <a href="@Url.Action("Index", "Attendance")" class="emp-quick-item">
+                            <i class="fa-solid fa-clock-rotate-left emp-quick-icon text-amber"></i>
+                            <span>Lịch sử chấm công</span>
+                        </a>
+                        <a href="@Url.Action("Index", "MyPayroll")" class="emp-quick-item">
+                            <i class="fa-solid fa-money-check-dollar emp-quick-icon text-green"></i>
+                            <span>Thông tin lương</span>
+                        </a>
+                        <a href="@Url.Action("Index", "MyRequest")" class="emp-quick-item">
+                            <i class="fa-solid fa-file-circle-plus emp-quick-icon text-purple"></i>
+                            <span>Tạo đơn nghỉ phép</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Attendance Table -->
+            <div class="emp-box-card">
+                <div class="emp-box-header">
+                    <h3 class="emp-box-title">
+                        <i class="fa-regular fa-clock text-blue"></i> Nhật ký chấm công gần đây
+                    </h3>
+                    <a href="@Url.Action("Index", "Attendance")" class="emp-box-action-btn">
+                        Xem tất cả
+                    </a>
+                </div>
+                <div class="emp-table-wrapper">
+                    <table class="emp-table">
+                        <thead>
                             <tr>
-                                <td><strong style="color: var(--text-primary);">@item.CheckIn.ToString("dd/MM/yyyy")</strong></td>
-                                <td style="color: var(--text-secondary);">@dowVi</td>
-                                <td style="text-align:center;"><strong style="color: var(--color-primary);">@item.CheckIn.ToString("HH:mm:ss")</strong></td>
-                                <td style="text-align:center; color: var(--text-secondary);">@(item.CheckOut.HasValue ? item.CheckOut.Value.ToString("HH:mm:ss") : "—")</td>
-                                <td style="text-align:center;">
-                                    @if(item.CheckOut == null) {
-                                        <span class="hrms-badge hrms-badge-success">Đang làm việc</span>
-                                    } else {
-                                        <span class="hrms-badge hrms-badge-info">Hoàn thành</span>
-                                    }
-                                </td>
+                                <th>NGÀY</th>
+                                <th>THỨ</th>
+                                <th>CHECK-IN</th>
+                                <th>CHECK-OUT</th>
+                                <th>TỔNG GIỜ</th>
+                                <th>TRẠNG THÁI</th>
                             </tr>
-                        }
-                    } else {
-                        <tr>
-                            <td colspan="5">
-                                <div class="hrms-empty-state">
-                                    <div class="hrms-empty-state-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
-                                    <div class="hrms-empty-state-title">Chưa có dữ liệu chấm công</div>
-                                    <div class="hrms-empty-state-desc">Dữ liệu chấm công của bạn sẽ hiển thị tại đây khi có lượt ghi nhận.</div>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                            @if (Model.RecentAttendances.Any())
+                            {
+                                foreach (var att in Model.RecentAttendances)
+                                {
+                                    var dowVi = att.CheckIn.DayOfWeek switch
+                                    {
+                                        DayOfWeek.Monday => "Thứ 2",
+                                        DayOfWeek.Tuesday => "Thứ 3",
+                                        DayOfWeek.Wednesday => "Thứ 4",
+                                        DayOfWeek.Thursday => "Thứ 5",
+                                        DayOfWeek.Friday => "Thứ 6",
+                                        DayOfWeek.Saturday => "Thứ 7",
+                                        DayOfWeek.Sunday => "Chủ nhật",
+                                        _ => ""
+                                    };
+
+                                    string totalHoursStr = "--";
+                                    if (att.CheckOut.HasValue)
+                                    {
+                                        var duration = att.CheckOut.Value - att.CheckIn;
+                                        if (duration.TotalMinutes > 0)
+                                        {
+                                            var hours = (int)Math.Floor(duration.TotalHours);
+                                            var minutes = duration.Minutes;
+                                            totalHoursStr = $"{hours}h {minutes}p";
+                                        }
+                                    }
+
+                                    <tr>
+                                        <td class="td-date">@att.CheckIn.ToString("dd/MM/yyyy")</td>
+                                        <td class="text-muted">@dowVi</td>
+                                        <td class="td-time-bold">@att.CheckIn.ToString("HH:mm:ss")</td>
+                                        <td>@(att.CheckOut.HasValue ? att.CheckOut.Value.ToString("HH:mm:ss") : "--:--:--")</td>
+                                        <td>@totalHoursStr</td>
+                                        <td>
+                                            @if (att.CheckOut == null)
+                                            {
+                                                <span class="emp-badge emp-badge-success">Đang làm việc</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="emp-badge emp-badge-teal">Hoàn thành</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6">
+                                        <div class="emp-empty-box">
+                                            <div class="emp-empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+                                            <div class="emp-empty-title">Chưa có dữ liệu chấm công</div>
+                                            <div class="emp-empty-desc">Dữ liệu chấm công của bạn sẽ hiển thị tại đây khi có lượt ghi nhận.</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Today's Schedule & Recent Notifications -->
+        <div class="emp-dash-col">
+            <!-- Work Schedule Today Card -->
+            <div class="emp-box-card">
+                <div class="emp-box-header">
+                    <h3 class="emp-box-title">
+                        <i class="fa-regular fa-calendar text-blue"></i> Lịch làm việc hôm nay
+                    </h3>
+                    <a href="@Url.Action("Index", "Attendance")" class="emp-box-action-btn">
+                        Xem lịch tuần
+                    </a>
+                </div>
+                <div class="emp-box-body">
+                    @if (Model.TodayShift != null)
+                    {
+                        var shift = Model.TodayShift;
+                        var startTimeStr = shift.StartTime.ToString(@"hh\:mm");
+                        var endTimeStr = shift.EndTime.ToString(@"hh\:mm");
+                        var isCurrent = now.TimeOfDay >= shift.StartTime && now.TimeOfDay <= shift.EndTime;
+                        var isUpcoming = now.TimeOfDay < shift.StartTime;
+
+                        <div class="emp-timeline">
+                            <div class="emp-timeline-item">
+                                <div class="emp-timeline-marker">
+                                    <div class="emp-timeline-dot @(isCurrent ? "active" : "")"></div>
+                                    <div class="emp-timeline-line"></div>
                                 </div>
-                            </td>
-                        </tr>
+                                <div class="emp-timeline-content">
+                                    <span class="emp-timeline-time">@startTimeStr - @endTimeStr</span>
+                                    <span class="emp-timeline-label">@shift.ShiftName</span>
+                                    <span class="emp-badge @(isCurrent ? "emp-badge-success" : (isUpcoming ? "emp-badge-neutral" : "emp-badge-teal"))">
+                                        @(isCurrent ? "Đang diễn ra" : (isUpcoming ? "Sắp tới" : "Đã kết thúc"))
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="emp-timeline-item">
+                                <div class="emp-timeline-marker">
+                                    <div class="emp-timeline-dot"></div>
+                                </div>
+                                <div class="emp-timeline-content">
+                                    <span class="emp-timeline-time">@endTimeStr</span>
+                                    <span class="emp-timeline-label">Kết thúc ngày làm việc</span>
+                                </div>
+                            </div>
+                        </div>
                     }
-                </tbody>
-            </table>
+                    else
+                    {
+                        <div class="emp-empty-box">
+                            <div class="emp-empty-icon"><i class="fa-regular fa-calendar-xmark"></i></div>
+                            <div class="emp-empty-title">Chưa có lịch phân ca hôm nay</div>
+                            <div class="emp-empty-desc">Bạn chưa được phân ca làm việc cố định cho ngày hôm nay.</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Notifications Card -->
+            <div class="emp-box-card">
+                <div class="emp-box-header">
+                    <h3 class="emp-box-title">
+                        <i class="fa-solid fa-bell text-amber"></i> Thông báo mới
+                    </h3>
+                    <a href="@Url.Action("Index", "Notification")" class="emp-box-action-btn">
+                        Xem tất cả
+                    </a>
+                </div>
+                <div class="emp-box-body">
+                    @if (Model.RecentNotifications.Any())
+                    {
+                        <div class="emp-notif-list">
+                            @foreach (var notif in Model.RecentNotifications)
+                            {
+                                var isTraining = notif.Message.Contains("đào tạo", StringComparison.OrdinalIgnoreCase) || notif.Message.Contains("khoá", StringComparison.OrdinalIgnoreCase);
+                                var isContract = notif.Message.Contains("hợp đồng", StringComparison.OrdinalIgnoreCase);
+                                var isBenefit = notif.Message.Contains("phúc lợi", StringComparison.OrdinalIgnoreCase);
+
+                                <a href="@Url.Action("Index", "Notification")" class="emp-notif-item">
+                                    <div class="emp-notif-icon @(isTraining ? "bg-red-subtle text-red" : isContract ? "bg-cyan-subtle text-cyan" : "bg-blue-subtle text-blue")">
+                                        <i class="fa-solid @(isTraining ? "fa-bullseye" : isContract ? "fa-file-signature" : "fa-file-lines")"></i>
+                                    </div>
+                                    <div class="emp-notif-info">
+                                        <div class="emp-notif-title">@notif.Message</div>
+                                        <div class="emp-notif-sub">@(string.IsNullOrEmpty(notif.SenderName) ? "Phòng Nhân sự" : notif.SenderName)</div>
+                                    </div>
+                                    <div class="emp-notif-time">@notif.TimeAgoVi</div>
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="emp-empty-box">
+                            <div class="emp-empty-icon"><i class="fa-regular fa-bell-slash"></i></div>
+                            <div class="emp-empty-title">Không có thông báo mới</div>
+                            <div class="emp-empty-desc">Các thông báo mới từ công ty sẽ xuất hiện tại đây.</div>
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        const connection = window.HRMSSignalRConnection;
+        const loggedInUser = "@currentUser";
+        const myRealName = "@myRealName";
 
-        connection.on("ReceiveNotification", function (data) {
-            const cardNum = document.getElementById("myNotificationCount");
-            if (cardNum) { let c = parseInt(cardNum.innerText)||0; cardNum.innerText = c+1; }
-        });
-
-        connection.on("UpdateAttendanceCount", (totalCount, name) => {
-            if (name === loggedInUser || name === myRealName) {
-                const el = document.getElementById("attendanceCount");
-                if(el) el.innerText = totalCount;
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString("vi-VN", { hour:'2-digit', minute:'2-digit' });
-                const ci = document.getElementById("checkInTime");
-                if(ci) ci.innerText = timeStr;
+        function updateEmpGreeting() {
+            var d = new Date();
+            var h = d.getHours();
+            var prefix = "Chào buổi sáng";
+            var icon = "☀️";
+            if (h >= 5 && h < 12) {
+                prefix = "Chào buổi sáng";
+                icon = "☀️";
+            } else if (h >= 12 && h < 18) {
+                prefix = "Chào buổi chiều";
+                icon = "🌤️";
+            } else {
+                prefix = "Chào buổi tối";
+                icon = "🌙";
             }
-        });
-
-        connection.on("UpdateMyLeaveCount", (count, name) => {
-            if (name === loggedInUser || name === myRealName) {
-                const el = document.getElementById("myLeaveCount");
-                if(el) el.innerText = count;
+            var headingElem = document.getElementById("empGreetingText");
+            if (headingElem) {
+                headingElem.innerHTML = prefix + ", " + myRealName + "! <span class=\"emp-sun-icon\">" + icon + "</span>";
             }
-        });
+            var dateElem = document.getElementById("empCurrentDateDisplay");
+            if (dateElem) {
+                var day = String(d.getDate()).padStart(2, '0');
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var year = d.getFullYear();
+                dateElem.textContent = day + "/" + month + "/" + year;
+            }
+        }
+        updateEmpGreeting();
+        setInterval(updateEmpGreeting, 30000);
 
+        if (window.HRMSSignalRConnection) {
+            const connection = window.HRMSSignalRConnection;
+
+            connection.on("ReceiveNotification", function (data) {
+                const cardNum = document.getElementById("myNotificationCount");
+                if (cardNum) {
+                    let c = parseInt(cardNum.innerText) || 0;
+                    cardNum.innerText = c + 1;
+                }
+            });
+
+            connection.on("UpdateAttendanceCount", (totalCount, name) => {
+                if (name === loggedInUser || name === myRealName) {
+                    const el = document.getElementById("attendanceCount");
+                    if (el) {
+                        el.innerHTML = `${totalCount} <span class="emp-kpi-subval">/ @standardDays</span>`;
+                    }
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    const ci = document.getElementById("checkInTime");
+                    if (ci) ci.innerText = timeStr;
+                }
+            });
+
+            connection.on("UpdateMyLeaveCount", (count, name) => {
+                if (name === loggedInUser || name === myRealName) {
+                    const el = document.getElementById("myLeaveCount");
+                    if (el) el.innerText = count;
+                }
+            });
+        }
     </script>
 }

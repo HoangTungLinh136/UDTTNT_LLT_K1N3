@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace giao_dien_demo.Models
 {
@@ -26,8 +29,23 @@ namespace giao_dien_demo.Models
         public decimal QualificationAllowance { get; set; } = 0; // Phụ cấp theo bằng cấp
         public int ExperienceYears { get; set; } = 0; // Số năm kinh nghiệm
 
-        // --- CÔNG VIỆC ---
+        // --- CÔNG VIỆC & PHÒNG BAN CHUẨN (OD-01, CR-01, CR-02) ---
+        public int? DepartmentId { get; set; }
+        [ForeignKey("DepartmentId")]
+        public Department? DepartmentEntity { get; set; }
         public string? Department { get; set; }
+
+        // --- QUẢN LÝ TRỰC TIẾP (OD-02, OD-07, OD-11) ---
+        public int? ManagerId { get; set; }
+        [ForeignKey("ManagerId")]
+        public Employee? Manager { get; set; }
+        [InverseProperty("Manager")]
+        public ICollection<Employee> Subordinates { get; set; } = new List<Employee>();
+
+        // --- KIỂM SOÁT ĐỒNG THỜI (OD-08) ---
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
+
         public string? Position { get; set; } // Trạng thái: Chính thức, Thử việc...
         public string? JobTitle { get; set; } // Vai trò: Admin, HR, Leader, Nhân viên...
         public string? KPIScore { get; set; } // Điểm/Loại KPI (A, B, C...)
